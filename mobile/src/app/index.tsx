@@ -1,98 +1,77 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect, useState } from 'react';
+import { useRouter, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { View, Text, StyleSheet } from 'react-native';
+import { useAuth } from '@/hooks/useAuth';
+import Loading from '@/components/common/Loading';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+export default function Index() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const segments = useSegments();
+  const [debugInfo, setDebugInfo] = useState('');
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+  useEffect(() => {
+    const currentDebug = `Loading: ${loading}, User: ${user?.displayName || 'none'}, Segments: ${segments.join('/')}`;
+    setDebugInfo(currentDebug);
+    console.log('📍 Index navigation check:', currentDebug);
+    
+    if (loading) {
+      console.log('⏳ Still loading auth...');
+      return;
+    }
+
+    // Small delay to ensure auth state is fully propagated
+    const navigationTimer = setTimeout(() => {
+      // Hide splash screen once auth is determined
+      SplashScreen.hideAsync();
+
+      const inAuthGroup = segments[0] === 'auth';
+      const inTabsGroup = segments[0] === '(tabs)';
+
+      if (!user && !inAuthGroup) {
+        // Not authenticated and not in auth screens - go to login
+        console.log('🔒 No user, redirecting to login...');
+        setDebugInfo('Redirecting to login...');
+        router.replace('/auth/login');
+      } else if (user && inAuthGroup) {
+        // Authenticated but still in auth screens - go to dashboard
+        console.log('✅ User authenticated, leaving auth screens...');
+        setDebugInfo(`Welcome ${user.displayName}! Redirecting to dashboard...`);
+        router.replace('/(tabs)/dashboard');
+      } else if (user && !inAuthGroup && !inTabsGroup) {
+        // Authenticated and at root - go to dashboard
+        console.log('✅ User found at root, going to dashboard...');
+        setDebugInfo(`Welcome ${user.displayName}! Loading dashboard...`);
+        router.replace('/(tabs)/dashboard');
+      } else {
+        console.log('✓ Navigation state is correct');
+      }
+    }, 100); // Small delay to ensure state is updated
+
+    return () => clearTimeout(navigationTimer);
+  }, [user, loading, segments]);
+
+  // Show debug info for troubleshooting
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
-
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+    <View style={styles.container}>
+      <Loading />
+      <Text style={styles.debug}>{debugInfo}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
+  debug: {
+    position: 'absolute',
+    bottom: 50,
+    left: 20,
+    right: 20,
+    fontSize: 12,
+    color: '#666',
     textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
   },
 });

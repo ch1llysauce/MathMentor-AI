@@ -13,6 +13,9 @@ build/
 .expo/
 .expo-shared/
 
+# AI Tools
+.claude/
+
 # Logs
 *.log
 npm-debug.log*
