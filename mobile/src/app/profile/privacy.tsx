@@ -268,6 +268,8 @@ export default function PrivacySecurityScreen() {
             We use industry-standard encryption to protect your data and privacy
           </Text>
         </View>
+
+        <View style={{ height: 20 }} />
       </ScrollView>
     </View>
   );

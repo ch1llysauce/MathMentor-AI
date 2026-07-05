@@ -194,6 +194,8 @@ export default function EditProfileScreen() {
         >
           <Text style={styles.deleteButtonText}>Delete Account</Text>
         </TouchableOpacity>
+
+        <View style={{ height: 20 }} />
       </ScrollView>
     </View>
   );

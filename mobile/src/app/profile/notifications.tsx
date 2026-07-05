@@ -223,6 +223,8 @@ export default function NotificationsScreen() {
             <Ionicons name="chevron-forward" size={20} color="#4b41e1" />
           </TouchableOpacity>
         </View>
+
+        <View style={{ height: 20 }} />
       </ScrollView>
     </View>
   );
