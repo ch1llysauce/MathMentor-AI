@@ -1,46 +1,6 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../constants/api';
-
-// Cross-platform storage solution
-const createStorage = () => {
-  // Check if we're in a web environment
-  if (typeof window !== 'undefined' && window.localStorage) {
-    return {
-      async getItem(key: string): Promise<string | null> {
-        return localStorage.getItem(key);
-      },
-      async setItem(key: string, value: string): Promise<void> {
-        localStorage.setItem(key, value);
-      },
-      async removeItem(key: string): Promise<void> {
-        localStorage.removeItem(key);
-      },
-    };
-  }
-  
-  // For React Native, try to import AsyncStorage
-  try {
-    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-    return AsyncStorage;
-  } catch (error) {
-    console.warn('AsyncStorage not available, using memory storage');
-    // Fallback to in-memory storage
-    const memoryStorage: { [key: string]: string } = {};
-    return {
-      async getItem(key: string): Promise<string | null> {
-        return memoryStorage[key] || null;
-      },
-      async setItem(key: string, value: string): Promise<void> {
-        memoryStorage[key] = value;
-      },
-      async removeItem(key: string): Promise<void> {
-        delete memoryStorage[key];
-      },
-    };
-  }
-};
-
-const storage = createStorage();
+import { storage } from '../utils/storage';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -55,8 +15,12 @@ api.interceptors.request.use(
   async (config) => {
     try {
       const token = await storage.getItem('token');
+      console.log('🔑 Token from storage:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('✅ Authorization header set');
+      } else {
+        console.log('⚠️  No token found in storage');
       }
       
       // Log request for debugging

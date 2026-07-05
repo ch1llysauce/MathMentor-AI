@@ -1,29 +1,28 @@
 // API Configuration - Update the IP address below to match your network setup
 
-// Step 1: Find your computer's IP address by running 'ipconfig' in command prompt
-// Step 2: Find your phone's IP address in WiFi settings  
-// Step 3: If both IPs start with the same numbers (like 192.168.1.x), use your computer's IP
-// Step 4: If they're different, you'll need ngrok or ensure both devices are on same WiFi
+// PRODUCTION URL (from Render deployment)
+// Replace with your actual Render URL after deployment
+const PRODUCTION_URL = 'https://mathmentor-ai-nxry.onrender.com/api'; // UPDATE THIS after Render gives you the URL
 
-// OPTION 1: Same WiFi Network - Replace with your computer's actual IP
-const SAME_WIFI_IP = 'http://192.168.254.107:5000/api'; // Current computer IP
+// LOCAL DEVELOPMENT URL
+const LOCAL_URL = 'http://192.168.254.107:5000/api';
 
-// OPTION 2: Different Networks - Use ngrok tunnel URL
-const NGROK_TUNNEL = 'https://your-ngrok-url.ngrok.io/api'; // Replace with ngrok URL
+// Toggle between production and local
+// Set to true when testing with local backend
+// Set to false when using deployed backend
+const USE_LOCAL = false;
 
-// OPTION 3: Manual IP Override - Replace with the IP that works for you
-const MANUAL_IP = 'http://192.168.254.107:5000/api'; // Replace YOUR_IP_HERE
+export const API_BASE_URL = USE_LOCAL ? LOCAL_URL : PRODUCTION_URL;
 
-// Choose which option to use by changing this line:
-export const API_BASE_URL = SAME_WIFI_IP;
+// 🔧 Quick Setup Guide:
+// 1. Deploy backend to Render
+// 2. Copy the URL from Render (e.g., https://your-app.onrender.com)
+// 3. Update PRODUCTION_URL above
+// 4. Set USE_LOCAL = false
+// 5. Rebuild your mobile app
 
-// 🔧 Quick IP Address Guide:
-// Computer IP (run 'ipconfig'): 192.168.254.107
-// Phone IP (check WiFi settings): ???
-// If your phone IP starts with 192.168.254.x → use SAME_WIFI_IP  
-// If your phone IP is different → use NGROK_TUNNEL or connect to same WiFi
-
-// Safe to change: YES! This file only contains network configuration.
+// For local development:
+// Set USE_LOCAL = true to use your PC's backend
 
 // API Endpoints remain the same
 export const AUTH_ENDPOINTS = {
@@ -48,9 +47,11 @@ export const AI_ENDPOINTS = {
 };
 
 export const PROGRESS_ENDPOINTS = {
+  BASE: '/progress',
   GET_ALL: '/progress',
   GET_TOPIC: '/progress',
   GET_SUMMARY: '/progress/stats/summary',
+  SUMMARY: '/progress/stats/summary',
   LEARNING_PATH: '/progress/learning-path',
   NEXT_RECOMMENDATION: '/progress/next-recommendation',
   UPDATE_STREAK: '/progress/update-streak',

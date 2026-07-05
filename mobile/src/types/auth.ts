@@ -3,7 +3,11 @@ export interface User {
   email: string;
   displayName: string;
   gradeLevel?: number;
+  focusAreas?: string[];
   currentTopic?: string;
+  diagnosticCompleted?: boolean;
+  currentStreak?: number;
+  totalStudyTime?: number;
   createdAt?: string;
 }
 
@@ -21,4 +25,5 @@ export interface RegisterData {
   password: string;
   displayName: string;
   gradeLevel?: number;
+  focusAreas?: string[];
 }

@@ -13,7 +13,8 @@ import {
     aiRoutes,
     questionRoutes,
     progressRoutes,
-    learningRoutes
+    learningRoutes,
+    diagnosticRoutes
 } from "./routes/index.js";
 
 dotenv.config();
@@ -39,7 +40,8 @@ app.get("/", (req, res) => {
             ai: "/api/ai",
             questions: "/api/questions",
             progress: "/api/progress",
-            learning: "/api/learning"
+            learning: "/api/learning",
+            diagnostic: "/api/diagnostic"
         }
     });
 });
@@ -50,6 +52,7 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/learning", learningRoutes);
+app.use("/api/diagnostic", diagnosticRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

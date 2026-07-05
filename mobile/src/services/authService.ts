@@ -1,47 +1,7 @@
 import api from './api';
 import { AUTH_ENDPOINTS } from '../constants/api';
 import { AuthResponse, RegisterData, User } from '../types/auth';
-
-// Cross-platform storage solution
-const createStorage = () => {
-  // Check if we're in a web environment
-  if (typeof window !== 'undefined' && window.localStorage) {
-    return {
-      async getItem(key: string): Promise<string | null> {
-        return localStorage.getItem(key);
-      },
-      async setItem(key: string, value: string): Promise<void> {
-        localStorage.setItem(key, value);
-      },
-      async removeItem(key: string): Promise<void> {
-        localStorage.removeItem(key);
-      },
-    };
-  }
-  
-  // For React Native, try to import AsyncStorage
-  try {
-    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-    return AsyncStorage;
-  } catch (error) {
-    console.warn('AsyncStorage not available, using memory storage');
-    // Fallback to in-memory storage
-    const memoryStorage: { [key: string]: string } = {};
-    return {
-      async getItem(key: string): Promise<string | null> {
-        return memoryStorage[key] || null;
-      },
-      async setItem(key: string, value: string): Promise<void> {
-        memoryStorage[key] = value;
-      },
-      async removeItem(key: string): Promise<void> {
-        delete memoryStorage[key];
-      },
-    };
-  }
-};
-
-const storage = createStorage();
+import { storage } from '../utils/storage';
 
 export const authService = {
   // Register new user
@@ -67,11 +27,21 @@ export const authService = {
     const response = await api.post(AUTH_ENDPOINTS.LOGIN, payload);
     
     console.log('📥 Response status:', response.status);
-    console.log('📥 Response data:', response.data);
+    console.log('📥 Response data:', JSON.stringify(response.data, null, 2));
+    console.log('📥 Response.data.success:', response.data.success);
+    console.log('📥 Token exists:', !!response.data.data?.token);
     
     if (response.data.success) {
+      console.log('💾 Saving token to storage...');
       await storage.setItem('token', response.data.data.token);
       await storage.setItem('user', JSON.stringify(response.data.data.user));
+      console.log('✅ Token saved successfully');
+      
+      // Verify token was saved
+      const savedToken = await storage.getItem('token');
+      console.log('🔍 Verify token saved:', savedToken ? 'YES' : 'NO');
+    } else {
+      console.log('❌ Login failed, response.data.success is false');
     }
     return response.data;
   },
