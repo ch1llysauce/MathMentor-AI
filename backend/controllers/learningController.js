@@ -538,8 +538,15 @@ export const submitPracticeAnswer = asyncHandler(async (req, res) => {
     // Check if answer is correct
     let isCorrect = false;
     if (problem.type === 'multiple-choice') {
+        console.log('🔍 Checking answer:');
+        console.log('  User answer:', userAnswer);
+        console.log('  Options:', JSON.stringify(problem.options, null, 2));
+        
         const selectedOption = problem.options.find(opt => opt.text === userAnswer);
+        console.log('  Selected option:', selectedOption);
+        
         isCorrect = selectedOption ? selectedOption.isCorrect : false;
+        console.log('  Is correct:', isCorrect);
     } else if (problem.type === 'free-response') {
         // Simple string comparison for now (can be enhanced with AI grading)
         isCorrect = userAnswer.trim().toLowerCase() === problem.correctAnswer.trim().toLowerCase();

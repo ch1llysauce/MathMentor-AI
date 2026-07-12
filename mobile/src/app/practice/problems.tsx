@@ -64,6 +64,12 @@ export default function ProblemsScreen() {
       setSubmitting(true);
       const timeSpent = Math.floor((Date.now() - startTime) / 1000);
       
+      console.log('📤 Submitting answer:');
+      console.log('  Problem ID:', currentProblem._id);
+      console.log('  Selected answer:', selectedAnswer);
+      console.log('  Time spent:', timeSpent);
+      console.log('  Hints used:', hintsUsed);
+      
       const response = await lessonService.submitAnswer(
         currentProblem._id,
         selectedAnswer,
@@ -71,6 +77,7 @@ export default function ProblemsScreen() {
         hintsUsed
       );
 
+      console.log('📥 Response:', response);
       setIsCorrect(response.isCorrect);
       setShowExplanation(true);
     } catch (error: any) {
