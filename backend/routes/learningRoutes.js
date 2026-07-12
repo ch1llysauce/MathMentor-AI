@@ -7,7 +7,12 @@ import {
     submitDiagnosticResults,
     getDiagnosticHistory,
     getLatestDiagnostic,
-    getReviewQuestions
+    getReviewQuestions,
+    getLessons,
+    getLesson,
+    completeLesson,
+    getPracticeProblems,
+    submitPracticeAnswer
 } from "../controllers/learningController.js";
 import {
     authenticate,
@@ -30,6 +35,15 @@ router.get("/sessions", getSessionHistory);
 router.post("/diagnostic/submit", submitDiagnosticResults);
 router.get("/diagnostic/history", getDiagnosticHistory);
 router.get("/diagnostic/latest", getLatestDiagnostic);
+
+// Lessons
+router.get("/lessons", getLessons);
+router.get("/lessons/:lessonId", validateMongoId("lessonId"), getLesson);
+router.put("/lessons/:lessonId/complete", validateMongoId("lessonId"), completeLesson);
+
+// Practice problems
+router.get("/practice", getPracticeProblems);
+router.post("/practice/:problemId/submit", validateMongoId("problemId"), submitPracticeAnswer);
 
 // Review
 router.get("/review", getReviewQuestions);

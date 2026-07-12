@@ -1,4 +1,4 @@
-import { Session, DiagnosticResult, User, Progress } from "../models/index.js";
+import { Session, DiagnosticResult, User, Progress, Lesson, PracticeProblem, UserLessonProgress, UserProblemAttempt } from "../models/index.js";
 import { analyzeDiagnosticResults, generateLearningPath } from "../services/learningPath.js";
 import { AppError, asyncHandler } from "../middleware/index.js";
 
@@ -318,3 +318,284 @@ export default {
     getLatestDiagnostic,
     getReviewQuestions
 };
+
+
+/**
+ * @desc    Get lessons for a specific topic/subtopic
+ * @route   GET /api/learning/lessons
+ * @access  Private
+ */
+export const getLessons = asyncHandler(async (req, res) => {
+    const { topic, subtopic } = req.query;
+    const userId = req.user._id;
+
+    const filter = {};
+    if (topic) filter.topic = topic;
+    if (subtopic) filter.subtopic = subtopic;
+
+    const lessons = await Lesson.find(filter).sort({ order: 1 });
+
+    // Get user's progress for these lessons
+    const lessonIds = lessons.map(l => l._id);
+    const progressRecords = await UserLessonProgress.find({
+        user: userId,
+        lesson: { $in: lessonIds }
+    });
+
+    // Map progress to lessons
+    const progressMap = {};
+    progressRecords.forEach(p => {
+        progressMap[p.lesson.toString()] = p;
+    });
+
+    const lessonsWithProgress = lessons.map(lesson => {
+        const progress = progressMap[lesson._id.toString()];
+        return {
+            ...lesson.toObject(),
+            userProgress: progress ? {
+                status: progress.status,
+                progress: progress.progress,
+                timeSpent: progress.timeSpent,
+                completedAt: progress.completedAt
+            } : {
+                status: 'not-started',
+                progress: 0,
+                timeSpent: 0
+            }
+        };
+    });
+
+    res.status(200).json({
+        success: true,
+        count: lessonsWithProgress.length,
+        data: { lessons: lessonsWithProgress }
+    });
+});
+
+/**
+ * @desc    Get a single lesson by ID
+ * @route   GET /api/learning/lessons/:lessonId
+ * @access  Private
+ */
+export const getLesson = asyncHandler(async (req, res) => {
+    const { lessonId } = req.params;
+    const userId = req.user._id;
+
+    const lesson = await Lesson.findById(lessonId).populate('prerequisites');
+
+    if (!lesson) {
+        throw new AppError("Lesson not found", 404);
+    }
+
+    // Get user's progress for this lesson
+    let progress = await UserLessonProgress.findOne({
+        user: userId,
+        lesson: lessonId
+    });
+
+    // Create progress record if it doesn't exist
+    if (!progress) {
+        progress = await UserLessonProgress.create({
+            user: userId,
+            lesson: lessonId,
+            status: 'in-progress'
+        });
+    } else {
+        // Update last accessed time
+        progress.lastAccessedAt = new Date();
+        await progress.save();
+    }
+
+    res.status(200).json({
+        success: true,
+        data: {
+            lesson,
+            progress: {
+                status: progress.status,
+                progress: progress.progress,
+                timeSpent: progress.timeSpent,
+                completedAt: progress.completedAt
+            }
+        }
+    });
+});
+
+/**
+ * @desc    Mark lesson as completed
+ * @route   PUT /api/learning/lessons/:lessonId/complete
+ * @access  Private
+ */
+export const completeLesson = asyncHandler(async (req, res) => {
+    const { lessonId } = req.params;
+    const { timeSpent } = req.body;
+    const userId = req.user._id;
+
+    const lesson = await Lesson.findById(lessonId);
+    if (!lesson) {
+        throw new AppError("Lesson not found", 404);
+    }
+
+    // Update or create progress record
+    let progress = await UserLessonProgress.findOne({
+        user: userId,
+        lesson: lessonId
+    });
+
+    if (!progress) {
+        progress = new UserLessonProgress({
+            user: userId,
+            lesson: lessonId
+        });
+    }
+
+    progress.status = 'completed';
+    progress.progress = 100;
+    progress.timeSpent += timeSpent || 0;
+    progress.completedAt = new Date();
+    await progress.save();
+
+    // Update overall topic progress
+    const topicProgress = await Progress.findOne({
+        user: userId,
+        topic: lesson.topic
+    });
+
+    if (topicProgress) {
+        topicProgress.lessonsCompleted += 1;
+        topicProgress.totalStudyTime += timeSpent || 0;
+        topicProgress.lastStudied = new Date();
+        await topicProgress.save();
+    }
+
+    res.status(200).json({
+        success: true,
+        message: 'Lesson marked as completed',
+        data: { progress }
+    });
+});
+
+/**
+ * @desc    Get practice problems
+ * @route   GET /api/learning/practice
+ * @access  Private
+ */
+export const getPracticeProblems = asyncHandler(async (req, res) => {
+    const { topic, subtopic, difficulty, lessonId, limit = 10 } = req.query;
+    const userId = req.user._id;
+
+    const filter = {};
+    if (topic) filter.topic = topic;
+    if (subtopic) filter.subtopic = subtopic;
+    if (difficulty) filter.difficulty = difficulty;
+    if (lessonId) filter.lessonId = lessonId;
+
+    const problems = await PracticeProblem.find(filter)
+        .limit(parseInt(limit))
+        .select('-correctAnswer -options.isCorrect'); // Don't send correct answers
+
+    // Get user's previous attempts
+    const problemIds = problems.map(p => p._id);
+    const attempts = await UserProblemAttempt.find({
+        user: userId,
+        problem: { $in: problemIds }
+    });
+
+    const attemptsMap = {};
+    attempts.forEach(a => {
+        if (!attemptsMap[a.problem.toString()]) {
+            attemptsMap[a.problem.toString()] = [];
+        }
+        attemptsMap[a.problem.toString()].push(a);
+    });
+
+    const problemsWithAttempts = problems.map(problem => ({
+        ...problem.toObject(),
+        previousAttempts: attemptsMap[problem._id.toString()] || []
+    }));
+
+    res.status(200).json({
+        success: true,
+        count: problemsWithAttempts.length,
+        data: { problems: problemsWithAttempts }
+    });
+});
+
+/**
+ * @desc    Submit practice problem answer
+ * @route   POST /api/learning/practice/:problemId/submit
+ * @access  Private
+ */
+export const submitPracticeAnswer = asyncHandler(async (req, res) => {
+    const { problemId } = req.params;
+    const { userAnswer, timeSpent, hintsUsed } = req.body;
+    const userId = req.user._id;
+
+    const problem = await PracticeProblem.findById(problemId);
+    if (!problem) {
+        throw new AppError("Problem not found", 404);
+    }
+
+    // Check if answer is correct
+    let isCorrect = false;
+    if (problem.type === 'multiple-choice') {
+        const selectedOption = problem.options.find(opt => opt.text === userAnswer);
+        isCorrect = selectedOption ? selectedOption.isCorrect : false;
+    } else if (problem.type === 'free-response') {
+        // Simple string comparison for now (can be enhanced with AI grading)
+        isCorrect = userAnswer.trim().toLowerCase() === problem.correctAnswer.trim().toLowerCase();
+    }
+
+    // Calculate points (reduce points for hints used)
+    let pointsEarned = 0;
+    if (isCorrect) {
+        pointsEarned = problem.points - (hintsUsed * 2);
+        pointsEarned = Math.max(pointsEarned, problem.points * 0.5); // At least 50% points
+    }
+
+    // Get attempt number
+    const previousAttempts = await UserProblemAttempt.countDocuments({
+        user: userId,
+        problem: problemId
+    });
+
+    // Create attempt record
+    const attempt = await UserProblemAttempt.create({
+        user: userId,
+        problem: problemId,
+        userAnswer,
+        isCorrect,
+        timeSpent: timeSpent || 0,
+        hintsUsed: hintsUsed || 0,
+        pointsEarned,
+        attemptNumber: previousAttempts + 1
+    });
+
+    // Update topic progress
+    const topicProgress = await Progress.findOne({
+        user: userId,
+        topic: problem.topic
+    });
+
+    if (topicProgress) {
+        topicProgress.questionsAnswered += 1;
+        if (isCorrect) {
+            topicProgress.correctAnswers += 1;
+        }
+        topicProgress.accuracy = Math.round(
+            (topicProgress.correctAnswers / topicProgress.questionsAnswered) * 100
+        );
+        topicProgress.lastStudied = new Date();
+        await topicProgress.save();
+    }
+
+    res.status(200).json({
+        success: true,
+        data: {
+            attempt,
+            isCorrect,
+            pointsEarned,
+            explanation: problem.explanation,
+            solution: isCorrect ? null : problem.solution // Only show solution if incorrect
+        }
+    });
+});

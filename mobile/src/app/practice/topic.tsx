@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,12 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
+import { lessonService } from '@/services/lessonService';
 
 type TabType = 'lessons' | 'practice';
 
@@ -33,24 +35,109 @@ export default function TopicScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [selectedTab, setSelectedTab] = useState<TabType>('lessons');
+  const [loading, setLoading] = useState(true);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [practiceSets, setPracticeSets] = useState<PracticeSet[]>([]);
   
   const topicName = params.topicName as string;
   const mastery = parseInt(params.mastery as string) || 0;
 
-  const lessons: Lesson[] = [
-    { id: '1', title: 'Introduction to Linear Equations', duration: '12 min', completed: true, locked: false },
-    { id: '2', title: 'Solving One-Variable Equations', duration: '15 min', completed: true, locked: false },
-    { id: '3', title: 'Two-Variable Linear Systems', duration: '18 min', completed: false, locked: false },
-    { id: '4', title: 'Graphing Linear Equations', duration: '20 min', completed: false, locked: false },
-    { id: '5', title: 'Word Problems & Applications', duration: '16 min', completed: false, locked: true },
-  ];
+  useEffect(() => {
+    loadTopicData();
+  }, [topicName]);
 
-  const practiceSets: PracticeSet[] = [
-    { id: '1', title: 'Basic Equations Practice', problems: 20, difficulty: 'Easy', completed: 18 },
-    { id: '2', title: 'Intermediate Problems', problems: 15, difficulty: 'Medium', completed: 8 },
-    { id: '3', title: 'Advanced Challenge Set', problems: 12, difficulty: 'Hard', completed: 0 },
-    { id: '4', title: 'Mixed Review', problems: 25, difficulty: 'Medium', completed: 5 },
-  ];
+  const loadTopicData = async () => {
+    try {
+      setLoading(true);
+      
+      // Load lessons for this topic
+      const lessonsResponse = await lessonService.getLessons(topicName);
+      const apiLessons = lessonsResponse.lessons;
+      
+      // Transform API lessons to component format
+      const transformedLessons: Lesson[] = apiLessons.map((lesson: any, index: number) => ({
+        id: lesson._id,
+        title: lesson.title,
+        duration: `${lesson.estimatedTime} min`,
+        completed: lesson.userProgress?.status === 'completed',
+        locked: lesson.isLocked,
+      }));
+      
+      setLessons(transformedLessons);
+
+      // Load practice problems for this topic
+      try {
+        const problemsResponse = await lessonService.getPracticeProblems({
+          topic: topicName,
+          limit: 50,
+        });
+        
+        // Group problems by difficulty to create practice sets
+        const easyProblems = problemsResponse.problems.filter(p => p.difficulty === 'Easy');
+        const mediumProblems = problemsResponse.problems.filter(p => p.difficulty === 'Medium');
+        const hardProblems = problemsResponse.problems.filter(p => p.difficulty === 'Hard');
+        
+        const sets: PracticeSet[] = [];
+        
+        if (easyProblems.length > 0) {
+          sets.push({
+            id: 'easy',
+            title: 'Basic Equations Practice',
+            problems: easyProblems.length,
+            difficulty: 'Easy',
+            completed: easyProblems.filter(p => p.previousAttempts && p.previousAttempts.length > 0).length,
+          });
+        }
+        
+        if (mediumProblems.length > 0) {
+          sets.push({
+            id: 'medium',
+            title: 'Intermediate Problems',
+            problems: mediumProblems.length,
+            difficulty: 'Medium',
+            completed: mediumProblems.filter(p => p.previousAttempts && p.previousAttempts.length > 0).length,
+          });
+        }
+        
+        if (hardProblems.length > 0) {
+          sets.push({
+            id: 'hard',
+            title: 'Advanced Challenge Set',
+            problems: hardProblems.length,
+            difficulty: 'Hard',
+            completed: hardProblems.filter(p => p.previousAttempts && p.previousAttempts.length > 0).length,
+          });
+        }
+        
+        // Add mixed review if we have problems in multiple difficulties
+        if (sets.length > 1) {
+          sets.push({
+            id: 'mixed',
+            title: 'Mixed Review',
+            problems: problemsResponse.problems.length,
+            difficulty: 'Medium',
+            completed: Math.floor(problemsResponse.problems.filter(p => p.previousAttempts && p.previousAttempts.length > 0).length / 2),
+          });
+        }
+        
+        setPracticeSets(sets);
+      } catch (error) {
+        console.error('Error loading practice problems:', error);
+        // Fallback to default practice sets if API fails
+        setPracticeSets([
+          { id: '1', title: 'Basic Practice', problems: 10, difficulty: 'Easy', completed: 0 },
+          { id: '2', title: 'Intermediate Problems', problems: 10, difficulty: 'Medium', completed: 0 },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error loading topic data:', error);
+      // Fallback to empty arrays
+      setLessons([]);
+      setPracticeSets([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -63,14 +150,30 @@ export default function TopicScreen() {
 
   const handleLessonPress = (lesson: Lesson) => {
     if (lesson.locked) return;
-    // TODO: Navigate to lesson viewer
-    console.log('Open lesson:', lesson.title);
+    router.push(`/practice/lesson?lessonId=${lesson.id}`);
   };
 
   const handlePracticePress = (practice: PracticeSet) => {
-    // TODO: Navigate to practice problems
-    console.log('Start practice:', practice.title);
+    router.push({
+      pathname: '/practice/problems',
+      params: {
+        difficulty: practice.difficulty,
+        title: practice.title,
+        topic: topicName,
+      }
+    });
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={{ marginTop: 12, fontSize: 14, color: Colors.textLight }}>
+          Loading {topicName}...
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

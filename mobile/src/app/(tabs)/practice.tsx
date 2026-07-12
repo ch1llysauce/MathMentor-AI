@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import diagnosticService from '@/services/diagnosticService';
+import { lessonService } from '@/services/lessonService';
 
 type TopicFilter = 'all' | 'weak' | 'strong';
 
@@ -32,50 +33,130 @@ export default function PracticeScreen() {
   const [selectedFilter, setSelectedFilter] = useState<TopicFilter>('all');
   const [loading, setLoading] = useState(true);
   const [userMastery, setUserMastery] = useState<any>(null);
-
-  const topics: Topic[] = [
-    {
-      id: '1',
-      name: 'Algebra',
-      icon: 'calculator',
-      color: '#2563eb',
-      lessons: 24,
-      problems: 156,
-      mastery: userMastery?.algebraScore || 75,
-      subtopics: ['Linear Equations', 'Quadratic Equations', 'Polynomials', 'Factoring'],
-    },
-    {
-      id: '2',
-      name: 'Geometry',
-      icon: 'shapes',
-      color: '#00a472',
-      lessons: 18,
-      problems: 124,
-      mastery: userMastery?.geometryScore || 68,
-      subtopics: ['Triangles', 'Circles', 'Area & Perimeter', 'Volume'],
-    },
-    {
-      id: '3',
-      name: 'Trigonometry',
-      icon: 'analytics',
-      color: '#f59e0b',
-      lessons: 16,
-      problems: 98,
-      mastery: userMastery?.trigonometryScore || 82,
-      subtopics: ['Sine & Cosine', 'Tangent', 'Identities', 'Angles'],
-    },
-  ];
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [allLessons, setAllLessons] = useState<any[]>([]);
 
   useEffect(() => {
-    loadUserProgress();
+    loadData();
   }, []);
 
-  const loadUserProgress = async () => {
+  const loadData = async () => {
     try {
-      const response = await diagnosticService.getLatestDiagnostic();
-      setUserMastery(response.data.diagnostic);
+      setLoading(true);
+      
+      // Load user diagnostic data for mastery scores
+      let diagnosticData = null;
+      try {
+        const response = await diagnosticService.getLatestDiagnostic();
+        diagnosticData = response.data.diagnostic;
+        setUserMastery(diagnosticData);
+      } catch (error) {
+        console.log('No diagnostic data available');
+      }
+
+      // Load all lessons to build topic list
+      try {
+        const lessonsResponse = await lessonService.getLessons();
+        const lessons = lessonsResponse.lessons;
+        setAllLessons(lessons);
+
+        // Group lessons by topic and build topic list
+        const topicMap = new Map<string, any>();
+        
+        lessons.forEach((lesson: any) => {
+          const topicName = lesson.topic;
+          
+          if (!topicMap.has(topicName)) {
+            topicMap.set(topicName, {
+              name: topicName,
+              subtopics: new Set<string>(),
+              lessons: [],
+              problemCount: 0,
+            });
+          }
+          
+          const topic = topicMap.get(topicName);
+          topic.subtopics.add(lesson.subtopic);
+          topic.lessons.push(lesson);
+        });
+
+        // Convert map to array with proper structure
+        const topicsArray: Topic[] = Array.from(topicMap.values()).map((topic, index) => {
+          // Get mastery score from diagnostic data
+          let mastery = 0;
+          if (diagnosticData) {
+            const topicLower = topic.name.toLowerCase();
+            if (topicLower === 'algebra') mastery = diagnosticData.algebraScore || 0;
+            else if (topicLower === 'geometry') mastery = diagnosticData.geometryScore || 0;
+            else if (topicLower === 'trigonometry') mastery = diagnosticData.trigonometryScore || 0;
+          }
+
+          // Assign icon and color
+          let icon = 'book';
+          let color = '#4b41e1';
+          const topicLower = topic.name.toLowerCase();
+          if (topicLower === 'algebra') {
+            icon = 'calculator';
+            color = '#2563eb';
+          } else if (topicLower === 'geometry') {
+            icon = 'shapes';
+            color = '#00a472';
+          } else if (topicLower === 'trigonometry') {
+            icon = 'analytics';
+            color = '#f59e0b';
+          }
+
+          return {
+            id: (index + 1).toString(),
+            name: topic.name,
+            icon,
+            color,
+            lessons: topic.lessons.length,
+            problems: topic.lessons.length * 5, // Estimate ~5 problems per lesson
+            mastery,
+            subtopics: Array.from(topic.subtopics),
+          };
+        });
+
+        setTopics(topicsArray);
+      } catch (error) {
+        console.error('Error loading lessons:', error);
+        // Fallback to default topics
+        setTopics([
+          {
+            id: '1',
+            name: 'Algebra',
+            icon: 'calculator',
+            color: '#2563eb',
+            lessons: 0,
+            problems: 0,
+            mastery: diagnosticData?.algebraScore || 0,
+            subtopics: ['Linear Equations', 'Quadratic Equations'],
+          },
+          {
+            id: '2',
+            name: 'Geometry',
+            icon: 'shapes',
+            color: '#00a472',
+            lessons: 0,
+            problems: 0,
+            mastery: diagnosticData?.geometryScore || 0,
+            subtopics: ['Triangles', 'Circles'],
+          },
+          {
+            id: '3',
+            name: 'Trigonometry',
+            icon: 'analytics',
+            color: '#f59e0b',
+            lessons: 0,
+            problems: 0,
+            mastery: diagnosticData?.trigonometryScore || 0,
+            subtopics: ['Sine & Cosine', 'Identities'],
+          },
+        ]);
+      }
     } catch (error) {
-      console.log('No diagnostic data available');
+      console.error('Error loading practice data:', error);
     } finally {
       setLoading(false);
     }

@@ -16,7 +16,7 @@ export const Colors = {
   
   // Surface variations
   surface: '#f7f9fb',
-  surfaceContainer: '#eff1f3',
+  surfaceContainer: '#d7d8daff',
   surfaceContainerLow: '#ebebebff',
   surfaceContainerHigh: '#e6e8ea',
   
