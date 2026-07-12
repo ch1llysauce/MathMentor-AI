@@ -58,7 +58,7 @@ Topics you cover: Algebra, Geometry, and Trigonometry.`,
     const groqResponse = await axios.post(
       'https://api.groq.com/openai/v1/chat/completions',
       {
-        model: 'llama3-70b-8192', // Fast and FREE model
+        model: 'llama-3.1-70b-versatile', // Latest FREE model (replaces llama3-70b-8192)
         messages: messages,
         max_tokens: 800,
         temperature: 0.7,
