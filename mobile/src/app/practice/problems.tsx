@@ -189,7 +189,7 @@ export default function ProblemsScreen() {
             <Text style={styles.optionsLabel}>Select your answer:</Text>
             {currentProblem.options.map((option, index) => {
               const optionLabel = String.fromCharCode(65 + index);
-              const isSelected = selectedAnswer === optionLabel;
+              const isSelected = selectedAnswer === option.text;
               
               return (
                 <TouchableOpacity
@@ -200,7 +200,7 @@ export default function ProblemsScreen() {
                     showExplanation && option.isCorrect && styles.optionCardCorrect,
                     showExplanation && isSelected && !option.isCorrect && styles.optionCardWrong,
                   ]}
-                  onPress={() => !showExplanation && setSelectedAnswer(optionLabel)}
+                  onPress={() => !showExplanation && setSelectedAnswer(option.text)}
                   disabled={showExplanation}
                   activeOpacity={0.7}
                 >
