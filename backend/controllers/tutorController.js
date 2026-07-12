@@ -47,24 +47,24 @@ Topics you cover: Algebra, Geometry, and Trigonometry.`,
       ...history,
     ];
 
-    // Call OpenAI API
-    const openaiResponse = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
+    // Call Groq API (FREE & FAST!)
+    const groqResponse = await axios.post(
+      'https://api.groq.com/openai/v1/chat/completions',
       {
-        model: 'gpt-3.5-turbo',
+        model: 'llama3-70b-8192', // Fast and FREE model
         messages: messages,
         max_tokens: 800,
         temperature: 0.7,
       },
       {
         headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
           'Content-Type': 'application/json',
         },
       }
     );
 
-    const aiMessage = openaiResponse.data.choices[0].message.content;
+    const aiMessage = groqResponse.data.choices[0].message.content;
 
     // Add AI response to history
     history.push({
@@ -91,7 +91,7 @@ Topics you cover: Algebra, Geometry, and Trigonometry.`,
     
     if (error.response?.status === 401) {
       return res.status(500).json({ 
-        error: 'OpenAI API key not configured properly' 
+        error: 'Groq API key not configured properly. Get a FREE key from https://console.groq.com/keys' 
       });
     }
 

@@ -203,9 +203,9 @@ export default function ProblemsScreen() {
                   key={index}
                   style={[
                     styles.optionCard,
-                    isSelected && styles.optionCardSelected,
-                    showExplanation && option.isCorrect && styles.optionCardCorrect,
-                    showExplanation && isSelected && !option.isCorrect && styles.optionCardWrong,
+                    isSelected && !showExplanation && styles.optionCardSelected,
+                    showExplanation && isSelected && isCorrect && styles.optionCardCorrect,
+                    showExplanation && isSelected && !isCorrect && styles.optionCardWrong,
                   ]}
                   onPress={() => !showExplanation && setSelectedAnswer(option.text)}
                   disabled={showExplanation}
@@ -213,13 +213,15 @@ export default function ProblemsScreen() {
                 >
                   <View style={[
                     styles.optionBubble,
-                    isSelected && styles.optionBubbleSelected,
-                    showExplanation && option.isCorrect && styles.optionBubbleCorrect,
-                    showExplanation && isSelected && !option.isCorrect && styles.optionBubbleWrong,
+                    isSelected && !showExplanation && styles.optionBubbleSelected,
+                    showExplanation && isSelected && isCorrect && styles.optionBubbleCorrect,
+                    showExplanation && isSelected && !isCorrect && styles.optionBubbleWrong,
                   ]}>
                     <Text style={[
                       styles.optionBubbleText,
-                      (isSelected || (showExplanation && option.isCorrect)) && styles.optionBubbleTextActive,
+                      (isSelected && !showExplanation) && styles.optionBubbleTextActive,
+                      (showExplanation && isSelected && isCorrect) && styles.optionBubbleTextActive,
+                      (showExplanation && isSelected && !isCorrect) && styles.optionBubbleTextActive,
                     ]}>
                       {optionLabel}
                     </Text>
@@ -329,8 +331,6 @@ export default function ProblemsScreen() {
             </View>
           </View>
         )}
-
-        <View style={{ height: 100 }} />
       </ScrollView>
 
       {/* Footer Actions */}
@@ -362,6 +362,7 @@ export default function ProblemsScreen() {
           </TouchableOpacity>
         )}
       </View>
+      <View style={{ height: 30 }} />
     </View>
   );
 }
