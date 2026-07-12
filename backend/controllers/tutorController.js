@@ -12,6 +12,13 @@ export const chat = async (req, res) => {
       return res.status(400).json({ error: 'Message is required' });
     }
 
+    // Check if Groq API key is configured
+    if (!process.env.GROQ_API_KEY) {
+      return res.status(500).json({ 
+        error: 'Groq API key not configured. Add GROQ_API_KEY to environment variables.' 
+      });
+    }
+
     // Get or create conversation history
     const historyKey = conversationId || `${userId}-${Date.now()}`;
     let history = conversationHistory.get(historyKey) || [];
@@ -88,6 +95,7 @@ Topics you cover: Algebra, Geometry, and Trigonometry.`,
 
   } catch (error) {
     console.error('Tutor chat error:', error.response?.data || error.message);
+    console.error('Full error:', error);
     
     if (error.response?.status === 401) {
       return res.status(500).json({ 
@@ -95,9 +103,15 @@ Topics you cover: Algebra, Geometry, and Trigonometry.`,
       });
     }
 
+    if (error.response?.status === 429) {
+      return res.status(429).json({ 
+        error: 'Rate limit exceeded. Please wait a moment and try again.' 
+      });
+    }
+
     res.status(500).json({ 
       error: 'Failed to get response from AI tutor',
-      details: error.message 
+      details: error.response?.data?.error?.message || error.message 
     });
   }
 };
