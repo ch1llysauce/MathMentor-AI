@@ -225,11 +225,14 @@ export default function ProblemsScreen() {
                     </Text>
                   </View>
                   <Text style={styles.optionText}>{option.text}</Text>
-                  {showExplanation && option.isCorrect && (
+                  {showExplanation && isSelected && isCorrect && (
                     <Ionicons name="checkmark-circle" size={24} color="#00a472" />
                   )}
-                  {showExplanation && isSelected && !option.isCorrect && (
+                  {showExplanation && isSelected && !isCorrect && (
                     <Ionicons name="close-circle" size={24} color="#ef4444" />
+                  )}
+                  {showExplanation && !isSelected && option.isCorrect && (
+                    <Ionicons name="checkmark-circle" size={24} color="#00a472" />
                   )}
                 </TouchableOpacity>
               );
