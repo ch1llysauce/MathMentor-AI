@@ -5,11 +5,9 @@ import { Colors } from '@/constants/colors';
 import { tutorService } from '@/services/tutorService';
 import { Message, QuickAction } from '@/types/tutor';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'expo-router';
 
 export default function TutorScreen() {
   const { user } = useAuth();
-  const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
   
   const [messages, setMessages] = useState<Message[]>([]);
@@ -100,7 +98,18 @@ export default function TutorScreen() {
 
     } catch (error: any) {
       console.error('Error sending message:', error);
-      Alert.alert('Error', error.response?.data?.error || 'Failed to send message. Please try again.');
+      console.error('Error details:', error.response?.data);
+      
+      const errorMessage = error.response?.data?.error 
+        || error.response?.data?.details 
+        || error.message 
+        || 'Failed to send message. Please try again.';
+      
+      Alert.alert(
+        'Error', 
+        errorMessage,
+        [{ text: 'OK' }]
+      );
       
       // Remove the user message if failed
       setMessages((prev) => prev.filter((msg) => msg.id !== userMessage.id));
