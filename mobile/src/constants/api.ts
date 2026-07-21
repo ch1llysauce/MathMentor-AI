@@ -10,7 +10,7 @@ const LOCAL_URL = 'http://192.168.254.107:5000/api';
 // Toggle between production and local
 // Set to true when testing with local backend
 // Set to false when using deployed backend
-const USE_LOCAL = false;
+const USE_LOCAL = true;
 
 export const API_BASE_URL = USE_LOCAL ? LOCAL_URL : PRODUCTION_URL;
 
