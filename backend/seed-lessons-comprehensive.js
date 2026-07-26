@@ -181,6 +181,7 @@ const seedLessons = async () => {
         difficulty: 'Easy',
         type: 'multiple-choice',
         problem: { text: 'Solve for x: x + 5 = 12' },
+        correctAnswer: 'x = 7',
         options: [
           { text: 'x = 7', isCorrect: true },
           { text: 'x = 17', isCorrect: false },
@@ -199,6 +200,7 @@ const seedLessons = async () => {
         difficulty: 'Easy',
         type: 'multiple-choice',
         problem: { text: 'Solve for x: 2x = 10' },
+        correctAnswer: 'x = 5',
         options: [
           { text: 'x = 5', isCorrect: true },
           { text: 'x = 20', isCorrect: false },
@@ -217,6 +219,7 @@ const seedLessons = async () => {
         difficulty: 'Easy',
         type: 'multiple-choice',
         problem: { text: 'Solve for x: x - 8 = 15' },
+        correctAnswer: 'x = 23',
         options: [
           { text: 'x = 23', isCorrect: true },
           { text: 'x = 7', isCorrect: false },
@@ -236,6 +239,7 @@ const seedLessons = async () => {
         difficulty: 'Medium',
         type: 'multiple-choice',
         problem: { text: 'Solve for x: 3x + 4 = 19' },
+        correctAnswer: 'x = 5',
         options: [
           { text: 'x = 5', isCorrect: true },
           { text: 'x = 15', isCorrect: false },
@@ -254,6 +258,7 @@ const seedLessons = async () => {
         difficulty: 'Medium',
         type: 'multiple-choice',
         problem: { text: 'Solve for x: 2x + 3x = 25' },
+        correctAnswer: 'x = 5',
         options: [
           { text: 'x = 5', isCorrect: true },
           { text: 'x = 10', isCorrect: false },
@@ -273,6 +278,7 @@ const seedLessons = async () => {
         difficulty: 'Hard',
         type: 'multiple-choice',
         problem: { text: 'Solve for x: 2(x + 3) = 5x - 9' },
+        correctAnswer: 'x = 5',
         options: [
           { text: 'x = 5', isCorrect: true },
           { text: 'x = 3', isCorrect: false },
@@ -292,6 +298,7 @@ const seedLessons = async () => {
         difficulty: 'Easy',
         type: 'multiple-choice',
         problem: { text: 'Two angles of a triangle are 50 and 60 degrees. Find the third angle.' },
+        correctAnswer: '70 degrees',
         options: [
           { text: '70 degrees', isCorrect: true },
           { text: '110 degrees', isCorrect: false },
@@ -310,6 +317,7 @@ const seedLessons = async () => {
         difficulty: 'Easy',
         type: 'multiple-choice',
         problem: { text: 'What type of triangle has all three sides equal?' },
+        correctAnswer: 'Equilateral',
         options: [
           { text: 'Equilateral', isCorrect: true },
           { text: 'Isosceles', isCorrect: false },
@@ -329,6 +337,7 @@ const seedLessons = async () => {
         difficulty: 'Medium',
         type: 'multiple-choice',
         problem: { text: 'In a right triangle with legs 6 and 8, find the hypotenuse.' },
+        correctAnswer: '10',
         options: [
           { text: '10', isCorrect: true },
           { text: '14', isCorrect: false },
@@ -348,6 +357,7 @@ const seedLessons = async () => {
         difficulty: 'Hard',
         type: 'multiple-choice',
         problem: { text: 'If one leg is 5 and hypotenuse is 13, find the other leg.' },
+        correctAnswer: '12',
         options: [
           { text: '12', isCorrect: true },
           { text: '8', isCorrect: false },
@@ -367,6 +377,7 @@ const seedLessons = async () => {
         difficulty: 'Easy',
         type: 'multiple-choice',
         problem: { text: 'In SOH-CAH-TOA, what does SOH stand for?' },
+        correctAnswer: 'Sine = Opposite / Hypotenuse',
         options: [
           { text: 'Sine = Opposite / Hypotenuse', isCorrect: true },
           { text: 'Sine = Opposite / Horizontal', isCorrect: false },
@@ -385,6 +396,7 @@ const seedLessons = async () => {
         difficulty: 'Easy',
         type: 'multiple-choice',
         problem: { text: 'If opposite = 3 and hypotenuse = 5, what is sin?' },
+        correctAnswer: '0.6 or 3/5',
         options: [
           { text: '0.6 or 3/5', isCorrect: true },
           { text: '0.8 or 4/5', isCorrect: false },
@@ -404,6 +416,7 @@ const seedLessons = async () => {
         difficulty: 'Medium',
         type: 'multiple-choice',
         problem: { text: 'If adjacent = 4 and hypotenuse = 5, what is cos?' },
+        correctAnswer: '0.8 or 4/5',
         options: [
           { text: '0.8 or 4/5', isCorrect: true },
           { text: '0.6 or 3/5', isCorrect: false },
@@ -423,6 +436,7 @@ const seedLessons = async () => {
         difficulty: 'Hard',
         type: 'multiple-choice',
         problem: { text: 'If sin = 0.6 and hypotenuse is 10, find the opposite side.' },
+        correctAnswer: '6',
         options: [
           { text: '6', isCorrect: true },
           { text: '8', isCorrect: false },

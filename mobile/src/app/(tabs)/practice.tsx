@@ -78,6 +78,7 @@ export default function PracticeScreen() {
           const topic = topicMap.get(topicName);
           topic.subtopics.add(lesson.subtopic);
           topic.lessons.push(lesson);
+          topic.problemCount += lesson.problemCount || 0;
         });
 
         // Convert map to array with proper structure
@@ -112,7 +113,7 @@ export default function PracticeScreen() {
             icon,
             color,
             lessons: topic.lessons.length,
-            problems: topic.lessons.length * 5, // Estimate ~5 problems per lesson
+            problems: topic.problemCount || 0,
             mastery,
             subtopics: Array.from(topic.subtopics),
           };

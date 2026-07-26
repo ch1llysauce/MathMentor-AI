@@ -365,10 +365,25 @@ export const getLessons = asyncHandler(async (req, res) => {
         };
     });
 
+    // Fetch actual problem counts for all lessons
+    const problemCounts = await PracticeProblem.aggregate([
+        { $match: { lessonId: { $in: lessonIds } } },
+        { $group: { _id: '$lessonId', count: { $sum: 1 } } }
+    ]);
+    const problemCountMap = {};
+    problemCounts.forEach(pc => {
+        problemCountMap[pc._id.toString()] = pc.count;
+    });
+
+    const lessonsWithCounts = lessonsWithProgress.map(lesson => ({
+        ...lesson,
+        problemCount: problemCountMap[lesson._id.toString()] || 0
+    }));
+
     res.status(200).json({
         success: true,
-        count: lessonsWithProgress.length,
-        data: { lessons: lessonsWithProgress }
+        count: lessonsWithCounts.length,
+        data: { lessons: lessonsWithCounts }
     });
 });
 

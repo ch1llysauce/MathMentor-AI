@@ -18,23 +18,24 @@ export interface LessonContent {
 }
 
 export interface Lesson {
-  _id: string;
-  topic: string;
-  subtopic: string;
-  order: number;
-  title: string;
-  description: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  content: LessonContent;
-  estimatedTime: number;
-  isLocked: boolean;
-  userProgress?: {
-    status: 'not-started' | 'in-progress' | 'completed';
-    progress: number;
-    timeSpent: number;
-    completedAt?: string;
-  };
-}
+   _id: string;
+   topic: string;
+   subtopic: string;
+   order: number;
+   title: string;
+   description: string;
+   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+   content: LessonContent;
+   estimatedTime: number;
+   isLocked: boolean;
+   problemCount?: number;
+   userProgress?: {
+     status: 'not-started' | 'in-progress' | 'completed';
+     progress: number;
+     timeSpent: number;
+     completedAt?: string;
+   };
+ }
 
 export interface PracticeProblem {
   _id: string;

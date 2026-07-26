@@ -48,22 +48,22 @@ Return an array of question objects with this structure:
 [
   {
     "problem": {
-      "text": "Clear, concise question text",
+      "text": "Solve for x: 2x + 3 = 11",
       "latex": null
     },
     "options": [
-      { "text": "Option A", "isCorrect": true },
-      { "text": "Option B", "isCorrect": false },
-      { "text": "Option C", "isCorrect": false },
-      { "text": "Option D", "isCorrect": false }
+      { "text": "x = 4", "isCorrect": true },
+      { "text": "x = 7", "isCorrect": false },
+      { "text": "x = 3", "isCorrect": false },
+      { "text": "x = 5", "isCorrect": false }
     ],
-    "explanation": "Brief explanation of why the correct answer is right",
+    "explanation": "Subtract 3 from both sides: 2x = 8, then divide by 2: x = 4",
     "solution": {
-      "steps": ["Step 1", "Step 2", "Step 3"],
-      "finalAnswer": "The correct answer"
+      "steps": ["2x + 3 = 11", "2x = 8", "x = 4"],
+      "finalAnswer": "x = 4"
     },
-    "hints": ["Hint 1", "Hint 2"],
-    "learningObjective": "The specific objective this question assesses"
+    "hints": ["What undoes addition?", "Divide by the coefficient"],
+    "learningObjective": "Solve one-step linear equations"
   }
 ]
 \`\`\`
@@ -146,19 +146,19 @@ Return an array of question objects:
     "subtopic": "Specific topic name",
     "difficulty": "Easy|Medium|Hard",
     "problem": {
-      "text": "Question text",
+      "text": "Find the hypotenuse of a right triangle with legs 3 and 4",
       "latex": null
     },
     "options": [
-      { "text": "Option A", "isCorrect": true },
-      { "text": "Option B", "isCorrect": false },
-      { "text": "Option C", "isCorrect": false },
-      { "text": "Option D", "isCorrect": false }
+      { "text": "5", "isCorrect": true },
+      { "text": "7", "isCorrect": false },
+      { "text": "25", "isCorrect": false },
+      { "text": "12", "isCorrect": false }
     ],
-    "explanation": "Brief explanation",
+    "explanation": "Using the Pythagorean theorem: 3² + 4² = 9 + 16 = 25, so c = √25 = 5",
     "solution": {
-      "steps": ["Step 1", "Step 2"],
-      "finalAnswer": "Answer"
+      "steps": ["a² + b² = c²", "9 + 16 = 25", "c = 5"],
+      "finalAnswer": "5"
     }
   }
 ]
