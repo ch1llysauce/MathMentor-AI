@@ -5,7 +5,7 @@
 const PRODUCTION_URL = 'https://mathmentor-ai-nxry.onrender.com/api'; // UPDATE THIS after Render gives you the URL
 
 // LOCAL DEVELOPMENT URL
-const LOCAL_URL = 'http://192.168.254.107:5000/api';
+const LOCAL_URL = 'http://192.168.254.112:5000/api';
 
 // Toggle between production and local
 // Set to true when testing with local backend

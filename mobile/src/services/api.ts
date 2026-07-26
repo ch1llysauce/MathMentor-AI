@@ -56,7 +56,7 @@ api.interceptors.response.use(
     }
     
     // Log detailed error information
-    /* console.error(`❌ API Error: ${error.response.status} ${error.config.method?.toUpperCase()} ${error.config.url}`);
+     console.error(`❌ API Error: ${error.response.status} ${error.config.method?.toUpperCase()} ${error.config.url}`);
     console.error('Error response data:', JSON.stringify(error.response.data, null, 2));
     console.error('Request data:', error.config.data);
     
@@ -69,7 +69,7 @@ api.interceptors.response.use(
         console.warn('Error clearing storage:', storageError);
       }
     }
-    */
+    
     return Promise.reject(error);
   }
 );

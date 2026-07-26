@@ -52,6 +52,10 @@ const practiceProblemSchema = new mongoose.Schema({
   points: {
     type: Number,
     default: 10
+  },
+  learningObjective: {
+    type: String,
+    required: false // Optional - describes which specific learning objective this problem targets
   }
 }, {
   timestamps: true

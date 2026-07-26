@@ -76,6 +76,6 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
     console.log(`Local: http://localhost:${PORT}/api`);
-    console.log(`Network: http://192.168.254.107:${PORT}/api`);
-    console.log(`\n📱 For Expo Go: Use http://192.168.254.107:${PORT}/api in mobile/.env`);
+    console.log(`Network: http://192.168.254.112:${PORT}/api`);
+    console.log(`\n📱 For Expo Go: Use http://192.168.254.112:${PORT}/api in mobile/.env`);
 });

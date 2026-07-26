@@ -192,7 +192,7 @@ export default function LessonScreen() {
           ))}
         </View>
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 50 }} />
       </ScrollView>
 
       {/* Complete Button */}
@@ -212,8 +212,10 @@ export default function LessonScreen() {
               </>
             )}
           </TouchableOpacity>
+          <View style={{ height: 30 }} />
         </View>
       )}
+      
     </View>
   );
 }

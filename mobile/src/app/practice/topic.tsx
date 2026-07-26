@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { lessonService } from '@/services/lessonService';
@@ -45,6 +45,13 @@ export default function TopicScreen() {
   useEffect(() => {
     loadTopicData();
   }, [topicName]);
+
+  // Reload data when screen comes back into focus (e.g., after completing practice)
+  useFocusEffect(
+    useCallback(() => {
+      loadTopicData();
+    }, [topicName])
+  );
 
   const loadTopicData = async () => {
     try {
@@ -366,7 +373,7 @@ export default function TopicScreen() {
           </View>
         )}
 
-        <View style={{ height: 24 }} />
+        <View style={{ height: 75 }} />
       </ScrollView>
     </View>
   );

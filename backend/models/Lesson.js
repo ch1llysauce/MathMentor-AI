@@ -10,6 +10,14 @@ const lessonSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  moduleNumber: {
+    type: Number,
+    required: false // Optional for backward compatibility
+  },
+  moduleName: {
+    type: String,
+    required: false // Optional for backward compatibility
+  },
   order: {
     type: Number,
     required: true
@@ -26,6 +34,15 @@ const lessonSchema = new mongoose.Schema({
     type: String,
     enum: ['Beginner', 'Intermediate', 'Advanced'],
     default: 'Beginner'
+  },
+  difficultyLevels: {
+    type: [String],
+    enum: ['Easy', 'Medium', 'Hard'],
+    default: ['Easy', 'Medium', 'Hard']
+  },
+  learningObjectives: {
+    type: [String],
+    default: []
   },
   content: {
     introduction: String,
