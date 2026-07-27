@@ -16,11 +16,13 @@ import { lessonService } from '@/services/lessonService';
 import { PracticeProblem } from '@/types/lesson';
 
 export default function ProblemsScreen() {
-  const { lessonId, difficulty, title } = useLocalSearchParams<{
+const { lessonId, difficulty, title, topic, mastery } = useLocalSearchParams<{
     lessonId?: string;
     difficulty?: string;
     title?: string;
-  }>();
+    topic?: string;
+    mastery?: string;
+}>();
   const router = useRouter();
 
   const [problems, setProblems] = useState<PracticeProblem[]>([]);
@@ -42,6 +44,7 @@ export default function ProblemsScreen() {
     try {
       setLoading(true);
       const data = await lessonService.getPracticeProblems({
+        topic: topic,
         lessonId: lessonId,
         difficulty: difficulty,
         limit: 10,

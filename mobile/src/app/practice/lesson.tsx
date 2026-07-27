@@ -1,19 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { lessonService } from '@/services/lessonService';
 import { Lesson } from '@/types/lesson';
 
 export default function LessonScreen() {
-  const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
+  const { lessonId, topicName, mastery } = useLocalSearchParams<{
+    lessonId: string;
+    topicName?: string;
+    mastery?: string;
+  }>();
   const router = useRouter();
   
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
   const [startTime] = useState(Date.now());
+  const [lessonList, setLessonList] = useState<Lesson[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     if (lessonId) {
@@ -21,11 +27,34 @@ export default function LessonScreen() {
     }
   }, [lessonId]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (lesson) {
+        fetchLessonList(lesson.topic);
+      }
+    }, [lesson])
+  );
+
+  const fetchLessonList = async (topic: string) => {
+    try {
+      const data = await lessonService.getLessons(topic);
+      const lessons = data.lessons;
+      setLessonList(lessons);
+      const idx = lessons.findIndex(l => l._id === lessonId);
+      if (idx >= 0) {
+        setCurrentIndex(idx);
+      }
+    } catch (error) {
+      console.error('Error fetching lesson list:', error);
+    }
+  };
+
   const fetchLesson = async () => {
     try {
       setLoading(true);
       const data = await lessonService.getLesson(lessonId);
       setLesson({ ...data.lesson, userProgress: data.progress });
+      fetchLessonList(data.lesson.topic);
     } catch (error: any) {
       console.error('Error fetching lesson:', error);
       Alert.alert('Error', 'Failed to load lesson');
@@ -48,7 +77,7 @@ export default function LessonScreen() {
         [
           {
             text: 'Practice Problems',
-            onPress: () => router.push(`/practice/problems?lessonId=${lesson._id}`),
+            onPress: () => router.push(`/practice/problems?lessonId=${lesson._id}&topic=${lesson.topic}&mastery=${mastery}`),
           },
           {
             text: 'Back to Practice',
@@ -61,6 +90,20 @@ export default function LessonScreen() {
       Alert.alert('Error', 'Failed to mark lesson as complete');
     } finally {
       setCompleting(false);
+    }
+  };
+
+  const handlePreviousLesson = () => {
+    if (currentIndex > 0 && lessonList[currentIndex - 1]) {
+      const prevLesson = lessonList[currentIndex - 1];
+      router.replace(`/practice/lesson?lessonId=${prevLesson._id}`);
+    }
+  };
+
+  const handleNextLesson = () => {
+    if (currentIndex < lessonList.length - 1 && lessonList[currentIndex + 1]) {
+      const nextLesson = lessonList[currentIndex + 1];
+      router.replace(`/practice/lesson?lessonId=${nextLesson._id}`);
     }
   };
 
@@ -91,7 +134,10 @@ export default function LessonScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backIcon} onPress={() => router.replace({
+    pathname: '/practice/topic',
+    params: { topicName: lesson.topic, mastery },
+  })}>
           <Ionicons name="arrow-back" size={24} color="#091426" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
@@ -195,10 +241,10 @@ export default function LessonScreen() {
         <View style={{ height: 50 }} />
       </ScrollView>
 
-      {/* Complete Button */}
-      {!isCompleted && (
-        <View style={styles.footer}>
-          <TouchableOpacity 
+{/* Footer */}
+      <View style={styles.footer}>
+        {!isCompleted && (
+          <TouchableOpacity
             style={[styles.completeButton, completing && styles.completeButtonDisabled]}
             onPress={handleCompleteLesson}
             disabled={completing}
@@ -212,9 +258,31 @@ export default function LessonScreen() {
               </>
             )}
           </TouchableOpacity>
-          <View style={{ height: 30 }} />
+        )}
+        <View style={styles.navButtonsContainer}>
+          <TouchableOpacity
+            style={[styles.navButton, currentIndex === 0 && styles.navButtonDisabled]}
+            onPress={handlePreviousLesson}
+            disabled={currentIndex === 0}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={20} color={currentIndex === 0 ? Colors.textLight : Colors.primary} />
+            <Text style={[styles.navButtonText, currentIndex === 0 && { color: Colors.textLight }]}>Previous</Text>
+          </TouchableOpacity>
+          <Text style={styles.navIndicator}>
+            {currentIndex + 1} / {lessonList.length}
+          </Text>
+          <TouchableOpacity
+            style={[styles.navButton, currentIndex >= lessonList.length - 1 && styles.navButtonDisabled]}
+            onPress={handleNextLesson}
+            disabled={currentIndex >= lessonList.length - 1}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.navButtonText, currentIndex >= lessonList.length - 1 ? { color: Colors.textLight } : { color: Colors.primary }]}>Next</Text>
+            <Ionicons name="arrow-forward" size={20} color={currentIndex >= lessonList.length - 1 ? Colors.textLight : Colors.primary} />
+          </TouchableOpacity>
         </View>
-      )}
+      </View>
       
     </View>
   );
@@ -433,6 +501,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#ffffff',
+  },
+  navButtonsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  navButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: Colors.surfaceContainer,
+  },
+  navButtonDisabled: {
+    opacity: 0.4,
+  },
+  navButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  navIndicator: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textLight,
   },
   loadingContainer: {
     flex: 1,

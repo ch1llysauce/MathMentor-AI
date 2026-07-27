@@ -157,7 +157,14 @@ export default function TopicScreen() {
 
   const handleLessonPress = (lesson: Lesson) => {
     if (lesson.locked) return;
-    router.push(`/practice/lesson?lessonId=${lesson.id}`);
+    router.push({
+      pathname: '/practice/lesson',
+      params: {
+        lessonId: lesson.id,
+        topicName: topicName,
+        mastery: mastery.toString(),
+      }
+    });
   };
 
   const handlePracticePress = (practice: PracticeSet) => {
@@ -190,7 +197,7 @@ export default function TopicScreen() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => router.replace('/(tabs)/practice')}
           activeOpacity={0.7}
         >
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
