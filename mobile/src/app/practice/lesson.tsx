@@ -69,25 +69,36 @@ export default function LessonScreen() {
     try {
       setCompleting(true);
       const timeSpent = Math.floor((Date.now() - startTime) / 1000);
-      await lessonService.completeLesson(lesson._id, timeSpent);
       
-      Alert.alert(
-        'Lesson Complete! 🎉',
-        'Great job! You\'ve completed this lesson.',
-        [
-          {
-            text: 'Practice Problems',
-            onPress: () => router.push(`/practice/problems?lessonId=${lesson._id}&topic=${lesson.topic}&mastery=${mastery}`),
-          },
-          {
-            text: 'Back to Practice',
-            onPress: () => router.back(),
-          },
-        ]
-      );
+      if (isCompleted) {
+        // Mark as incomplete
+        await lessonService.markLessonIncomplete(lesson._id);
+        // Update local state
+        setLesson({
+          ...lesson,
+          userProgress: {
+            status: 'in-progress',
+            progress: lesson.userProgress?.progress || 0,
+            timeSpent: lesson.userProgress?.timeSpent || 0
+          }
+        });
+      } else {
+        // Mark as complete
+        await lessonService.completeLesson(lesson._id, timeSpent);
+        // Update local state
+        setLesson({
+          ...lesson,
+          userProgress: {
+            status: 'completed',
+            progress: 100,
+            timeSpent: lesson.userProgress?.timeSpent || timeSpent,
+            completedAt: new Date().toISOString()
+          }
+        });
+      }
     } catch (error: any) {
-      console.error('Error completing lesson:', error);
-      Alert.alert('Error', 'Failed to mark lesson as complete');
+      console.error('Error updating lesson status:', error);
+      Alert.alert('Error', 'Failed to update lesson status');
     } finally {
       setCompleting(false);
     }
@@ -238,27 +249,36 @@ export default function LessonScreen() {
           ))}
         </View>
 
-        <View style={{ height: 50 }} />
+        {/* Extra padding at bottom to avoid tab bar overlap */}
+        <View style={{ height: 10 }} />
       </ScrollView>
 
-{/* Footer */}
+      {/* Footer */}
       <View style={styles.footer}>
-        {!isCompleted && (
-          <TouchableOpacity
-            style={[styles.completeButton, completing && styles.completeButtonDisabled]}
-            onPress={handleCompleteLesson}
-            disabled={completing}
-          >
-            {completing ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
-              <>
-                <Ionicons name="checkmark-circle-outline" size={24} color="#ffffff" />
-                <Text style={styles.completeButtonText}>Mark as Complete</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={[
+            styles.completeButton,
+            completing && styles.completeButtonDisabled,
+            isCompleted && styles.incompleteButton
+          ]}
+          onPress={handleCompleteLesson}
+          disabled={completing}
+        >
+          {completing ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <>
+              <Ionicons 
+                name={isCompleted ? "close-circle-outline" : "checkmark-circle-outline"} 
+                size={24} 
+                color="#ffffff" 
+              />
+              <Text style={styles.completeButtonText}>
+                {isCompleted ? "Mark as Incomplete" : "Mark as Complete"}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
         <View style={styles.navButtonsContainer}>
           <TouchableOpacity
             style={[styles.navButton, currentIndex === 0 && styles.navButtonDisabled]}
@@ -479,11 +499,18 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   footer: {
-    padding: 24,
-    paddingBottom: 32,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 14,
+    paddingBottom: 50, // Extra padding for tab bar
     backgroundColor: Colors.white,
-    borderTopWidth: 1,
+    borderTopWidth: 0,
     borderTopColor: Colors.borderLight,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   completeButton: {
     flexDirection: 'row',
@@ -493,6 +520,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#4b41e1',
     paddingVertical: 16,
     borderRadius: 16,
+  },
+  incompleteButton: {
+    backgroundColor: '#64748b', // Gray color for incomplete
   },
   completeButtonDisabled: {
     opacity: 0.6,

@@ -11,6 +11,7 @@ import {
     getLessons,
     getLesson,
     completeLesson,
+    markLessonIncomplete,
     getPracticeProblems,
     submitPracticeAnswer
 } from "../controllers/learningController.js";
@@ -40,6 +41,7 @@ router.get("/diagnostic/latest", getLatestDiagnostic);
 router.get("/lessons", getLessons);
 router.get("/lessons/:lessonId", validateMongoId("lessonId"), getLesson);
 router.put("/lessons/:lessonId/complete", validateMongoId("lessonId"), completeLesson);
+router.put("/lessons/:lessonId/incomplete", validateMongoId("lessonId"), markLessonIncomplete);
 
 // Practice problems
 router.get("/practice", getPracticeProblems);

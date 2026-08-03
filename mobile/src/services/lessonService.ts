@@ -24,6 +24,12 @@ export const lessonService = {
     return response.data.data;
   },
 
+  // Mark lesson as incomplete
+  async markLessonIncomplete(lessonId: string): Promise<any> {
+    const response = await api.put(`/learning/lessons/${lessonId}/incomplete`);
+    return response.data.data;
+  },
+
   // Get practice problems
   async getPracticeProblems(params: {
     topic?: string;

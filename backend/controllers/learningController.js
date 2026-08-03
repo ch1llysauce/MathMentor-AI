@@ -463,6 +463,8 @@ export const completeLesson = asyncHandler(async (req, res) => {
         });
     }
 
+    const wasCompleted = progress.status === 'completed';
+
     progress.status = 'completed';
     progress.progress = 100;
     progress.timeSpent += timeSpent || 0;
@@ -475,7 +477,7 @@ export const completeLesson = asyncHandler(async (req, res) => {
         topic: lesson.topic
     });
 
-    if (topicProgress) {
+    if (topicProgress && !wasCompleted) {
         topicProgress.lessonsCompleted += 1;
         topicProgress.totalStudyTime += timeSpent || 0;
         topicProgress.lastStudied = new Date();
@@ -485,6 +487,58 @@ export const completeLesson = asyncHandler(async (req, res) => {
     res.status(200).json({
         success: true,
         message: 'Lesson marked as completed',
+        data: { progress }
+    });
+});
+
+/**
+ * @desc    Mark lesson as incomplete
+ * @route   PUT /api/learning/lessons/:lessonId/incomplete
+ * @access  Private
+ */
+export const markLessonIncomplete = asyncHandler(async (req, res) => {
+    const { lessonId } = req.params;
+    const userId = req.user._id;
+
+    const lesson = await Lesson.findById(lessonId);
+    if (!lesson) {
+        throw new AppError("Lesson not found", 404);
+    }
+
+    // Find progress record
+    const progress = await UserLessonProgress.findOne({
+        user: userId,
+        lesson: lessonId
+    });
+
+    if (!progress) {
+        throw new AppError("No progress record found for this lesson", 404);
+    }
+
+    const wasCompleted = progress.status === 'completed';
+
+    progress.status = 'in-progress';
+    progress.progress = 50; // Set to in-progress state
+    progress.completedAt = null;
+    await progress.save();
+
+    // Update overall topic progress
+    if (wasCompleted) {
+        const topicProgress = await Progress.findOne({
+            user: userId,
+            topic: lesson.topic
+        });
+
+        if (topicProgress && topicProgress.lessonsCompleted > 0) {
+            topicProgress.lessonsCompleted -= 1;
+            topicProgress.lastStudied = new Date();
+            await topicProgress.save();
+        }
+    }
+
+    res.status(200).json({
+        success: true,
+        message: 'Lesson marked as incomplete',
         data: { progress }
     });
 });

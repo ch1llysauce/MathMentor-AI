@@ -10,7 +10,12 @@
     "dev": "node --tls-min-v1.0 ./node_modules/nodemon/bin/nodemon.js server.js",
     "seed:full": "node seed-full-curriculum.js",
     "seed:diagnostic": "node seed-diagnostic.js",
-    "seed:production": "node seed-production.js"
+    "seed:production": "node seed-production.js",
+    "init:progress": "node initialize-user-progress.js",
+    "init:diagnostics": "node initialize-all-diagnostics.js",
+    "test:production": "node test-production-api.js",
+    "create:demo": "node create-test-user-with-password.js",
+    "list:users": "node list-users.js"
   },
   "keywords": [],
   "author": "",
