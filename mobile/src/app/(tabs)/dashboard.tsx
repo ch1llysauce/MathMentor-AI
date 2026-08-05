@@ -1,17 +1,43 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, RefreshControl, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import { Colors } from '@/constants/colors';
 import Loading from '@/components/common/Loading';
 import { dashboardService, DashboardStats, TopicProgress as TopicProgressData } from '@/services/dashboardService';
+import api from '@/services/api';
+import { PROGRESS_ENDPOINTS } from '@/constants/api';
 
 interface TopicProgress {
   name: string;
   progress: number;
   problemsSolved: number;
 }
+
+interface NextStep {
+  topic: string;
+  subtopic: string;
+  currentScore: number;
+  reason: string;
+  difficulty: string;
+}
+
+// Per-topic icon and description fallbacks
+const TOPIC_META: Record<string, { icon: string; description: string }> = {
+  Algebra: {
+    icon: 'calculator',
+    description: 'Build your foundation with equations, expressions, and algebraic reasoning.',
+  },
+  Geometry: {
+    icon: 'shapes',
+    description: 'Explore angles, shapes, areas, and spatial relationships.',
+  },
+  Trigonometry: {
+    icon: 'compass',
+    description: 'Master ratios, triangles, and the unit circle with confidence.',
+  },
+};
 
 export default function DashboardScreen() {
   const { user, logout, loading } = useAuth();
@@ -21,8 +47,10 @@ export default function DashboardScreen() {
     stats: DashboardStats;
     topics: TopicProgress[];
   } | null>(null);
+  const [nextStep, setNextStep] = useState<NextStep | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
+  const [resumeLoading, setResumeLoading] = useState(false);
 
   // Default fallback data
   const defaultTopics: TopicProgress[] = [
@@ -36,6 +64,50 @@ export default function DashboardScreen() {
     xpEarned: 0,
     accuracy: 0,
     avgSpeed: 0,
+  };
+
+  // Handle Diagnostic button press
+  const handleDiagnosticPress = () => {
+    if (user?.diagnosticCompleted) {
+      // User has results — show their diagnostic tab
+      router.push('/(tabs)/diagnostic');
+    } else {
+      // No diagnostic yet — send them to the test
+      router.push('/diagnostic/retake');
+    }
+  };
+
+  // Handle Resume Tutoring button press
+  const handleResumeTutoring = async () => {
+    if (!user?.diagnosticCompleted) {
+      // No diagnostic done — prompt them to take it first
+      router.push('/diagnostic/retake');
+      return;
+    }
+
+    try {
+      setResumeLoading(true);
+      const response = await api.get(PROGRESS_ENDPOINTS.NEXT_RECOMMENDATION);
+      const recommendation = response.data.data;
+
+      // Navigate to the recommended topic
+      const topicName = recommendation.topic || recommendation.nextTopic || 'Algebra';
+      const mastery = recommendation.masteryLevel ?? 0;
+
+      router.push({
+        pathname: '/practice/topic',
+        params: {
+          topicName,
+          mastery: mastery.toString(),
+        },
+      });
+    } catch (error: any) {
+      // If no recommendation available (e.g. no diagnostic), fall back to practice tab
+      console.warn('Resume tutoring fallback:', error?.message);
+      router.push('/(tabs)/practice');
+    } finally {
+      setResumeLoading(false);
+    }
   };
 
   // Fetch dashboard data
@@ -64,6 +136,24 @@ export default function DashboardScreen() {
         stats: defaultStats,
         topics: defaultTopics,
       });
+    }
+
+    // Fetch next recommendation if diagnostic is done
+    try {
+      const recResponse = await api.get(PROGRESS_ENDPOINTS.NEXT_RECOMMENDATION);
+      const rec = recResponse.data.data;
+      if (rec?.nextStep) {
+        setNextStep({
+          topic: rec.nextStep.topic,
+          subtopic: rec.nextStep.subtopic,
+          currentScore: rec.nextStep.currentScore ?? 0,
+          reason: rec.nextStep.reason ?? '',
+          difficulty: rec.nextStep.difficulty ?? 'Easy',
+        });
+      }
+    } catch {
+      // No diagnostic yet or network issue — nextStep stays null
+      setNextStep(null);
     } finally {
       setLoadingData(false);
       setRefreshing(false);
@@ -138,13 +228,25 @@ export default function DashboardScreen() {
             <Text style={styles.welcomeSubtitle}>Ready to solve some problems today?</Text>
           </View>
           <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.primaryButton}>
-              <Ionicons name="school" size={20} color="#ffffff" />
-              <Text style={styles.primaryButtonText}>Resume Tutoring</Text>
+            <TouchableOpacity
+              style={[styles.primaryButton, resumeLoading && styles.primaryButtonDisabled]}
+              onPress={handleResumeTutoring}
+              disabled={resumeLoading}
+            >
+              {resumeLoading ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Ionicons name="school" size={20} color="#ffffff" />
+              )}
+              <Text style={styles.primaryButtonText}>
+                {resumeLoading ? 'Loading...' : 'Resume Tutoring'}
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.secondaryButton}>
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleDiagnosticPress}>
               <Ionicons name="analytics" size={20} color="#3323cc" />
-              <Text style={styles.secondaryButtonText}>Diagnostic</Text>
+              <Text style={styles.secondaryButtonText}>
+                {user?.diagnosticCompleted ? 'Diagnostic' : 'Take Diagnostic'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -152,34 +254,95 @@ export default function DashboardScreen() {
         {/* Main Content Grid */}
         <View style={styles.mainGrid}>
           {/* Featured Topic Card */}
-          <View style={styles.featuredCard}>
-            <View style={styles.featuredBadge}>
-              <Text style={styles.featuredBadgeText}>NEXT IN YOUR PATH</Text>
-            </View>
-            <Text style={styles.featuredTitle}>Linear Equations</Text>
-            <Text style={styles.featuredDescription}>
-              Master the fundamentals of algebraic balancing and solving for single variables in coordinate planes.
-            </Text>
-            
-            <View style={styles.featuredFooter}>
-              <View style={styles.progressSection}>
-                <View style={styles.progressHeader}>
-                  <Text style={styles.progressLabel}>Topic Progress</Text>
-                  <Text style={styles.progressPercent}>65%</Text>
+          {nextStep ? (
+            <TouchableOpacity
+              style={styles.featuredCard}
+              activeOpacity={0.92}
+              onPress={() =>
+                router.push({
+                  pathname: '/practice/topic',
+                  params: {
+                    topicName: nextStep.topic,
+                    mastery: nextStep.currentScore.toString(),
+                  },
+                })
+              }
+            >
+              <View style={styles.featuredBadge}>
+                <Text style={styles.featuredBadgeText}>NEXT IN YOUR PATH</Text>
+              </View>
+              <Text style={styles.featuredTitle}>{nextStep.subtopic}</Text>
+              <Text style={styles.featuredDescription}>
+                {nextStep.reason ||
+                  TOPIC_META[nextStep.topic]?.description ||
+                  `Continue building your ${nextStep.topic} skills.`}
+              </Text>
+
+              <View style={styles.featuredFooter}>
+                <View style={styles.progressSection}>
+                  <View style={styles.progressHeader}>
+                    <Text style={styles.progressLabel}>
+                      {nextStep.topic} Progress
+                    </Text>
+                    <Text style={styles.progressPercent}>{nextStep.currentScore}%</Text>
+                  </View>
+                  <View style={styles.progressBar}>
+                    <View
+                      style={[
+                        styles.progressFill,
+                        { width: `${nextStep.currentScore}%` },
+                      ]}
+                    />
+                  </View>
                 </View>
-                <View style={styles.progressBar}>
-                  <View style={[styles.progressFill, { width: '65%' }]} />
+                <View style={styles.startButton}>
+                  <Text style={styles.startButtonText}>Start Lesson</Text>
                 </View>
               </View>
-              <TouchableOpacity style={styles.startButton}>
-                <Text style={styles.startButtonText}>Start Lesson</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.featuredIcon}>
-              <Ionicons name="calculator" size={80} color="rgba(255,255,255,0.1)" />
-            </View>
-          </View>
+
+              <View style={styles.featuredIcon}>
+                <Ionicons
+                  name={(TOPIC_META[nextStep.topic]?.icon ?? 'calculator') as any}
+                  size={80}
+                  color="rgba(255,255,255,0.1)"
+                />
+              </View>
+            </TouchableOpacity>
+          ) : (
+            /* No diagnostic yet — prompt the user */
+            <TouchableOpacity
+              style={styles.featuredCard}
+              activeOpacity={0.92}
+              onPress={() => router.push('/diagnostic/retake')}
+            >
+              <View style={styles.featuredBadge}>
+                <Text style={styles.featuredBadgeText}>GET STARTED</Text>
+              </View>
+              <Text style={styles.featuredTitle}>Take the Diagnostic</Text>
+              <Text style={styles.featuredDescription}>
+                Complete a short assessment so MathMentor can build your personalised learning path.
+              </Text>
+
+              <View style={styles.featuredFooter}>
+                <View style={styles.progressSection}>
+                  <View style={styles.progressHeader}>
+                    <Text style={styles.progressLabel}>Your Path</Text>
+                    <Text style={styles.progressPercent}>0%</Text>
+                  </View>
+                  <View style={styles.progressBar}>
+                    <View style={[styles.progressFill, { width: '0%' }]} />
+                  </View>
+                </View>
+                <View style={styles.startButton}>
+                  <Text style={styles.startButtonText}>Start Now</Text>
+                </View>
+              </View>
+
+              <View style={styles.featuredIcon}>
+                <Ionicons name="analytics" size={80} color="rgba(255,255,255,0.1)" />
+              </View>
+            </TouchableOpacity>
+          )}
 
           {/* Learning Pulse Card */}
           <View style={styles.pulseCard}>
@@ -237,26 +400,7 @@ export default function DashboardScreen() {
             </View>
           </View>
 
-          {/* Daily Challenge Card */}
-          <View style={styles.challengeCard}>
-            <View style={styles.challengeContent}>
-              <Text style={styles.challengeTitle}>Daily Challenge</Text>
-              <Text style={styles.challengeDescription}>
-                Solve 3 Polynomial Division problems to earn double XP and a "Master of Logic" badge.
-              </Text>
-              <View style={styles.challengeButtons}>
-                <TouchableOpacity style={styles.challengePrimaryButton}>
-                  <Text style={styles.challengePrimaryText}>Accept Challenge</Text>
-                </TouchableOpacity>
-                <TouchableOpacity>
-                  <Text style={styles.challengeSecondaryText}>View Rewards</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            <View style={styles.challengeBadge}>
-              <Ionicons name="trophy" size={40} color="#4b41e1" />
-            </View>
-          </View>
+
         </View>
         </>
         )}
@@ -360,6 +504,9 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '600',
+  },
+  primaryButtonDisabled: {
+    opacity: 0.7,
   },
   secondaryButton: {
     flex: 1,
@@ -564,52 +711,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#091426',
   },
-  challengeCard: {
-    backgroundColor: 'rgba(224, 227, 234, 0.5)',
-    borderRadius: 24,
-    padding: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 20,
-    borderWidth: 1,
-    borderColor: '#ffffff',
-  },
-  challengeContent: {
-    flex: 1,
-  },
-  challengeTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#091426',
-    marginBottom: 8,
-  },
-  challengeDescription: {
-    fontSize: 14,
-    color: '#45474c',
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  challengeButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  challengePrimaryButton: {
-    backgroundColor: '#091426',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-  },
-  challengePrimaryText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  challengeSecondaryText: {
-    color: '#091426',
-    fontSize: 15,
-    fontWeight: '600',
-  },
   loadingDataContainer: {
     paddingVertical: 60,
     alignItems: 'center',
@@ -618,18 +719,5 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#45474c',
-  },
-  challengeBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: 16,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
   },
 });

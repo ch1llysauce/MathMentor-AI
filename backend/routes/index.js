@@ -6,6 +6,7 @@ import progressRoutes from "./progressRoutes.js";
 import learningRoutes from "./learningRoutes.js";
 import diagnosticRoutes from "./diagnosticRoutes.js";
 import tutorRoutes from "./tutorRoutes.js";
+import practiceRoutes from "./practiceRoutes.js";
 
 export {
     authRoutes,
@@ -14,5 +15,6 @@ export {
     progressRoutes,
     learningRoutes,
     diagnosticRoutes,
-    tutorRoutes
+    tutorRoutes,
+    practiceRoutes
 };

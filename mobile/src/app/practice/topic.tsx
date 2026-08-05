@@ -72,70 +72,38 @@ export default function TopicScreen() {
       
       setLessons(transformedLessons);
 
-      // Load practice problems for this topic
-      try {
-        const problemsResponse = await lessonService.getPracticeProblems({
-          topic: topicName,
-          limit: 50,
-        });
-        
-        // Group problems by difficulty to create practice sets
-        const easyProblems = problemsResponse.problems.filter(p => p.difficulty === 'Easy');
-        const mediumProblems = problemsResponse.problems.filter(p => p.difficulty === 'Medium');
-        const hardProblems = problemsResponse.problems.filter(p => p.difficulty === 'Hard');
-        
-        const sets: PracticeSet[] = [];
-        
-        if (easyProblems.length > 0) {
-          sets.push({
-            id: 'easy',
-            title: 'Basic Equations Practice',
-            problems: easyProblems.length,
-            difficulty: 'Easy',
-            completed: easyProblems.filter(p => p.previousAttempts && p.previousAttempts.length > 0).length,
-          });
-        }
-        
-        if (mediumProblems.length > 0) {
-          sets.push({
-            id: 'medium',
-            title: 'Intermediate Problems',
-            problems: mediumProblems.length,
-            difficulty: 'Medium',
-            completed: mediumProblems.filter(p => p.previousAttempts && p.previousAttempts.length > 0).length,
-          });
-        }
-        
-        if (hardProblems.length > 0) {
-          sets.push({
-            id: 'hard',
-            title: 'Advanced Challenge Set',
-            problems: hardProblems.length,
-            difficulty: 'Hard',
-            completed: hardProblems.filter(p => p.previousAttempts && p.previousAttempts.length > 0).length,
-          });
-        }
-        
-        // Add mixed review if we have problems in multiple difficulties
-        if (sets.length > 1) {
-          sets.push({
-            id: 'mixed',
-            title: 'Mixed Review',
-            problems: problemsResponse.problems.length,
-            difficulty: 'Medium',
-            completed: Math.floor(problemsResponse.problems.filter(p => p.previousAttempts && p.previousAttempts.length > 0).length / 2),
-          });
-        }
-        
-        setPracticeSets(sets);
-      } catch (error) {
-        console.error('Error loading practice problems:', error);
-        // Fallback to default practice sets if API fails
-        setPracticeSets([
-          { id: '1', title: 'Basic Practice', problems: 10, difficulty: 'Easy', completed: 0 },
-          { id: '2', title: 'Intermediate Problems', problems: 10, difficulty: 'Medium', completed: 0 },
-        ]);
-      }
+      // Build static practice sets for the topic — problems are generated on-demand
+      // when the user taps a set (via the generator endpoint)
+      setPracticeSets([
+        {
+          id: 'basic',
+          title: 'Basic Equations Practice',
+          problems: 5,
+          difficulty: 'Easy',
+          completed: 0,
+        },
+        {
+          id: 'intermediate',
+          title: 'Intermediate Problems',
+          problems: 5,
+          difficulty: 'Medium',
+          completed: 0,
+        },
+        {
+          id: 'advanced',
+          title: 'Advanced Challenge Set',
+          problems: 5,
+          difficulty: 'Hard',
+          completed: 0,
+        },
+        {
+          id: 'mixed',
+          title: 'Mixed Review',
+          problems: 15,
+          difficulty: 'Medium',
+          completed: 0,
+        },
+      ]);
     } catch (error) {
       console.error('Error loading topic data:', error);
       // Fallback to empty arrays
@@ -168,12 +136,20 @@ export default function TopicScreen() {
   };
 
   const handlePracticePress = (practice: PracticeSet) => {
+    const categoryMap: Record<string, string> = {
+      basic: 'basic',
+      intermediate: 'intermediate',
+      advanced: 'advanced',
+      mixed: 'mixed',
+    };
     router.push({
       pathname: '/practice/problems',
       params: {
+        category: categoryMap[practice.id] ?? 'mixed',
         difficulty: practice.difficulty,
         title: practice.title,
         topic: topicName,
+        count: practice.problems.toString(),
       }
     });
   };

@@ -1,5 +1,6 @@
 import api from './api';
 import { Lesson, PracticeProblem, SubmitAnswerResponse } from '@/types/lesson';
+import { generateProblems } from './clientProblemGenerator';
 
 export const lessonService = {
   // Get all lessons for a topic/subtopic
@@ -7,7 +8,6 @@ export const lessonService = {
     const params = new URLSearchParams();
     if (topic) params.append('topic', topic);
     if (subtopic) params.append('subtopic', subtopic);
-    
     const response = await api.get(`/learning/lessons?${params.toString()}`);
     return response.data.data;
   },
@@ -30,26 +30,54 @@ export const lessonService = {
     return response.data.data;
   },
 
-  // Get practice problems
+  /**
+   * Get practice problems.
+   *
+   * Strategy:
+   * 1. If `lessonId` is provided → fetch from database (lesson-specific, progress tracking).
+   * 2. Otherwise → generate problems client-side instantly (PRIMARY, zero-cost, offline-capable).
+   *    If generation somehow fails → attempt the backend generator endpoint as fallback.
+   */
   async getPracticeProblems(params: {
     topic?: string;
     subtopic?: string;
     difficulty?: string;
+    category?: string;
     lessonId?: string;
     limit?: number;
   }): Promise<{ problems: PracticeProblem[] }> {
-    const queryParams = new URLSearchParams();
-    if (params.topic) queryParams.append('topic', params.topic);
-    if (params.subtopic) queryParams.append('subtopic', params.subtopic);
-    if (params.difficulty) queryParams.append('difficulty', params.difficulty);
-    if (params.lessonId) queryParams.append('lessonId', params.lessonId);
-    if (params.limit) queryParams.append('limit', params.limit.toString());
-    
-    const response = await api.get(`/learning/practice?${queryParams.toString()}`);
-    return response.data.data;
+
+    // ── Path A: lesson-specific → database ──────────────────────────────────
+    if (params.lessonId) {
+      const q = new URLSearchParams();
+      if (params.topic)      q.append('topic', params.topic);
+      if (params.difficulty) q.append('difficulty', params.difficulty);
+      q.append('lessonId', params.lessonId);
+      if (params.limit)      q.append('limit', params.limit.toString());
+      const response = await api.get(`/learning/practice?${q.toString()}`);
+      return response.data.data;
+    }
+
+    // ── Path B: general practice → client-side generator (PRIMARY) ──────────
+    const difficultyToCategory: Record<string, string> = {
+      Easy: 'basic', Medium: 'intermediate', Hard: 'advanced',
+    };
+    const topic    = (params.topic ?? 'algebra').toLowerCase();
+    const category = params.category
+      ?? (params.difficulty ? (difficultyToCategory[params.difficulty] ?? 'mixed') : 'mixed');
+    const count    = params.limit ?? 10;
+
+    try {
+      const generated = generateProblems(topic, category, count);
+      console.log(`✅ Generated ${generated.length} ${topic}/${category} problems client-side`);
+      return { problems: generated as unknown as PracticeProblem[] };
+    } catch (genError) {
+      console.error('Client generator failed:', genError);
+      throw genError;
+    }
   },
 
-  // Submit practice problem answer
+  // Submit practice problem answer (database-backed problems only)
   async submitAnswer(
     problemId: string,
     userAnswer: string,

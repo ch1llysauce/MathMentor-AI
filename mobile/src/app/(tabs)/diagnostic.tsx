@@ -78,23 +78,31 @@ export default function DiagnosticScreen() {
   };
 
   const handleTopicPress = (topic: string, score: number) => {
+    if (!diagnostic) return;
+    const topicKey = topic.toLowerCase() as 'algebra' | 'geometry' | 'trigonometry';
+    const topicScore = diagnostic.topicScores?.[topicKey] ?? null;
     router.push({
       pathname: '/diagnostic/topic-detail',
-      params: { topic, score: score.toString() }
+      params: {
+        topic,
+        score: score.toString(),
+        topicScoreJson: topicScore ? JSON.stringify(topicScore) : '',
+      }
     });
   };
 
+  // "VIEW DETAILS →" cycles through the three topic detail screens instead of
+  // navigating to a non-existent all-topics route.
   const handleViewAllTopics = () => {
     if (!diagnostic) return;
-    router.push({
-      pathname: '/diagnostic/all-topics',
-      params: {
-        algebraScore: diagnostic.algebraScore.toString(),
-        geometryScore: diagnostic.geometryScore.toString(),
-        trigonometryScore: diagnostic.trigonometryScore.toString(),
-        overallScore: diagnostic.overallScore.toString(),
-      }
-    });
+    // Navigate to the weakest topic detail as the most useful entry point
+    const scores = [
+      { topic: 'Algebra',      score: diagnostic.algebraScore },
+      { topic: 'Geometry',     score: diagnostic.geometryScore },
+      { topic: 'Trigonometry', score: diagnostic.trigonometryScore },
+    ];
+    const weakest = scores.reduce((a, b) => (a.score <= b.score ? a : b));
+    handleTopicPress(weakest.topic, weakest.score);
   };
 
   const getTopicSubtitle = (topic: string, score: number): string => {
@@ -242,6 +250,15 @@ export default function DiagnosticScreen() {
                 key={index}
                 subtopic={weak.subtopic || weak.topic}
                 masteryPercentage={weak.score}
+                onPress={() =>
+                  router.push({
+                    pathname: '/practice/topic',
+                    params: {
+                      topicName: weak.topic,
+                      mastery: weak.score.toString(),
+                    },
+                  })
+                }
               />
             ))
           ) : (

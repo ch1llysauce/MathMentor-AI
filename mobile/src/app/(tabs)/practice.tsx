@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/colors';
 import diagnosticService from '@/services/diagnosticService';
 import { lessonService } from '@/services/lessonService';
@@ -35,6 +36,36 @@ export default function PracticeScreen() {
   const [userMastery, setUserMastery] = useState<any>(null);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [allLessons, setAllLessons] = useState<any[]>([]);
+
+  // ── Daily Challenge ─────────────────────────────────────────────────────────
+  // Uses today's date as a seed so the topic rotates daily and is the same for
+  // every user. We store completion in AsyncStorage keyed by today's date string.
+  const todayKey = new Date().toISOString().slice(0, 10); // "2026-08-04"
+  const DAILY_TOPICS = ['algebra', 'geometry', 'trigonometry'];
+  const dailyTopicIndex =
+    (new Date().getDate() + new Date().getMonth() * 3) % DAILY_TOPICS.length;
+  const dailyTopic     = DAILY_TOPICS[dailyTopicIndex];
+  const dailyTopicLabel = dailyTopic.charAt(0).toUpperCase() + dailyTopic.slice(1);
+  const [dailyDone, setDailyDone] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(`daily_challenge_${todayKey}`).then(val => {
+      if (val === 'done') setDailyDone(true);
+    });
+  }, []);
+
+  const handleDailyChallenge = () => {
+    router.push({
+      pathname: '/practice/problems',
+      params: {
+        topic:    dailyTopic,
+        category: 'mixed',
+        count:    '10',
+        title:    `Daily Challenge — ${dailyTopicLabel}`,
+        isDaily:  'true',
+      },
+    });
+  };
 
   useEffect(() => {
     loadData();
@@ -373,27 +404,40 @@ export default function PracticeScreen() {
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <Text style={styles.quickActionsTitle}>Quick Actions</Text>
-          
-          <TouchableOpacity style={styles.actionCard} activeOpacity={0.7}>
-            <View style={[styles.actionIcon, { backgroundColor: '#fef3c7' }]}>
-              <Ionicons name="trophy" size={24} color="#f59e0b" />
-            </View>
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Daily Challenge</Text>
-              <Text style={styles.actionSubtitle}>Complete today's problem set</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={Colors.textLight} />
-          </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionCard} activeOpacity={0.7}>
-            <View style={[styles.actionIcon, { backgroundColor: '#dbeafe' }]}>
-              <Ionicons name="refresh" size={24} color="#2563eb" />
+          <TouchableOpacity
+            style={[styles.actionCard, dailyDone && styles.actionCardDone]}
+            onPress={dailyDone ? undefined : handleDailyChallenge}
+            activeOpacity={dailyDone ? 1 : 0.7}
+            disabled={dailyDone}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: dailyDone ? '#d1fae5' : '#fef3c7' }]}>
+              <Ionicons
+                name={dailyDone ? 'checkmark-circle' : 'trophy'}
+                size={24}
+                color={dailyDone ? '#00a472' : '#f59e0b'}
+              />
             </View>
             <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Review Mistakes</Text>
-              <Text style={styles.actionSubtitle}>Practice problems you got wrong</Text>
+              <View style={styles.actionTitleRow}>
+                <Text style={styles.actionTitle}>Daily Challenge</Text>
+                {dailyDone && (
+                  <View style={styles.doneBadge}>
+                    <Text style={styles.doneBadgeText}>Done ✓</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.actionSubtitle}>
+                {dailyDone
+                  ? 'Come back tomorrow for a new challenge!'
+                  : `Today: ${dailyTopicLabel} — 10 mixed problems`}
+              </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={Colors.textLight} />
+            {dailyDone ? (
+              <Ionicons name="lock-closed" size={18} color="#00a472" />
+            ) : (
+              <Ionicons name="chevron-forward" size={20} color={Colors.textLight} />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -636,6 +680,27 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  actionCardDone: {
+    borderWidth: 1,
+    borderColor: '#00a472',
+  },
+  actionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
+  doneBadge: {
+    backgroundColor: '#d1fae5',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  doneBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#00a472',
+  },
   actionIcon: {
     width: 48,
     height: 48,
@@ -651,7 +716,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.text,
-    marginBottom: 2,
   },
   actionSubtitle: {
     fontSize: 13,

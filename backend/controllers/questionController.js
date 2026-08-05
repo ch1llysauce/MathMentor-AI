@@ -1,6 +1,7 @@
 import { Question, Session, Progress } from "../models/index.js";
 import { validateAnswer } from "../services/mathService.js";
 import { AppError, asyncHandler } from "../middleware/index.js";
+import { generateDiagnosticQuestions } from "../services/diagnosticGenerator.js";
 
 /**
  * @desc    Get questions (with filters)
@@ -57,30 +58,14 @@ export const getRandomQuestions = asyncHandler(async (req, res) => {
  * @route   GET /api/questions/diagnostic
  * @access  Private
  */
+/**
+ * @desc    Get diagnostic questions — freshly generated with random numbers
+ * @route   GET /api/questions/diagnostic
+ * @access  Private
+ */
 export const getDiagnosticQuestions = asyncHandler(async (req, res) => {
-    const { topic } = req.query;
-
-    const filter = { isDiagnostic: true };
-    if (topic) filter.topic = topic;
-
-    // Get balanced questions from each topic/difficulty
-    const questions = await Question.aggregate([
-        { $match: filter },
-        {
-            $group: {
-                _id: { topic: "$topic", difficulty: "$difficulty" },
-                questions: { $push: "$$ROOT" }
-            }
-        },
-        {
-            $project: {
-                questions: { $slice: ["$questions", 2] } // 2 questions per topic-difficulty combo
-            }
-        },
-        { $unwind: "$questions" },
-        { $replaceRoot: { newRoot: "$questions" } },
-        { $sample: { size: 15 } } // Total 15 diagnostic questions
-    ]);
+    // Generate 9 fresh questions (1 per topic/difficulty bucket), no DB query needed
+    const questions = generateDiagnosticQuestions();
 
     res.status(200).json({
         success: true,

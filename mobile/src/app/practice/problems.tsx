@@ -7,23 +7,28 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Modal,
+  TextInput,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/colors';
 import { lessonService } from '@/services/lessonService';
+import { generateProblems } from '@/services/clientProblemGenerator';
 import { PracticeProblem } from '@/types/lesson';
 
 export default function ProblemsScreen() {
-const { lessonId, difficulty, title, topic, mastery } = useLocalSearchParams<{
+const { lessonId, difficulty, category, count, title, topic, isDaily } = useLocalSearchParams<{
     lessonId?: string;
     difficulty?: string;
+    category?: string;
+    count?: string;
     title?: string;
     topic?: string;
-    mastery?: string;
-}>();
+    isDaily?: string;
+  }>();
   const router = useRouter();
+  const todayKey = new Date().toISOString().slice(0, 10);
 
   const [problems, setProblems] = useState<PracticeProblem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,16 +48,29 @@ const { lessonId, difficulty, title, topic, mastery } = useLocalSearchParams<{
   const fetchProblems = async () => {
     try {
       setLoading(true);
-      const data = await lessonService.getPracticeProblems({
-        topic: topic,
-        lessonId: lessonId,
-        difficulty: difficulty,
-        limit: 10,
-      });
-      setProblems(data.problems);
+
+      // Lesson-specific: must come from DB
+      if (lessonId) {
+        const data = await lessonService.getPracticeProblems({
+          topic: topic,
+          lessonId: lessonId,
+          difficulty: difficulty,
+          limit: count ? parseInt(count) : 10,
+        });
+        setProblems(data.problems);
+        return;
+      }
+
+      // General practice: generate directly client-side — no network needed
+      const topicKey  = (topic  || 'algebra').toLowerCase();
+      const catKey    = (category || 'mixed').toLowerCase();
+      const numProbs  = count ? parseInt(count) : (catKey === 'mixed' ? 15 : 5);
+
+      const generated = generateProblems(topicKey, catKey, numProbs);
+      setProblems(generated as unknown as PracticeProblem[]);
     } catch (error: any) {
-      console.error('Error fetching problems:', error);
-      Alert.alert('Error', 'Failed to load practice problems');
+      console.error('Error loading problems:', error?.message || error);
+      Alert.alert('Error', `Could not load problems: ${error?.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -61,26 +79,55 @@ const { lessonId, difficulty, title, topic, mastery } = useLocalSearchParams<{
   const currentProblem = problems[currentIndex];
 
   const handleSubmitAnswer = async () => {
-    if (!selectedAnswer || !currentProblem) return;
+    if (!selectedAnswer?.trim() || !currentProblem) return;
 
     try {
       setSubmitting(true);
+
+      // All generated problems are checked client-side — no DB call needed.
+      // Generated IDs follow the pattern: "algebra-basic-timestamp-index-random"
+      // DB problems have MongoDB ObjectId format (24 hex chars).
+      const isGenerated = currentProblem._id.includes('-');
+
+      if (isGenerated || currentProblem.type === 'free-response') {
+        let correct = false;
+
+        if (currentProblem.type === 'multiple-choice' || currentProblem.type === 'true-false') {
+          // For MC and T/F: compare selected text against correctAnswer
+          correct = selectedAnswer.trim() === (currentProblem.correctAnswer ?? '').trim();
+        } else {
+          // Free-response: forgiving numeric/text match
+          const normalize = (s: string) =>
+            s.trim()
+              .toLowerCase()
+              .replace(/\s+/g, '')
+              .replace(/x\s*=\s*/g, '')
+              .replace(/[°²³]/g, '')
+              .replace(/cm|m²|m³|cm²|cm³/g, '')
+              .replace(/≈/g, '');
+
+          const userNorm    = normalize(selectedAnswer);
+          const correctNorm = normalize(currentProblem.correctAnswer ?? '');
+          const extractNums = (s: string) => s.match(/-?\d+\.?\d*/g)?.join(',') ?? s;
+
+          correct =
+            userNorm === correctNorm ||
+            extractNums(userNorm) === extractNums(correctNorm);
+        }
+
+        setIsCorrect(correct);
+        setShowExplanation(true);
+        return;
+      }
+
+      // Only truly DB-backed problems (MongoDB ObjectId) reach here
       const timeSpent = Math.floor((Date.now() - startTime) / 1000);
-      
-      console.log('📤 Submitting answer:');
-      console.log('  Problem ID:', currentProblem._id);
-      console.log('  Selected answer:', selectedAnswer);
-      console.log('  Time spent:', timeSpent);
-      console.log('  Hints used:', hintsUsed);
-      
       const response = await lessonService.submitAnswer(
         currentProblem._id,
         selectedAnswer,
         timeSpent,
         hintsUsed
       );
-
-      console.log('📥 Response:', response);
       setIsCorrect(response.isCorrect);
       setShowExplanation(true);
     } catch (error: any) {
@@ -91,20 +138,21 @@ const { lessonId, difficulty, title, topic, mastery } = useLocalSearchParams<{
     }
   };
 
-  const handleNextProblem = () => {
+  const handleNextProblem = async () => {
     if (currentIndex < problems.length - 1) {
       setCurrentIndex(currentIndex + 1);
       resetProblem();
     } else {
+      // Mark daily challenge done if applicable
+      if (isDaily === 'true') {
+        await AsyncStorage.setItem(`daily_challenge_${todayKey}`, 'done');
+      }
       Alert.alert(
-        'Practice Complete! 🎉',
-        'You\'ve completed all problems in this set.',
-        [
-          {
-            text: 'Back to Practice',
-            onPress: () => router.back(),
-          },
-        ]
+        isDaily === 'true' ? 'Daily Challenge Complete! 🏆' : 'Practice Complete! 🎉',
+        isDaily === 'true'
+          ? "You've completed today's challenge. Come back tomorrow for a new one!"
+          : "You've completed all problems in this set.",
+        [{ text: 'Back to Practice', onPress: () => router.back() }]
       );
     }
   };
@@ -248,15 +296,63 @@ const { lessonId, difficulty, title, topic, mastery } = useLocalSearchParams<{
         {/* Free Response */}
         {currentProblem.type === 'free-response' && (
           <View style={styles.freeResponseContainer}>
-            <Text style={styles.freeResponseLabel}>Enter your answer:</Text>
-            <View style={styles.freeResponseInput}>
-              <Text style={styles.freeResponsePlaceholder}>
-                Type your solution here
-              </Text>
-            </View>
-            <Text style={styles.freeResponseNote}>
-              Note: Free response problems are evaluated manually
-            </Text>
+            <Text style={styles.freeResponseLabel}>Type your answer:</Text>
+            <TextInput
+              style={[
+                styles.freeResponseInput,
+                showExplanation && isCorrect  && styles.freeResponseCorrect,
+                showExplanation && !isCorrect && styles.freeResponseWrong,
+              ]}
+              placeholder="e.g. 7  or  x = 7"
+              placeholderTextColor={Colors.textLight}
+              value={selectedAnswer ?? ''}
+              onChangeText={(text) => !showExplanation && setSelectedAnswer(text)}
+              editable={!showExplanation}
+              autoCapitalize="none"
+              keyboardType="default"
+            />
+            {showExplanation && !isCorrect && (
+              <View style={styles.correctAnswerHint}>
+                <Ionicons name="checkmark-circle" size={16} color="#00a472" />
+                <Text style={styles.correctAnswerText}>
+                  Correct answer: {currentProblem.correctAnswer}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* True / False */}
+        {currentProblem.type === 'true-false' && (
+          <View style={styles.tfContainer}>
+            {['True', 'False'].map((opt) => {
+              const isSelected = selectedAnswer === opt;
+              const isCorrectOpt = opt === currentProblem.correctAnswer;
+              let bg = Colors.white;
+              let border = Colors.surfaceContainer;
+              let textColor = Colors.text;
+              if (showExplanation) {
+                if (isSelected && isCorrect)   { bg = '#f0fdf4'; border = '#00a472'; textColor = '#00a472'; }
+                if (isSelected && !isCorrect)  { bg = '#fef2f2'; border = '#ef4444'; textColor = '#ef4444'; }
+                if (!isSelected && isCorrectOpt){ bg = '#f0fdf4'; border = '#00a472'; textColor = '#00a472'; }
+              } else if (isSelected) {
+                bg = '#f5f4ff'; border = '#4b41e1'; textColor = '#4b41e1';
+              }
+              return (
+                <TouchableOpacity
+                  key={opt}
+                  style={[styles.tfButton, { backgroundColor: bg, borderColor: border }]}
+                  onPress={() => !showExplanation && setSelectedAnswer(opt)}
+                  disabled={showExplanation}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.tfButtonText, { color: textColor }]}>{opt}</Text>
+                  {showExplanation && isSelected && isCorrect  && <Ionicons name="checkmark-circle" size={22} color="#00a472" />}
+                  {showExplanation && isSelected && !isCorrect && <Ionicons name="close-circle"     size={22} color="#ef4444" />}
+                  {showExplanation && !isSelected && isCorrectOpt && <Ionicons name="checkmark-circle" size={22} color="#00a472" />}
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
 
@@ -340,9 +436,9 @@ const { lessonId, difficulty, title, topic, mastery } = useLocalSearchParams<{
       <View style={styles.footer}>
         {!showExplanation ? (
           <TouchableOpacity
-            style={[styles.submitButton, !selectedAnswer && styles.submitButtonDisabled]}
+            style={[styles.submitButton, !selectedAnswer?.trim() && styles.submitButtonDisabled]}
             onPress={handleSubmitAnswer}
-            disabled={!selectedAnswer || submitting}
+            disabled={!selectedAnswer?.trim() || submitting}
           >
             {submitting ? (
               <ActivityIndicator size="small" color="#ffffff" />
@@ -522,6 +618,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.text,
   },
+  tfContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  tfButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 22,
+    borderRadius: 16,
+    borderWidth: 2,
+  },
+  tfButtonText: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
   freeResponseContainer: {
     marginBottom: 24,
   },
@@ -537,11 +652,31 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.surfaceContainer,
     padding: 16,
-    minHeight: 120,
-  },
-  freeResponsePlaceholder: {
+    minHeight: 80,
     fontSize: 16,
-    color: Colors.textLight,
+    color: Colors.text,
+  },
+  freeResponseCorrect: {
+    borderColor: '#00a472',
+    backgroundColor: '#f0fdf4',
+  },
+  freeResponseWrong: {
+    borderColor: '#ef4444',
+    backgroundColor: '#fef2f2',
+  },
+  correctAnswerHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    padding: 10,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 8,
+  },
+  correctAnswerText: {
+    fontSize: 14,
+    color: '#00a472',
+    fontWeight: '600',
   },
   freeResponseNote: {
     fontSize: 12,

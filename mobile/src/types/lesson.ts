@@ -54,6 +54,7 @@ export interface PracticeProblem {
     latex?: string;
     isCorrect?: boolean;
   }[];
+  correctAnswer?: string;
   explanation: string;
   solution?: {
     steps: string[];
