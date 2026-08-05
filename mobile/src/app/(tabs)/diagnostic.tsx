@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,6 @@ import { MasteryRing } from '@/components/MasteryRing';
 import { WeakAreaCard } from '@/components/WeakAreaCard';
 import { TimelineChart } from '@/components/TimelineChart';
 import diagnosticService from '@/services/diagnosticService';
-import { lessonService } from '@/services/lessonService';
 import { DiagnosticResult, WeakTopic } from '@/types/diagnostic';
 
 type TimelinePeriod = 'week' | 'month' | '6months';
@@ -29,7 +28,6 @@ export default function DiagnosticScreen() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimelinePeriod>('week');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [navigatingWeak, setNavigatingWeak] = useState<string | null>(null);
 
   useEffect(() => {
     loadDiagnosticData();
@@ -73,49 +71,6 @@ export default function DiagnosticScreen() {
     setRefreshing(true);
     await loadDiagnosticData();
     setRefreshing(false);
-  };
-
-  const handleWeakAreaPress = async (weak: WeakTopic) => {
-    const key = `${weak.topic}-${weak.subtopic ?? ''}`;
-    setNavigatingWeak(key);
-    try {
-      // Try to find a lesson matching the exact subtopic first
-      const data = await lessonService.getLessons(weak.topic, weak.subtopic);
-      const lessons = data.lessons;
-
-      if (lessons.length > 0) {
-        // Navigate directly to the first lesson in that subtopic
-        const firstLesson = lessons[0];
-        router.push({
-          pathname: '/practice/lesson',
-          params: {
-            lessonId: firstLesson._id,
-            topicName: weak.topic,
-            mastery: weak.score.toString(),
-          },
-        });
-      } else {
-        // No subtopic-specific lesson found — fall back to the topic screen
-        router.push({
-          pathname: '/practice/topic',
-          params: {
-            topicName: weak.topic,
-            mastery: weak.score.toString(),
-          },
-        });
-      }
-    } catch {
-      // On error just go to the topic screen
-      router.push({
-        pathname: '/practice/topic',
-        params: {
-          topicName: weak.topic,
-          mastery: weak.score.toString(),
-        },
-      });
-    } finally {
-      setNavigatingWeak(null);
-    }
   };
 
   const handleStartDiagnostic = () => {
@@ -290,18 +245,22 @@ export default function DiagnosticScreen() {
           </View>
 
           {diagnostic.weakTopics && diagnostic.weakTopics.length > 0 ? (
-            diagnostic.weakTopics.slice(0, 5).map((weak, index) => {
-              const key = `${weak.topic}-${weak.subtopic ?? ''}`;
-              const isNavigating = navigatingWeak === key;
-              return (
-                <WeakAreaCard
-                  key={index}
-                  subtopic={weak.subtopic ? `${weak.topic} · ${weak.subtopic}` : weak.topic}
-                  masteryPercentage={weak.score}
-                  onPress={isNavigating ? undefined : () => handleWeakAreaPress(weak)}
-                />
-              );
-            })
+            diagnostic.weakTopics.slice(0, 3).map((weak, index) => (
+              <WeakAreaCard
+                key={index}
+                subtopic={weak.topic}
+                masteryPercentage={weak.score}
+                onPress={() =>
+                  router.push({
+                    pathname: '/practice/topic',
+                    params: {
+                      topicName: weak.topic,
+                      mastery: weak.score.toString(),
+                    },
+                  })
+                }
+              />
+            ))
           ) : (
             <Text style={styles.noWeakAreas}>
               Great work! No weak areas identified.

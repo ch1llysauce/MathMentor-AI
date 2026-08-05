@@ -250,7 +250,7 @@ export default function LessonScreen() {
         </View>
 
         {/* Extra padding at bottom to avoid tab bar overlap */}
-        <View style={{ height: 10 }} />
+        <View style={{ height: 200 }} />
       </ScrollView>
 
       {/* Footer */}

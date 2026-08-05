@@ -155,18 +155,8 @@ export const submitDiagnosticResults = asyncHandler(async (req, res) => {
             });
         }
 
-        // Find weak subtopics
-        if (topicData.subtopicScores) {
-            Object.entries(topicData.subtopicScores).forEach(([subtopicKey, subtopicScore]) => {
-                if (subtopicScore < 50) {
-                    weakTopics.push({
-                        topic: topicName,
-                        subtopic: formatSubtopicName(subtopicKey),
-                        score: subtopicScore
-                    });
-                }
-            });
-        }
+        // Find weak subtopics — skipped, we track at topic level only
+        // if (topicData.subtopicScores) { ... }
     });
 
     // Create diagnostic result
