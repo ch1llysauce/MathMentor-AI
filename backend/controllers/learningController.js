@@ -303,7 +303,9 @@ export const getReviewQuestions = asyncHandler(async (req, res) => {
  */
 const formatSubtopicName = (subtopicKey) => {
     return subtopicKey
-        .replace(/([A-Z])/g, " $1")
+        .replace(/_/g, ' ')                  // snake_case → spaces
+        .replace(/([A-Z])/g, ' $1')          // camelCase → spaces
+        .replace(/\s+/g, ' ')                // collapse double spaces
         .replace(/^./, str => str.toUpperCase())
         .trim();
 };

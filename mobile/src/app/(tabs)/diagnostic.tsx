@@ -248,7 +248,7 @@ export default function DiagnosticScreen() {
             diagnostic.weakTopics.slice(0, 5).map((weak, index) => (
               <WeakAreaCard
                 key={index}
-                subtopic={weak.subtopic || weak.topic}
+                subtopic={weak.subtopic ? `${weak.topic} · ${weak.subtopic}` : weak.topic}
                 masteryPercentage={weak.score}
                 onPress={() =>
                   router.push({
