@@ -57,7 +57,7 @@ export default function TermsOfServiceScreen() {
         </Section>
 
         <Section title="6. AI-Generated Content">
-          {`MathMentor AI uses artificial intelligence to generate explanations, hints, and tutoring responses. While we strive for accuracy, AI-generated content may occasionally contain errors.\n\nWe do not guarantee the accuracy, completeness, or suitability of AI-generated content for any particular purpose. Always verify important mathematical concepts with your teacher or textbook.`}
+          {`MathMentor AI uses a multi-provider AI system to generate tutoring responses, explanations, and hints. The primary provider is Groq (Meta's Llama model), with Google Gemini as a fallback, and a rule-based system as a final backup when both are unavailable.\n\nWhile we strive for accuracy, AI-generated content may occasionally contain mathematical errors or imprecise explanations. We do not guarantee the accuracy, completeness, or suitability of AI-generated content for any particular purpose. Always verify important mathematical concepts with your teacher or textbook.`}
         </Section>
 
         <Section title="7. Privacy">
