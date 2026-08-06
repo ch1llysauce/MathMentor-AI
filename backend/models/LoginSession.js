@@ -46,6 +46,5 @@ const loginSessionSchema = new mongoose.Schema({
 });
 
 loginSessionSchema.index({ user: 1, isActive: 1 });
-loginSessionSchema.index({ tokenId: 1 });
 
 export default mongoose.model("LoginSession", loginSessionSchema);
