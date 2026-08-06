@@ -37,7 +37,8 @@ export default function ForgotPasswordScreen() {
       // Always advance — server hides whether account exists
       setStep('otp');
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to send reset code. Please try again.');
+      const msg = error.response?.data?.message || error.message || 'Failed to send reset code. Please try again.';
+      Alert.alert('Error', msg);
     } finally {
       setLoading(false);
     }

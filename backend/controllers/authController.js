@@ -11,14 +11,14 @@ import { AppError, asyncHandler } from "../middleware/index.js";
  * Email transporter (lazy-initialized)
  */
 const getMailTransporter = () => nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false, // use STARTTLS on port 587
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
-    tls: {
-        family: 4,  // force IPv4 — Render free tier blocks IPv6
-    },
+    family: 4, // force IPv4 — Render free tier blocks IPv6
 });
 
 /**
@@ -655,23 +655,32 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     await user.save();
 
     // Send email
-    const transporter = getMailTransporter();
-    await transporter.sendMail({
-        from: `"MathMentor AI" <${process.env.EMAIL_USER}>`,
-        to: user.email,
-        subject: "Your Password Reset Code",
-        html: `
-            <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
-                <h2 style="color: #4b41e1;">Reset your password</h2>
-                <p>Hi ${user.displayName},</p>
-                <p>Use the code below to reset your MathMentor AI password. It expires in <strong>10 minutes</strong>.</p>
-                <div style="background: #f0eeff; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
-                    <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #4b41e1;">${otp}</span>
+    try {
+        const transporter = getMailTransporter();
+        await transporter.sendMail({
+            from: `"MathMentor AI" <${process.env.EMAIL_USER}>`,
+            to: user.email,
+            subject: "Your Password Reset Code",
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
+                    <h2 style="color: #4b41e1;">Reset your password</h2>
+                    <p>Hi ${user.displayName},</p>
+                    <p>Use the code below to reset your MathMentor AI password. It expires in <strong>10 minutes</strong>.</p>
+                    <div style="background: #f0eeff; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
+                        <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #4b41e1;">${otp}</span>
+                    </div>
+                    <p style="color: #75777d; font-size: 13px;">If you didn't request this, you can safely ignore this email.</p>
                 </div>
-                <p style="color: #75777d; font-size: 13px;">If you didn't request this, you can safely ignore this email.</p>
-            </div>
-        `
-    });
+            `
+        });
+    } catch (emailError) {
+        console.error("Email send failed:", emailError.message);
+        // Clear the OTP since we couldn't deliver it
+        user.passwordResetOtp = null;
+        user.passwordResetExpiry = null;
+        await user.save();
+        throw new AppError("Failed to send reset email. Please try again later.", 500);
+    }
 
     res.status(200).json({
         success: true,
