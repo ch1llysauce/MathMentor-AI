@@ -41,8 +41,9 @@ export const authenticate = async (req, res, next) => {
             });
         }
 
-        // Attach user to request object
+        // Attach user and tokenId to request object
         req.user = user;
+        req.user.currentTokenId = decoded.jti || null;
         next();
 
     } catch (error) {

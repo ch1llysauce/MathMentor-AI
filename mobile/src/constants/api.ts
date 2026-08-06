@@ -33,6 +33,8 @@ export const AUTH_ENDPOINTS = {
   LOGOUT: '/auth/logout',
   DATA_EXPORT: '/auth/data-export',
   DELETE_ACCOUNT: '/auth/account',
+  SESSIONS: '/auth/sessions',
+  REVOKE_OTHER_SESSIONS: '/auth/sessions/others/all',
   TWO_FA_SETUP: '/auth/2fa/setup',
   TWO_FA_VERIFY: '/auth/2fa/verify',
   TWO_FA_VALIDATE: '/auth/2fa/validate',

@@ -8,6 +8,7 @@ import Lesson from "./Lesson.js";
 import PracticeProblem from "./PracticeProblem.js";
 import UserLessonProgress from "./UserLessonProgress.js";
 import UserProblemAttempt from "./UserProblemAttempt.js";
+import LoginSession from "./LoginSession.js";
 
 export {
     User,
@@ -18,5 +19,6 @@ export {
     Lesson,
     PracticeProblem,
     UserLessonProgress,
-    UserProblemAttempt
+    UserProblemAttempt,
+    LoginSession
 };

@@ -11,7 +11,10 @@ import {
     validate2FA,
     disable2FA,
     exportUserData,
-    deleteAccount
+    deleteAccount,
+    getSessions,
+    revokeSession,
+    revokeOtherSessions
 } from "../controllers/authController.js";
 import {
     authenticate,
@@ -33,6 +36,11 @@ router.put("/change-password", authenticate, changePassword);
 router.post("/logout", authenticate, logout);
 router.get("/data-export", authenticate, exportUserData);
 router.delete("/account", authenticate, deleteAccount);
+
+// Session management routes
+router.get("/sessions", authenticate, getSessions);
+router.delete("/sessions/others/all", authenticate, revokeOtherSessions);
+router.delete("/sessions/:sessionId", authenticate, revokeSession);
 
 // 2FA routes
 router.post("/2fa/setup", authenticate, setup2FA);

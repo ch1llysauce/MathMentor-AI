@@ -1,19 +1,32 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { v4 as uuidv4 } from "uuid";
 import speakeasy from "speakeasy";
 import QRCode from "qrcode";
-import { User, Progress, DiagnosticResult } from "../models/index.js";
+import { User, Progress, DiagnosticResult, LoginSession } from "../models/index.js";
 import { AppError, asyncHandler } from "../middleware/index.js";
 
 /**
- * Generate JWT Token
+ * Generate JWT Token with unique jti
  */
-const generateToken = (userId) => {
+const generateToken = (userId, tokenId) => {
     return jwt.sign(
-        { userId },
+        { userId, jti: tokenId },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRE || "7d" }
     );
+};
+
+/**
+ * Parse device info from User-Agent header
+ */
+const parseDeviceInfo = (userAgent = "") => {
+    if (!userAgent) return "Unknown device";
+    if (/android/i.test(userAgent)) return "Android";
+    if (/iphone|ipad|ipod/i.test(userAgent)) return "iOS";
+    if (/windows/i.test(userAgent)) return "Windows";
+    if (/macintosh|mac os/i.test(userAgent)) return "Mac";
+    return "Unknown device";
 };
 
 /**
@@ -102,8 +115,18 @@ export const login = asyncHandler(async (req, res) => {
     user.lastActiveDate = new Date();
     await user.save();
 
-    // Generate token
-    const token = generateToken(user._id);
+    // Generate token with unique ID
+    const tokenId = uuidv4();
+    const token = generateToken(user._id, tokenId);
+
+    // Record the login session
+    await LoginSession.create({
+        user: user._id,
+        tokenId,
+        deviceInfo: parseDeviceInfo(req.headers["user-agent"]),
+        ipAddress: req.ip || req.connection?.remoteAddress || "",
+        lastActiveAt: new Date(),
+    });
 
     res.status(200).json({
         success: true,
@@ -338,8 +361,18 @@ export const validate2FA = asyncHandler(async (req, res) => {
     user.lastActiveDate = new Date();
     await user.save();
 
-    // Issue the JWT token
-    const jwtToken = generateToken(user._id);
+    // Issue the JWT token with unique ID
+    const tokenId = uuidv4();
+    const jwtToken = generateToken(user._id, tokenId);
+
+    // Record the login session
+    await LoginSession.create({
+        user: user._id,
+        tokenId,
+        deviceInfo: parseDeviceInfo(req.headers["user-agent"]),
+        ipAddress: req.ip || req.connection?.remoteAddress || "",
+        lastActiveAt: new Date(),
+    });
 
     res.status(200).json({
         success: true,
@@ -479,6 +512,88 @@ export const deleteAccount = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * @desc    Get all active login sessions for the current user
+ * @route   GET /api/auth/sessions
+ * @access  Private
+ */
+export const getSessions = asyncHandler(async (req, res) => {
+    const currentTokenId = req.user.currentTokenId; // set by auth middleware
+
+    const sessions = await LoginSession.find({
+        user: req.user._id,
+        isActive: true
+    }).sort({ lastActiveAt: -1 });
+
+    res.status(200).json({
+        success: true,
+        data: {
+            sessions: sessions.map(s => ({
+                id: s._id,
+                deviceInfo: s.deviceInfo,
+                ipAddress: s.ipAddress,
+                lastActiveAt: s.lastActiveAt,
+                createdAt: s.createdAt,
+                isCurrent: s.tokenId === currentTokenId
+            }))
+        }
+    });
+});
+
+/**
+ * @desc    Revoke a specific login session
+ * @route   DELETE /api/auth/sessions/:sessionId
+ * @access  Private
+ */
+export const revokeSession = asyncHandler(async (req, res) => {
+    const { sessionId } = req.params;
+
+    const session = await LoginSession.findOne({
+        _id: sessionId,
+        user: req.user._id,
+        isActive: true
+    });
+
+    if (!session) {
+        throw new AppError("Session not found", 404);
+    }
+
+    session.isActive = false;
+    session.revokedAt = new Date();
+    await session.save();
+
+    res.status(200).json({
+        success: true,
+        message: "Session revoked successfully"
+    });
+});
+
+/**
+ * @desc    Revoke all sessions except the current one
+ * @route   DELETE /api/auth/sessions/others/all
+ * @access  Private
+ */
+export const revokeOtherSessions = asyncHandler(async (req, res) => {
+    const currentTokenId = req.user.currentTokenId;
+
+    const result = await LoginSession.updateMany(
+        {
+            user: req.user._id,
+            isActive: true,
+            tokenId: { $ne: currentTokenId }
+        },
+        {
+            isActive: false,
+            revokedAt: new Date()
+        }
+    );
+
+    res.status(200).json({
+        success: true,
+        message: `Signed out from ${result.modifiedCount} other device(s)`
+    });
+});
+
 export default {
     register,
     login,
@@ -491,5 +606,8 @@ export default {
     validate2FA,
     disable2FA,
     exportUserData,
-    deleteAccount
+    deleteAccount,
+    getSessions,
+    revokeSession,
+    revokeOtherSessions
 };
