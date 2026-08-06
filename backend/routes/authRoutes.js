@@ -14,7 +14,10 @@ import {
     deleteAccount,
     getSessions,
     revokeSession,
-    revokeOtherSessions
+    revokeOtherSessions,
+    forgotPassword,
+    verifyResetOtp,
+    resetPassword
 } from "../controllers/authController.js";
 import {
     authenticate,
@@ -28,6 +31,11 @@ const router = express.Router();
 router.post("/register", validateRegister, register);
 router.post("/login", validateLogin, login);
 router.post("/2fa/validate", validate2FA);
+
+// Password reset (public — no auth needed)
+router.post("/forgot-password", forgotPassword);
+router.post("/verify-reset-otp", verifyResetOtp);
+router.post("/reset-password", resetPassword);
 
 // Protected routes
 router.get("/profile", authenticate, getProfile);

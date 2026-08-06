@@ -1,10 +1,22 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
+import nodemailer from "nodemailer";
 import speakeasy from "speakeasy";
 import QRCode from "qrcode";
 import { User, Progress, DiagnosticResult, LoginSession } from "../models/index.js";
 import { AppError, asyncHandler } from "../middleware/index.js";
+
+/**
+ * Email transporter (lazy-initialized)
+ */
+const getMailTransporter = () => nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+    },
+});
 
 /**
  * Generate JWT Token with unique jti
@@ -518,23 +530,38 @@ export const deleteAccount = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const getSessions = asyncHandler(async (req, res) => {
-    const currentTokenId = req.user.currentTokenId; // set by auth middleware
+    const currentTokenId = req.user.currentTokenId;
 
-    const sessions = await LoginSession.find({
+    let sessions = await LoginSession.find({
         user: req.user._id,
         isActive: true
     }).sort({ lastActiveAt: -1 });
 
+    // If no sessions exist yet (user logged in before tracking was added),
+    // create a record for the current device automatically
+    if (sessions.length === 0) {
+        const tokenId = currentTokenId || `legacy-${req.user._id}-${Date.now()}`;
+        const newSession = await LoginSession.create({
+            user: req.user._id,
+            tokenId,
+            deviceInfo: parseDeviceInfo(req.headers["user-agent"]),
+            ipAddress: req.ip || req.connection?.remoteAddress || "",
+            lastActiveAt: new Date(),
+        });
+        sessions = [newSession];
+    }
+
     res.status(200).json({
         success: true,
         data: {
-            sessions: sessions.map(s => ({
+            sessions: sessions.map((s, index) => ({
                 id: s._id,
                 deviceInfo: s.deviceInfo,
                 ipAddress: s.ipAddress,
                 lastActiveAt: s.lastActiveAt,
                 createdAt: s.createdAt,
-                isCurrent: s.tokenId === currentTokenId
+                // Mark as current if tokenId matches, or if no jti in token (legacy) use first result
+                isCurrent: currentTokenId ? s.tokenId === currentTokenId : index === 0
             }))
         }
     });
@@ -594,6 +621,145 @@ export const revokeOtherSessions = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * @desc    Step 1 — Send OTP to email for password reset
+ * @route   POST /api/auth/forgot-password
+ * @access  Public
+ */
+export const forgotPassword = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) throw new AppError("Email is required", 400);
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+    // Always return success to prevent email enumeration
+    if (!user) {
+        return res.status(200).json({
+            success: true,
+            message: "If an account exists with that email, a reset code has been sent."
+        });
+    }
+
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Hash OTP before storing
+    const salt = await bcrypt.genSalt(10);
+    user.passwordResetOtp = await bcrypt.hash(otp, salt);
+    user.passwordResetExpiry = expiry;
+    await user.save();
+
+    // Send email
+    const transporter = getMailTransporter();
+    await transporter.sendMail({
+        from: `"MathMentor AI" <${process.env.EMAIL_USER}>`,
+        to: user.email,
+        subject: "Your Password Reset Code",
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
+                <h2 style="color: #4b41e1;">Reset your password</h2>
+                <p>Hi ${user.displayName},</p>
+                <p>Use the code below to reset your MathMentor AI password. It expires in <strong>10 minutes</strong>.</p>
+                <div style="background: #f0eeff; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
+                    <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #4b41e1;">${otp}</span>
+                </div>
+                <p style="color: #75777d; font-size: 13px;">If you didn't request this, you can safely ignore this email.</p>
+            </div>
+        `
+    });
+
+    res.status(200).json({
+        success: true,
+        message: "If an account exists with that email, a reset code has been sent."
+    });
+});
+
+/**
+ * @desc    Step 2 — Verify OTP
+ * @route   POST /api/auth/verify-reset-otp
+ * @access  Public
+ */
+export const verifyResetOtp = asyncHandler(async (req, res) => {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) throw new AppError("Email and code are required", 400);
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+    if (!user || !user.passwordResetOtp || !user.passwordResetExpiry) {
+        throw new AppError("Invalid or expired reset code", 400);
+    }
+
+    if (new Date() > user.passwordResetExpiry) {
+        throw new AppError("Reset code has expired. Please request a new one.", 400);
+    }
+
+    const isValid = await bcrypt.compare(otp.toString(), user.passwordResetOtp);
+    if (!isValid) {
+        throw new AppError("Invalid reset code", 400);
+    }
+
+    // Issue a short-lived reset token (valid 15 min, single use)
+    const resetToken = jwt.sign(
+        { userId: user._id, purpose: "password-reset" },
+        process.env.JWT_SECRET,
+        { expiresIn: "15m" }
+    );
+
+    res.status(200).json({
+        success: true,
+        message: "Code verified successfully",
+        data: { resetToken }
+    });
+});
+
+/**
+ * @desc    Step 3 — Reset password using reset token
+ * @route   POST /api/auth/reset-password
+ * @access  Public
+ */
+export const resetPassword = asyncHandler(async (req, res) => {
+    const { resetToken, newPassword } = req.body;
+
+    if (!resetToken || !newPassword) {
+        throw new AppError("Reset token and new password are required", 400);
+    }
+
+    if (newPassword.length < 6) {
+        throw new AppError("Password must be at least 6 characters", 400);
+    }
+
+    let decoded;
+    try {
+        decoded = jwt.verify(resetToken, process.env.JWT_SECRET);
+    } catch (err) {
+        throw new AppError("Invalid or expired reset token", 400);
+    }
+
+    if (decoded.purpose !== "password-reset") {
+        throw new AppError("Invalid reset token", 400);
+    }
+
+    const user = await User.findById(decoded.userId);
+    if (!user) throw new AppError("User not found", 404);
+
+    // Hash and save new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+
+    // Clear reset fields
+    user.passwordResetOtp = null;
+    user.passwordResetExpiry = null;
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: "Password reset successfully. You can now log in."
+    });
+});
+
 export default {
     register,
     login,
@@ -609,5 +775,8 @@ export default {
     deleteAccount,
     getSessions,
     revokeSession,
-    revokeOtherSessions
+    revokeOtherSessions,
+    forgotPassword,
+    verifyResetOtp,
+    resetPassword
 };

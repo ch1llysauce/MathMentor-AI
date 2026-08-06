@@ -104,6 +104,16 @@ const userSchema = new mongoose.Schema({
     twoFactorSecret: {
         type: String,
         default: null
+    },
+
+    passwordResetOtp: {
+        type: String,
+        default: null
+    },
+
+    passwordResetExpiry: {
+        type: Date,
+        default: null
     }
 
 }, {
