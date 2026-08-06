@@ -1,0 +1,121 @@
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+
+const Section = ({ title, children }: { title: string; children: string }) => (
+  <View style={styles.section}>
+    <Text style={styles.sectionTitle}>{title}</Text>
+    <Text style={styles.sectionBody}>{children}</Text>
+  </View>
+);
+
+export default function PrivacyPolicyScreen() {
+  const router = useRouter();
+
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#091426" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Privacy Policy</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.heroIcon}>
+          <Ionicons name="shield-checkmark" size={40} color="#4b41e1" />
+        </View>
+        <Text style={styles.pageTitle}>Privacy Policy</Text>
+        <Text style={styles.effectiveDate}>Effective: January 2025 · MathMentor AI</Text>
+
+        <Section title="1. Introduction">
+          {`MathMentor AI ("we", "us", or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and share information about you when you use our application.\n\nBy using MathMentor AI, you agree to the collection and use of information as described in this policy.`}
+        </Section>
+
+        <Section title="2. Information We Collect">
+          {`We collect the following categories of information:\n\nAccount Information\n• Your name (display name)\n• Email address\n• Password (stored as a secure hash — never in plain text)\n• Grade level and focus areas\n\nLearning Data\n• Quiz and practice question answers\n• Mastery levels per topic and subtopic\n• Diagnostic assessment results and scores\n• Learning path progress and lesson completions\n\nUsage Data\n• Session activity timestamps\n• Study time and streak data\n• Login history and device information (for security)\n• IP address (used for session management only)`}
+        </Section>
+
+        <Section title="3. How We Use Your Information">
+          {`We use the information we collect to:\n\n• Create and manage your account\n• Personalise your learning path and topic recommendations\n• Track your academic progress over time\n• Power the AI tutor to provide relevant explanations\n• Identify weak areas and suggest focused practice\n• Improve the accuracy and quality of the service\n• Send password reset codes and security alerts\n• Detect and prevent fraudulent or unauthorised access`}
+        </Section>
+
+        <Section title="4. Data Storage and Security">
+          {`Your data is stored on secure servers provided by MongoDB Atlas (cloud database) and hosted through Render (backend infrastructure).\n\nSecurity measures we apply:\n• Passwords are hashed using bcrypt (one-way encryption)\n• All API communication uses HTTPS/TLS encryption\n• Two-factor authentication secrets are encrypted at rest\n• Login sessions use JWT tokens with expiry limits\n• Session management allows you to revoke access from any device`}
+        </Section>
+
+        <Section title="5. Data Sharing">
+          {`We do not sell your personal information to third parties.\n\nWe may share data with:\n• Service providers who help us operate the platform (e.g., cloud hosting, AI inference services) — under strict confidentiality obligations\n• Law enforcement or regulatory bodies if required by applicable law\n\nWe use Groq's API for AI tutoring responses. Your questions may be processed through their infrastructure. We do not send personally identifying information to AI providers.`}
+        </Section>
+
+        <Section title="6. Your Rights">
+          {`You have the following rights regarding your personal data:\n\n• Access — You can download a copy of your data at any time from Privacy & Security settings\n• Correction — You can update your profile information in Edit Profile\n• Deletion — You can permanently delete your account and all associated data from Privacy & Security settings\n• Portability — Your exported data is provided in a human-readable format\n\nTo exercise any of these rights, use the in-app options or contact us at support@mathmentor.ai.`}
+        </Section>
+
+        <Section title="7. Data Retention">
+          {`We retain your data for as long as your account is active. If you delete your account, all personal data — including your profile, progress, and diagnostic results — is permanently deleted from our systems within 30 days.\n\nAnonymised, aggregated data (with no connection to your identity) may be retained for improving the service.`}
+        </Section>
+
+        <Section title="8. Children's Privacy">
+          {`MathMentor AI is designed for senior high school students. We do not knowingly collect personal information from children under 13 years of age.\n\nIf you are a parent or guardian and believe your child under 13 has created an account, please contact us at support@mathmentor.ai and we will delete the account promptly.`}
+        </Section>
+
+        <Section title="9. Cookies and Tracking">
+          {`MathMentor AI is a mobile application and does not use browser cookies. We use secure local storage on your device to maintain your login session. This data is stored only on your device and is cleared when you log out.`}
+        </Section>
+
+        <Section title="10. Changes to This Policy">
+          {`We may update this Privacy Policy from time to time. We will notify you of significant changes through the app. The "Effective" date at the top of this page indicates when the policy was last updated.\n\nYour continued use of MathMentor AI after changes are posted constitutes your acceptance of the updated policy.`}
+        </Section>
+
+        <Section title="11. Contact Us">
+          {`If you have questions, concerns, or requests regarding this Privacy Policy or your personal data, please contact us:\n\nEmail: support@mathmentor.ai\n\nWe aim to respond to all privacy-related inquiries within 48 hours.`}
+        </Section>
+
+        <Text style={styles.footer}>© 2025 MathMentor AI · All rights reserved</Text>
+        <View style={{ height: 32 }} />
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f7f9fb' },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingTop: 48, paddingBottom: 12,
+    backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#e0e3e5',
+  },
+  backBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: '#f2f4f6', alignItems: 'center', justifyContent: 'center',
+  },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: '#091426' },
+  scroll: { flex: 1 },
+  scrollContent: { padding: 24 },
+  heroIcon: {
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: 'rgba(75,65,225,0.1)',
+    alignItems: 'center', justifyContent: 'center',
+    alignSelf: 'center', marginBottom: 16,
+  },
+  pageTitle: {
+    fontSize: 26, fontWeight: '700', color: '#091426',
+    textAlign: 'center', marginBottom: 6,
+  },
+  effectiveDate: {
+    fontSize: 12, color: '#75777d', textAlign: 'center', marginBottom: 32,
+  },
+  section: { marginBottom: 28 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#091426', marginBottom: 10 },
+  sectionBody: { fontSize: 14, color: '#45474c', lineHeight: 24 },
+  footer: { fontSize: 12, color: '#75777d', textAlign: 'center', marginTop: 16 },
+});

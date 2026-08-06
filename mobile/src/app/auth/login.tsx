@@ -226,11 +226,11 @@ export default function LoginScreen() {
               <View style={styles.footer}>
                 <Text style={styles.footerText}>By signing in, you agree to our</Text>
                 <View style={styles.footerLinks}>
-                  <TouchableOpacity activeOpacity={0.7}>
+                  <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/legal/terms')}>
                     <Text style={styles.footerLink}>Terms of Service</Text>
                   </TouchableOpacity>
                   <Text style={styles.footerDivider}>|</Text>
-                  <TouchableOpacity activeOpacity={0.7}>
+                  <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/legal/privacy-policy')}>
                     <Text style={styles.footerLink}>Privacy Policy</Text>
                   </TouchableOpacity>
                 </View>
