@@ -1,25 +1,13 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import speakeasy from "speakeasy";
 import QRCode from "qrcode";
 import { User, Progress, DiagnosticResult, LoginSession } from "../models/index.js";
 import { AppError, asyncHandler } from "../middleware/index.js";
 
-/**
- * Email transporter (lazy-initialized)
- */
-const getMailTransporter = () => nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false, // use STARTTLS on port 587
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-    family: 4, // force IPv4 — Render free tier blocks IPv6
-});
+const getResend = () => new Resend(process.env.RESEND_API_KEY);
 
 /**
  * Generate JWT Token with unique jti
@@ -654,11 +642,11 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     user.passwordResetExpiry = expiry;
     await user.save();
 
-    // Send email
+    // Send email via Resend
     try {
-        const transporter = getMailTransporter();
-        await transporter.sendMail({
-            from: `"MathMentor AI" <${process.env.EMAIL_USER}>`,
+        const resend = getResend();
+        const { error: emailError } = await resend.emails.send({
+            from: "MathMentor AI <onboarding@resend.dev>",
             to: user.email,
             subject: "Your Password Reset Code",
             html: `
@@ -673,9 +661,16 @@ export const forgotPassword = asyncHandler(async (req, res) => {
                 </div>
             `
         });
+
+        if (emailError) {
+            console.error("Resend email error:", emailError);
+            user.passwordResetOtp = null;
+            user.passwordResetExpiry = null;
+            await user.save();
+            throw new AppError("Failed to send reset email. Please try again later.", 500);
+        }
     } catch (emailError) {
         console.error("Email send failed:", emailError.message);
-        // Clear the OTP since we couldn't deliver it
         user.passwordResetOtp = null;
         user.passwordResetExpiry = null;
         await user.save();
