@@ -16,6 +16,9 @@ const getMailTransporter = () => nodemailer.createTransport({
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
+    tls: {
+        family: 4,  // force IPv4 — Render free tier blocks IPv6
+    },
 });
 
 /**
