@@ -10,7 +10,8 @@ import {
     verify2FA,
     validate2FA,
     disable2FA,
-    exportUserData
+    exportUserData,
+    deleteAccount
 } from "../controllers/authController.js";
 import {
     authenticate,
@@ -31,6 +32,7 @@ router.put("/profile", authenticate, updateProfile);
 router.put("/change-password", authenticate, changePassword);
 router.post("/logout", authenticate, logout);
 router.get("/data-export", authenticate, exportUserData);
+router.delete("/account", authenticate, deleteAccount);
 
 // 2FA routes
 router.post("/2fa/setup", authenticate, setup2FA);

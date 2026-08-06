@@ -456,6 +456,29 @@ export const exportUserData = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * @desc    Delete account and all associated data
+ * @route   DELETE /api/auth/account
+ * @access  Private
+ */
+export const deleteAccount = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+
+    // Delete all user data across collections
+    await Promise.all([
+        Progress.deleteMany({ user: userId }),
+        DiagnosticResult.deleteMany({ user: userId }),
+    ]);
+
+    // Delete the user account itself
+    await User.findByIdAndDelete(userId);
+
+    res.status(200).json({
+        success: true,
+        message: "Account and all associated data have been permanently deleted"
+    });
+});
+
 export default {
     register,
     login,
@@ -467,5 +490,6 @@ export default {
     verify2FA,
     validate2FA,
     disable2FA,
-    exportUserData
+    exportUserData,
+    deleteAccount
 };

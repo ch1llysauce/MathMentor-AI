@@ -16,7 +16,7 @@ type PanelMode = null | 'setup-key' | 'setup-verify' | 'disable' | 'policy';
 export default function PrivacySecurityScreen() {
   const router = useRouter();
   const { darkMode } = useTheme();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const PV = {
     bg: darkMode ? '#0a0a0a' : '#f7f9fb',
@@ -41,6 +41,7 @@ export default function PrivacySecurityScreen() {
   const [disableCode, setDisableCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     setTwoFactorAuth(user?.twoFactorEnabled ?? false);
@@ -165,7 +166,50 @@ export default function PrivacySecurityScreen() {
     }
   };
 
-  // ── Shared components ────────────────────────────────────────────────────
+  // ── Delete Account ────────────────────────────────────────────────────────
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete All My Data',
+      'This will permanently delete your account, all learning progress, and diagnostic results. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () => {
+            // Second confirmation with typed acknowledgement via Alert
+            Alert.alert(
+              'Are you absolutely sure?',
+              'Your account will be deleted immediately and you will be logged out. There is no way to recover your data.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete Everything',
+                  style: 'destructive',
+                  onPress: confirmDeleteAccount,
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const confirmDeleteAccount = async () => {
+    setDeleteLoading(true);
+    try {
+      await api.delete(AUTH_ENDPOINTS.DELETE_ACCOUNT);
+      await logout();
+      // logout clears storage; router will redirect to login via AuthContext
+      router.replace('/auth/login');
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.message || 'Failed to delete account. Please try again.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   const PolicySection = ({ title, children }: { title: string; children: string }) => (
     <View style={styles.policySectionContainer}>
@@ -429,24 +473,20 @@ export default function PrivacySecurityScreen() {
             {/* Delete My Data */}
             <TouchableOpacity
               style={[styles.menuItem, { borderBottomColor: 'transparent' }]}
-              onPress={() => {
-                Alert.alert(
-                  'Delete My Data',
-                  'This will permanently delete all your learning progress, diagnostic results, and account data. This cannot be undone.',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Delete Everything', style: 'destructive', onPress: () => {} },
-                  ]
-                );
-              }}
+              onPress={handleDeleteAccount}
+              disabled={deleteLoading}
             >
               <View style={styles.menuItemLeft}>
                 <View style={[styles.menuIcon, { backgroundColor: 'rgba(186, 26, 26, 0.1)' }]}>
-                  <Ionicons name="trash-outline" size={20} color="#ba1a1a" />
+                  {deleteLoading
+                    ? <ActivityIndicator size="small" color="#ba1a1a" />
+                    : <Ionicons name="trash-outline" size={20} color="#ba1a1a" />}
                 </View>
                 <View style={styles.menuTextContainer}>
                   <Text style={[styles.menuTitle, { color: '#ba1a1a' }]}>Delete My Data</Text>
-                  <Text style={[styles.menuDescription, { color: PV.textLight }]}>Permanently remove all your data</Text>
+                  <Text style={[styles.menuDescription, { color: PV.textLight }]}>
+                    {deleteLoading ? 'Deleting your account...' : 'Permanently remove all your data'}
+                  </Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={20} color={PV.chevron} />

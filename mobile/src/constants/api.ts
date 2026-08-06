@@ -32,6 +32,7 @@ export const AUTH_ENDPOINTS = {
   UPDATE_PROFILE: '/auth/profile',
   LOGOUT: '/auth/logout',
   DATA_EXPORT: '/auth/data-export',
+  DELETE_ACCOUNT: '/auth/account',
   TWO_FA_SETUP: '/auth/2fa/setup',
   TWO_FA_VERIFY: '/auth/2fa/verify',
   TWO_FA_VALIDATE: '/auth/2fa/validate',
