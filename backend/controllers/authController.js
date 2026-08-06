@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import speakeasy from "speakeasy";
 import QRCode from "qrcode";
-import { User } from "../models/index.js";
+import { User, Progress, DiagnosticResult } from "../models/index.js";
 import { AppError, asyncHandler } from "../middleware/index.js";
 
 /**
@@ -236,7 +236,7 @@ export const setup2FA = asyncHandler(async (req, res) => {
     const secret = speakeasy.generateSecret({
         name: `MathMentor AI (${user.email})`,
         issuer: "MathMentor AI",
-        length: 20
+        length: 10
     });
 
     // Temporarily store the secret (not enabled yet — user must verify first)
@@ -401,6 +401,61 @@ export const disable2FA = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * @desc    Export all user data (profile, progress, diagnostics)
+ * @route   GET /api/auth/data-export
+ * @access  Private
+ */
+export const exportUserData = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id).select("-password -twoFactorSecret");
+    const progress = await Progress.find({ user: req.user._id });
+    const diagnostics = await DiagnosticResult.find({ user: req.user._id })
+        .sort({ completedAt: -1 });
+
+    const exportData = {
+        exportedAt: new Date().toISOString(),
+        profile: {
+            displayName: user.displayName,
+            email: user.email,
+            gradeLevel: user.gradeLevel,
+            focusAreas: user.focusAreas,
+            learningPreferences: user.learningPreferences,
+            currentStreak: user.currentStreak,
+            longestStreak: user.longestStreak,
+            totalStudyTime: user.totalStudyTime,
+            diagnosticCompleted: user.diagnosticCompleted,
+            memberSince: user.createdAt,
+            lastActive: user.lastActiveDate,
+        },
+        progress: progress.map(p => ({
+            topic: p.topic,
+            subtopic: p.subtopic,
+            masteryLevel: p.masteryLevel,
+            questionsAnswered: p.questionsAnswered,
+            correctAnswers: p.correctAnswers,
+            accuracy: p.accuracy,
+            lessonsCompleted: p.lessonsCompleted,
+            lastStudied: p.lastStudied,
+        })),
+        diagnosticResults: diagnostics.map(d => ({
+            completedAt: d.completedAt,
+            overallScore: d.overallScore,
+            totalQuestions: d.totalQuestions,
+            correctAnswers: d.correctAnswers,
+            algebraScore: d.topicScores?.algebra?.score ?? d.algebraScore,
+            geometryScore: d.topicScores?.geometry?.score ?? d.geometryScore,
+            trigonometryScore: d.topicScores?.trigonometry?.score ?? d.trigonometryScore,
+            weakTopics: d.weakTopics,
+            strongTopics: d.strongTopics,
+        })),
+    };
+
+    res.status(200).json({
+        success: true,
+        data: exportData,
+    });
+});
+
 export default {
     register,
     login,
@@ -411,5 +466,6 @@ export default {
     setup2FA,
     verify2FA,
     validate2FA,
-    disable2FA
+    disable2FA,
+    exportUserData
 };

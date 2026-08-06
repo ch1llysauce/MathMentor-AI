@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Switch, Alert, Modal, TextInput, ActivityIndicator, Image,
+  Switch, Alert, TextInput, ActivityIndicator, Share,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import { authService } from '@/services/authService';
+import api from '@/services/api';
+import { AUTH_ENDPOINTS } from '@/constants/api';
+
+type PanelMode = null | 'setup-key' | 'setup-verify' | 'disable' | 'policy';
 
 export default function PrivacySecurityScreen() {
   const router = useRouter();
@@ -26,23 +30,17 @@ export default function PrivacySecurityScreen() {
     chevron: darkMode ? '#666666' : '#75777d',
     input: darkMode ? '#2a2a2a' : '#f2f4f6',
     inputBorder: darkMode ? '#3a3a3a' : '#c5c6cd',
+    panelBg: darkMode ? '#111111' : '#f0eeff',
+    panelBorder: darkMode ? '#2e2e2e' : '#c5bfff',
   };
 
-  // ── 2FA state ────────────────────────────────────────────────────────────
   const [twoFactorAuth, setTwoFactorAuth] = useState(user?.twoFactorEnabled ?? false);
-
-  // 2FA setup modal
-  const [setupModalVisible, setSetupModalVisible] = useState(false);
-  const [qrCode, setQrCode] = useState('');
+  const [panelMode, setPanelMode] = useState<PanelMode>(null);
   const [setupSecret, setSetupSecret] = useState('');
   const [verifyCode, setVerifyCode] = useState('');
-  const [setupLoading, setSetupLoading] = useState(false);
-  const [setupStep, setSetupStep] = useState<'qr' | 'verify'>('qr');
-
-  // 2FA disable modal
-  const [disableModalVisible, setDisableModalVisible] = useState(false);
   const [disableCode, setDisableCode] = useState('');
-  const [disableLoading, setDisableLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
 
   useEffect(() => {
     setTwoFactorAuth(user?.twoFactorEnabled ?? false);
@@ -52,23 +50,20 @@ export default function PrivacySecurityScreen() {
 
   const handleTwoFactorToggle = async (value: boolean) => {
     if (value) {
-      setSetupStep('qr');
-      setVerifyCode('');
-      setSetupLoading(true);
-      setSetupModalVisible(true);
+      setLoading(true);
       try {
         const data = await authService.setup2FA();
-        setQrCode(data.qrCode);
         setSetupSecret(data.secret);
+        setVerifyCode('');
+        setPanelMode('setup-key');
       } catch (error: any) {
-        setSetupModalVisible(false);
         Alert.alert('Error', error.response?.data?.message || 'Failed to set up 2FA');
       } finally {
-        setSetupLoading(false);
+        setLoading(false);
       }
     } else {
       setDisableCode('');
-      setDisableModalVisible(true);
+      setPanelMode('disable');
     }
   };
 
@@ -77,21 +72,21 @@ export default function PrivacySecurityScreen() {
       Alert.alert('Error', 'Please enter the 6-digit code from your authenticator app');
       return;
     }
-    setSetupLoading(true);
+    setLoading(true);
     try {
       const response = await authService.verify2FA(verifyCode.trim());
       if (response.success) {
         setTwoFactorAuth(true);
-        setSetupModalVisible(false);
+        setPanelMode(null);
         setVerifyCode('');
         Alert.alert('2FA Enabled', 'Two-factor authentication is now active on your account');
       } else {
-        Alert.alert('Invalid Code', response.message || 'Verification failed');
+        Alert.alert('Invalid Code', response.message || 'Verification failed. Check the code and try again.');
       }
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.message || 'Invalid verification code');
     } finally {
-      setSetupLoading(false);
+      setLoading(false);
     }
   };
 
@@ -100,12 +95,12 @@ export default function PrivacySecurityScreen() {
       Alert.alert('Error', 'Please enter your current 6-digit code to confirm');
       return;
     }
-    setDisableLoading(true);
+    setLoading(true);
     try {
       const response = await authService.disable2FA(disableCode.trim());
       if (response.success) {
         setTwoFactorAuth(false);
-        setDisableModalVisible(false);
+        setPanelMode(null);
         setDisableCode('');
         Alert.alert('2FA Disabled', 'Two-factor authentication has been turned off');
       } else {
@@ -114,35 +109,68 @@ export default function PrivacySecurityScreen() {
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.message || 'Invalid verification code');
     } finally {
-      setDisableLoading(false);
+      setLoading(false);
+    }
+  };
+
+  const cancelPanel = () => {
+    setPanelMode(null);
+    setVerifyCode('');
+    setDisableCode('');
+  };
+
+  // ── Download My Data ──────────────────────────────────────────────────────
+
+  const handleDownloadData = async () => {
+    setDownloadLoading(true);
+    try {
+      const response = await api.get(AUTH_ENDPOINTS.DATA_EXPORT);
+      const exportData = response.data.data;
+
+      const formatted = [
+        '=== MathMentor AI — My Data Export ===',
+        `Exported: ${new Date(exportData.exportedAt).toLocaleString()}`,
+        '',
+        '--- PROFILE ---',
+        `Name: ${exportData.profile.displayName}`,
+        `Email: ${exportData.profile.email}`,
+        `Grade Level: ${exportData.profile.gradeLevel ?? 'Not set'}`,
+        `Focus Areas: ${exportData.profile.focusAreas?.join(', ') || 'None'}`,
+        `Difficulty: ${exportData.profile.learningPreferences?.difficulty ?? 'Easy'}`,
+        `Current Streak: ${exportData.profile.currentStreak} days`,
+        `Longest Streak: ${exportData.profile.longestStreak} days`,
+        `Total Study Time: ${Math.round((exportData.profile.totalStudyTime ?? 0) / 60)} minutes`,
+        `Member Since: ${new Date(exportData.profile.memberSince).toLocaleDateString()}`,
+        `Last Active: ${new Date(exportData.profile.lastActive).toLocaleDateString()}`,
+        '',
+        '--- PROGRESS BY TOPIC ---',
+        ...exportData.progress.map((p: any) =>
+          `${p.topic} › ${p.subtopic}: ${p.masteryLevel}% mastery, ${p.correctAnswers}/${p.questionsAnswered} correct (${p.accuracy}% accuracy)`
+        ),
+        '',
+        '--- DIAGNOSTIC RESULTS ---',
+        ...exportData.diagnosticResults.map((d: any, i: number) =>
+          `[${i + 1}] ${new Date(d.completedAt).toLocaleDateString()} — Overall: ${d.overallScore}% | Algebra: ${d.algebraScore}% | Geometry: ${d.geometryScore}% | Trigonometry: ${d.trigonometryScore}%`
+        ),
+      ].join('\n');
+
+      await Share.share({
+        message: formatted,
+        title: 'My MathMentor AI Data',
+      });
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.message || 'Failed to export data. Please try again.');
+    } finally {
+      setDownloadLoading(false);
     }
   };
 
   // ── Shared components ────────────────────────────────────────────────────
 
-  const ToggleItem = ({
-    icon, title, description, value, onValueChange, iconBg, iconColor,
-  }: {
-    icon: string; title: string; description: string; value: boolean;
-    onValueChange: (v: boolean) => void; iconBg: string; iconColor: string;
-  }) => (
-    <View style={[styles.toggleItem, { borderBottomColor: PV.itemBorder }]}>
-      <View style={styles.toggleLeft}>
-        <View style={[styles.toggleIcon, { backgroundColor: iconBg }]}>
-          <Ionicons name={icon as any} size={20} color={iconColor} />
-        </View>
-        <View style={styles.toggleTextContainer}>
-          <Text style={[styles.toggleTitle, { color: PV.text }]}>{title}</Text>
-          <Text style={[styles.toggleDescription, { color: PV.textLight }]}>{description}</Text>
-        </View>
-      </View>
-      <Switch
-        value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: darkMode ? '#3a3a3a' : '#e0e3e5', true: '#b8b3ff' }}
-        thumbColor={value ? '#4b41e1' : darkMode ? '#666666' : '#f2f4f6'}
-        ios_backgroundColor={darkMode ? '#3a3a3a' : '#e0e3e5'}
-      />
+  const PolicySection = ({ title, children }: { title: string; children: string }) => (
+    <View style={styles.policySectionContainer}>
+      <Text style={[styles.policySectionTitle, { color: PV.text }]}>{title}</Text>
+      <Text style={[styles.policySectionBody, { color: PV.textLight }]}>{children}</Text>
     </View>
   );
 
@@ -177,42 +205,253 @@ export default function PrivacySecurityScreen() {
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Security Settings */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: PV.text }]}>Security Settings</Text>
-          <View style={[styles.toggleList, { backgroundColor: PV.card }]}>
-            <ToggleItem
-              icon="shield-checkmark-outline"
-              title="Two-Factor Authentication"
-              description={twoFactorAuth ? 'Your account has extra protection' : 'Add an extra layer of security'}
-              value={twoFactorAuth}
-              onValueChange={handleTwoFactorToggle}
-              iconBg="rgba(0, 164, 114, 0.1)"
-              iconColor="#00a472"
-            />
+          <View style={[styles.card, { backgroundColor: PV.card }]}>
+
+            {/* 2FA Toggle row */}
+            <View style={[styles.toggleItem, { borderBottomColor: (panelMode && panelMode !== 'policy') ? PV.itemBorder : 'transparent' }]}>
+              <View style={styles.toggleLeft}>
+                <View style={[styles.toggleIcon, { backgroundColor: 'rgba(0, 164, 114, 0.1)' }]}>
+                  <Ionicons name="shield-checkmark-outline" size={20} color="#00a472" />
+                </View>
+                <View style={styles.toggleTextContainer}>
+                  <Text style={[styles.toggleTitle, { color: PV.text }]}>Two-Factor Authentication</Text>
+                  <Text style={[styles.toggleDescription, { color: PV.textLight }]}>
+                    {twoFactorAuth ? 'Your account has extra protection' : 'Add an extra layer of security'}
+                  </Text>
+                </View>
+              </View>
+              {loading && panelMode === null ? (
+                <ActivityIndicator size="small" color="#00a472" />
+              ) : (
+                <Switch
+                  value={twoFactorAuth}
+                  onValueChange={handleTwoFactorToggle}
+                  disabled={loading}
+                  trackColor={{ false: darkMode ? '#3a3a3a' : '#e0e3e5', true: '#b8b3ff' }}
+                  thumbColor={twoFactorAuth ? '#4b41e1' : darkMode ? '#666666' : '#f2f4f6'}
+                  ios_backgroundColor={darkMode ? '#3a3a3a' : '#e0e3e5'}
+                />
+              )}
+            </View>
+
+            {/* ── Setup step 1: show key ── */}
+            {panelMode === 'setup-key' && (
+              <View style={[styles.inlinePanel, { borderTopColor: PV.itemBorder }]}>
+                <Text style={[styles.panelTitle, { color: PV.text }]}>Set Up 2FA</Text>
+                <Text style={[styles.panelSubtitle, { color: PV.textLight }]}>
+                  Copy the key below, then open Google Authenticator and add it manually.
+                </Text>
+
+                <View style={[styles.secretBox, { backgroundColor: PV.input, borderColor: PV.inputBorder }]}>
+                  <Text style={[styles.secretLabel, { color: PV.textLight }]}>Your setup key</Text>
+                  <Text style={[styles.secretText, { color: PV.text }]}>
+                    {setupSecret.match(/.{1,4}/g)?.join(' ') ?? setupSecret}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.copyButton}
+                    onPress={() => Share.share({ message: setupSecret })}
+                  >
+                    <Ionicons name="share-outline" size={15} color="#4b41e1" />
+                    <Text style={styles.copyButtonText}>Share / Copy key</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={[styles.stepsBox, { backgroundColor: PV.panelBg, borderColor: PV.panelBorder }]}>
+                  <Text style={[styles.stepsTitle, { color: PV.text }]}>How to add in Google Authenticator:</Text>
+                  <Text style={[styles.stepsText, { color: PV.textLight }]}>1. Open Google Authenticator</Text>
+                  <Text style={[styles.stepsText, { color: PV.textLight }]}>2. Tap <Text style={{ fontWeight: '700', color: PV.text }}>+</Text> → <Text style={{ fontWeight: '700', color: PV.text }}>Enter a setup key</Text></Text>
+                  <Text style={[styles.stepsText, { color: PV.textLight }]}>3. <Text style={{ fontWeight: '700', color: PV.text }}>Code name:</Text> MathMentor AI (or anything)</Text>
+                  <Text style={[styles.stepsText, { color: PV.textLight }]}>4. <Text style={{ fontWeight: '700', color: PV.text }}>Your key:</Text> paste the key above</Text>
+                  <Text style={[styles.stepsText, { color: PV.textLight }]}>5. <Text style={{ fontWeight: '700', color: PV.text }}>Type of key:</Text> Time based</Text>
+                  <Text style={[styles.stepsText, { color: PV.textLight }]}>6. Tap <Text style={{ fontWeight: '700', color: PV.text }}>Add</Text></Text>
+                </View>
+
+                <TouchableOpacity style={styles.primaryButton} onPress={() => setPanelMode('setup-verify')}>
+                  <Text style={styles.primaryButtonText}>I've added it — Next</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.ghostButton} onPress={cancelPanel}>
+                  <Text style={[styles.ghostButtonText, { color: PV.textLight }]}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* ── Setup step 2: verify code ── */}
+            {panelMode === 'setup-verify' && (
+              <View style={[styles.inlinePanel, { borderTopColor: PV.itemBorder }]}>
+                <View style={styles.panelIconRow}>
+                  <Ionicons name="keypad-outline" size={28} color="#4b41e1" />
+                </View>
+                <Text style={[styles.panelTitle, { color: PV.text }]}>Enter Verification Code</Text>
+                <Text style={[styles.panelSubtitle, { color: PV.textLight }]}>
+                  Open Google Authenticator and enter the 6-digit code shown for MathMentor AI
+                </Text>
+
+                <TextInput
+                  style={[styles.codeInput, { backgroundColor: PV.input, borderColor: PV.inputBorder, color: PV.text }]}
+                  value={verifyCode}
+                  onChangeText={setVerifyCode}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  placeholder="000000"
+                  placeholderTextColor={PV.textLight}
+                  textAlign="center"
+                />
+
+                <TouchableOpacity
+                  style={[styles.primaryButton, loading && styles.buttonDisabled]}
+                  onPress={handleVerify2FA}
+                  disabled={loading}
+                >
+                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Enable 2FA</Text>}
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.ghostButton} onPress={() => setPanelMode('setup-key')}>
+                  <Text style={[styles.ghostButtonText, { color: PV.textLight }]}>Back</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* ── Disable: confirm with code ── */}
+            {panelMode === 'disable' && (
+              <View style={[styles.inlinePanel, { borderTopColor: PV.itemBorder }]}>
+                <View style={styles.panelIconRow}>
+                  <Ionicons name="shield-outline" size={28} color="#ba1a1a" />
+                </View>
+                <Text style={[styles.panelTitle, { color: PV.text }]}>Disable 2FA</Text>
+                <Text style={[styles.panelSubtitle, { color: PV.textLight }]}>
+                  Enter your current 6-digit authenticator code to confirm
+                </Text>
+
+                <TextInput
+                  style={[styles.codeInput, { backgroundColor: PV.input, borderColor: PV.inputBorder, color: PV.text }]}
+                  value={disableCode}
+                  onChangeText={setDisableCode}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  placeholder="000000"
+                  placeholderTextColor={PV.textLight}
+                  textAlign="center"
+                />
+
+                <TouchableOpacity
+                  style={[styles.destructiveButton, loading && styles.buttonDisabled]}
+                  onPress={handleDisable2FA}
+                  disabled={loading}
+                >
+                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Disable 2FA</Text>}
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.ghostButton} onPress={cancelPanel}>
+                  <Text style={[styles.ghostButtonText, { color: PV.textLight }]}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
           </View>
         </View>
 
         {/* Data Management */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: PV.text }]}>Data Management</Text>
-          <View style={[styles.menuList, { backgroundColor: PV.card }]}>
-            <MenuItem icon="download-outline" title="Download My Data" description="Get a copy of your data"
-              onPress={() => Alert.alert('Download Data', 'Your data will be prepared and sent to your email within 24 hours.')}
-              iconBg="rgba(75, 65, 225, 0.1)" iconColor="#4b41e1" />
-            <MenuItem icon="document-text-outline" title="Data Usage Policy" description="How we use your information"
-              onPress={() => Alert.alert('Data Policy', 'View our data usage policy in the help center.')}
-              iconBg="rgba(33, 150, 243, 0.1)" iconColor="#2196f3" />
-            <MenuItem icon="trash-outline" title="Delete My Data" description="Permanently remove your data"
+          <View style={[styles.card, { backgroundColor: PV.card }]}>
+
+            {/* Download My Data */}
+            <TouchableOpacity
+              style={[styles.menuItem, { borderBottomColor: PV.itemBorder }]}
+              onPress={handleDownloadData}
+              disabled={downloadLoading}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.menuIcon, { backgroundColor: 'rgba(75, 65, 225, 0.1)' }]}>
+                  {downloadLoading
+                    ? <ActivityIndicator size="small" color="#4b41e1" />
+                    : <Ionicons name="download-outline" size={20} color="#4b41e1" />}
+                </View>
+                <View style={styles.menuTextContainer}>
+                  <Text style={[styles.menuTitle, { color: PV.text }]}>Download My Data</Text>
+                  <Text style={[styles.menuDescription, { color: PV.textLight }]}>
+                    {downloadLoading ? 'Preparing your data...' : 'Get a copy of your learning data'}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={PV.chevron} />
+            </TouchableOpacity>
+
+            {/* Data Usage Policy — toggles inline panel */}
+            <TouchableOpacity
+              style={[styles.menuItem, { borderBottomColor: PV.itemBorder }]}
+              onPress={() => setPanelMode(panelMode === 'policy' ? null : 'policy')}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.menuIcon, { backgroundColor: 'rgba(33, 150, 243, 0.1)' }]}>
+                  <Ionicons name="document-text-outline" size={20} color="#2196f3" />
+                </View>
+                <View style={styles.menuTextContainer}>
+                  <Text style={[styles.menuTitle, { color: PV.text }]}>Data Usage Policy</Text>
+                  <Text style={[styles.menuDescription, { color: PV.textLight }]}>How we use your information</Text>
+                </View>
+              </View>
+              <Ionicons
+                name={panelMode === 'policy' ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={PV.chevron}
+              />
+            </TouchableOpacity>
+
+            {/* Inline policy panel */}
+            {panelMode === 'policy' && (
+              <View style={[styles.policyPanel, { borderTopColor: PV.itemBorder, backgroundColor: PV.panelBg }]}>
+                <PolicySection title="What data we collect">
+                  {`• Account info: your name, email address, and grade level\n• Learning data: quiz answers, mastery levels, and progress per topic\n• Diagnostic results: scores and recommended learning paths\n• Usage data: session times and streak activity`}
+                </PolicySection>
+                <PolicySection title="How we use it">
+                  {`• To personalise your learning path and topic recommendations\n• To track your progress and show your statistics\n• To improve the accuracy of the AI tutor responses\n• We do not sell your data to third parties`}
+                </PolicySection>
+                <PolicySection title="Data storage">
+                  {`• Your data is stored securely on our servers hosted on Render\n• Passwords are hashed using bcrypt and never stored in plain text\n• Two-factor authentication secrets are encrypted at rest`}
+                </PolicySection>
+                <PolicySection title="Your rights">
+                  {`• You can download a copy of your data at any time using "Download My Data"\n• You can request permanent deletion using "Delete My Data"\n• You can update your profile information in Edit Profile`}
+                </PolicySection>
+                <Text style={[styles.policyFooter, { color: PV.textLight }]}>
+                  Last updated: January 2025 · MathMentor AI
+                </Text>
+              </View>
+            )}
+
+            {/* Delete My Data */}
+            <TouchableOpacity
+              style={[styles.menuItem, { borderBottomColor: 'transparent' }]}
               onPress={() => {
-                Alert.alert('Delete Data', 'This will permanently delete all your learning data. This action cannot be undone.', [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Delete', style: 'destructive', onPress: () => {} },
-                ]);
+                Alert.alert(
+                  'Delete My Data',
+                  'This will permanently delete all your learning progress, diagnostic results, and account data. This cannot be undone.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Delete Everything', style: 'destructive', onPress: () => {} },
+                  ]
+                );
               }}
-              iconBg="rgba(186, 26, 26, 0.1)" iconColor="#ba1a1a" />
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.menuIcon, { backgroundColor: 'rgba(186, 26, 26, 0.1)' }]}>
+                  <Ionicons name="trash-outline" size={20} color="#ba1a1a" />
+                </View>
+                <View style={styles.menuTextContainer}>
+                  <Text style={[styles.menuTitle, { color: '#ba1a1a' }]}>Delete My Data</Text>
+                  <Text style={[styles.menuDescription, { color: PV.textLight }]}>Permanently remove all your data</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={PV.chevron} />
+            </TouchableOpacity>
+
           </View>
         </View>
 
@@ -236,9 +475,7 @@ export default function PrivacySecurityScreen() {
 
         {/* Security status card */}
         <View style={[styles.securityCard, { backgroundColor: PV.card }]}>
-          <View style={styles.securityIconContainer}>
-            <Ionicons name="shield-checkmark" size={48} color={twoFactorAuth ? '#00a472' : '#4b41e1'} />
-          </View>
+          <Ionicons name="shield-checkmark" size={48} color={twoFactorAuth ? '#00a472' : '#4b41e1'} style={{ marginBottom: 16 }} />
           <Text style={[styles.securityTitle, { color: PV.text }]}>
             {twoFactorAuth ? 'Strong Protection Active' : 'Your Account is Secure'}
           </Text>
@@ -249,128 +486,8 @@ export default function PrivacySecurityScreen() {
           </Text>
         </View>
 
-        <View style={{ height: 20 }} />
+        <View style={{ height: 40 }} />
       </ScrollView>
-
-      {/* ── 2FA Setup Modal ─────────────────────────────────────────────────── */}
-      <Modal visible={setupModalVisible} transparent animationType="slide"
-        onRequestClose={() => { setSetupModalVisible(false); setVerifyCode(''); }}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: PV.card }]}>
-
-            {setupLoading && setupStep === 'qr' ? (
-              <View style={styles.modalLoadingContainer}>
-                <ActivityIndicator size="large" color="#4b41e1" />
-                <Text style={[styles.modalSubtitle, { color: PV.textLight, marginTop: 16 }]}>
-                  Generating your QR code...
-                </Text>
-              </View>
-            ) : setupStep === 'qr' ? (
-              <>
-                <View style={styles.modalIconContainer}>
-                  <Ionicons name="shield-checkmark" size={36} color="#4b41e1" />
-                </View>
-                <Text style={[styles.modalTitle, { color: PV.text }]}>Set Up 2FA</Text>
-                <Text style={[styles.modalSubtitle, { color: PV.textLight }]}>
-                  Scan this QR code with Google Authenticator or Authy
-                </Text>
-
-                {qrCode ? (
-                  <Image source={{ uri: qrCode }} style={styles.qrCode} resizeMode="contain" />
-                ) : null}
-
-                <View style={[styles.secretBox, { backgroundColor: PV.input, borderColor: PV.inputBorder }]}>
-                  <Text style={[styles.secretLabel, { color: PV.textLight }]}>Manual entry key</Text>
-                  <Text style={[styles.secretText, { color: PV.text }]} selectable>{setupSecret}</Text>
-                </View>
-
-                <TouchableOpacity style={styles.primaryButton} onPress={() => setSetupStep('verify')}>
-                  <Text style={styles.primaryButtonText}>I've scanned the code</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.ghostButton} onPress={() => { setSetupModalVisible(false); setVerifyCode(''); }}>
-                  <Text style={[styles.ghostButtonText, { color: PV.textLight }]}>Cancel</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <View style={styles.modalIconContainer}>
-                  <Ionicons name="keypad-outline" size={36} color="#4b41e1" />
-                </View>
-                <Text style={[styles.modalTitle, { color: PV.text }]}>Enter Verification Code</Text>
-                <Text style={[styles.modalSubtitle, { color: PV.textLight }]}>
-                  Enter the 6-digit code from your authenticator app to confirm setup
-                </Text>
-
-                <TextInput
-                  style={[styles.codeInput, { backgroundColor: PV.input, borderColor: PV.inputBorder, color: PV.text }]}
-                  value={verifyCode}
-                  onChangeText={setVerifyCode}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  placeholder="000000"
-                  placeholderTextColor={PV.textLight}
-                  textAlign="center"
-                  autoFocus
-                />
-
-                <TouchableOpacity
-                  style={[styles.primaryButton, setupLoading && styles.buttonDisabled]}
-                  onPress={handleVerify2FA}
-                  disabled={setupLoading}
-                >
-                  {setupLoading
-                    ? <ActivityIndicator color="#fff" />
-                    : <Text style={styles.primaryButtonText}>Enable 2FA</Text>}
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.ghostButton} onPress={() => setSetupStep('qr')}>
-                  <Text style={[styles.ghostButtonText, { color: PV.textLight }]}>Back</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
-
-      {/* ── 2FA Disable Modal ────────────────────────────────────────────────── */}
-      <Modal visible={disableModalVisible} transparent animationType="slide"
-        onRequestClose={() => { setDisableModalVisible(false); setDisableCode(''); }}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: PV.card }]}>
-            <View style={[styles.modalIconContainer, { backgroundColor: 'rgba(186, 26, 26, 0.1)' }]}>
-              <Ionicons name="shield-outline" size={36} color="#ba1a1a" />
-            </View>
-            <Text style={[styles.modalTitle, { color: PV.text }]}>Disable 2FA</Text>
-            <Text style={[styles.modalSubtitle, { color: PV.textLight }]}>
-              Enter your current authenticator code to confirm
-            </Text>
-
-            <TextInput
-              style={[styles.codeInput, { backgroundColor: PV.input, borderColor: PV.inputBorder, color: PV.text }]}
-              value={disableCode}
-              onChangeText={setDisableCode}
-              keyboardType="number-pad"
-              maxLength={6}
-              placeholder="000000"
-              placeholderTextColor={PV.textLight}
-              textAlign="center"
-              autoFocus
-            />
-
-            <TouchableOpacity
-              style={[styles.destructiveButton, disableLoading && styles.buttonDisabled]}
-              onPress={handleDisable2FA}
-              disabled={disableLoading}
-            >
-              {disableLoading
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={styles.primaryButtonText}>Disable 2FA</Text>}
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.ghostButton} onPress={() => { setDisableModalVisible(false); setDisableCode(''); }}>
-              <Text style={[styles.ghostButtonText, { color: PV.textLight }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -388,7 +505,7 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 24, paddingBottom: 40 },
   section: { marginBottom: 32 },
   sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 12 },
-  toggleList: {
+  card: {
     borderRadius: 20, overflow: 'hidden',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04, shadowRadius: 12, elevation: 2,
@@ -402,6 +519,44 @@ const styles = StyleSheet.create({
   toggleTextContainer: { flex: 1 },
   toggleTitle: { fontSize: 16, fontWeight: '500', marginBottom: 2 },
   toggleDescription: { fontSize: 12 },
+
+  // Inline panel (expands inside the card)
+  inlinePanel: { padding: 20, borderTopWidth: 1 },
+  panelIconRow: { alignItems: 'center', marginBottom: 12 },
+  panelTitle: { fontSize: 18, fontWeight: '700', marginBottom: 6, textAlign: 'center' },
+  panelSubtitle: { fontSize: 13, lineHeight: 20, textAlign: 'center', marginBottom: 20 },
+
+  secretBox: { borderRadius: 12, borderWidth: 1, padding: 16, marginBottom: 16, alignItems: 'center' },
+  secretLabel: { fontSize: 11, marginBottom: 8 },
+  secretText: { fontSize: 16, fontWeight: '700', letterSpacing: 3, textAlign: 'center', marginBottom: 12 },
+  copyButton: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 14, paddingVertical: 7,
+    backgroundColor: 'rgba(75, 65, 225, 0.1)', borderRadius: 20,
+  },
+  copyButtonText: { fontSize: 13, fontWeight: '600', color: '#4b41e1' },
+
+  stepsBox: { borderRadius: 12, borderWidth: 1, padding: 14, marginBottom: 20 },
+  stepsTitle: { fontSize: 13, fontWeight: '700', marginBottom: 8 },
+  stepsText: { fontSize: 13, lineHeight: 22 },
+
+  codeInput: {
+    width: '100%', height: 64, borderRadius: 16, borderWidth: 1,
+    fontSize: 28, fontWeight: '700', letterSpacing: 10, marginBottom: 16,
+  },
+  primaryButton: {
+    width: '100%', height: 52, backgroundColor: '#4b41e1',
+    borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 10,
+  },
+  primaryButtonText: { fontSize: 16, fontWeight: '600', color: '#ffffff' },
+  destructiveButton: {
+    width: '100%', height: 52, backgroundColor: '#ba1a1a',
+    borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 10,
+  },
+  ghostButton: { alignItems: 'center', paddingVertical: 10 },
+  ghostButtonText: { fontSize: 15 },
+  buttonDisabled: { opacity: 0.6 },
+
   menuList: {
     borderRadius: 20, overflow: 'hidden',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
@@ -416,42 +571,19 @@ const styles = StyleSheet.create({
   menuTextContainer: { flex: 1 },
   menuTitle: { fontSize: 16, fontWeight: '500', marginBottom: 2 },
   menuDescription: { fontSize: 12 },
+
   securityCard: {
     padding: 24, borderRadius: 20, alignItems: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04, shadowRadius: 12, elevation: 2,
   },
-  securityIconContainer: { marginBottom: 16 },
   securityTitle: { fontSize: 20, fontWeight: '700', marginBottom: 8 },
   securityDescription: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 32, alignItems: 'center', paddingBottom: 48 },
-  modalLoadingContainer: { paddingVertical: 40, alignItems: 'center' },
-  modalIconContainer: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: 'rgba(75, 65, 225, 0.1)',
-    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
-  },
-  modalTitle: { fontSize: 22, fontWeight: '700', marginBottom: 8 },
-  modalSubtitle: { fontSize: 14, textAlign: 'center', marginBottom: 24, lineHeight: 20 },
-  qrCode: { width: 200, height: 200, marginBottom: 20 },
-  secretBox: { width: '100%', padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 24, alignItems: 'center' },
-  secretLabel: { fontSize: 11, marginBottom: 4 },
-  secretText: { fontSize: 13, fontWeight: '600', letterSpacing: 1 },
-  codeInput: {
-    width: '100%', height: 64, borderRadius: 16, borderWidth: 1,
-    fontSize: 32, fontWeight: '700', letterSpacing: 12, marginBottom: 24,
-  },
-  primaryButton: {
-    width: '100%', height: 56, backgroundColor: '#4b41e1',
-    borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 12,
-  },
-  primaryButtonText: { fontSize: 17, fontWeight: '600', color: '#ffffff' },
-  destructiveButton: {
-    width: '100%', height: 56, backgroundColor: '#ba1a1a',
-    borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 12,
-  },
-  ghostButton: { paddingVertical: 12 },
-  ghostButtonText: { fontSize: 16 },
-  buttonDisabled: { opacity: 0.6 },
+
+  // Policy panel
+  policyPanel: { padding: 20, borderTopWidth: 1 },
+  policySectionContainer: { marginBottom: 16 },
+  policySectionTitle: { fontSize: 13, fontWeight: '700', marginBottom: 6 },
+  policySectionBody: { fontSize: 13, lineHeight: 22 },
+  policyFooter: { fontSize: 11, textAlign: 'center', marginTop: 8 },
 });
