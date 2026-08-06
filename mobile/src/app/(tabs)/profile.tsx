@@ -1,27 +1,130 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, Alert, Linking, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
-import { Colors } from '@/constants/colors';
 import Loading from '@/components/common/Loading';
 import { dashboardService } from '@/services/dashboardService';
+import { useTheme } from '@/context/ThemeContext';
+
+const lightColors = {
+  background: '#f7f9fb',
+  card: '#ffffff',
+  text: '#091426',
+  textLight: '#45474c',
+  textDark: '#091426',
+  primary: '#4b41e1',
+  primaryBg: 'rgba(75, 65, 225, 0.1)',
+  success: '#00a472',
+  successBg: 'rgba(0, 164, 114, 0.1)',
+  purpleBg: 'rgba(216, 227, 251, 1)',
+  greenBg: 'rgba(78, 222, 163, 0.2)',
+  border: '#e0e3e5',
+  borderLight: '#f2f4f6',
+  outline: '#75777d',
+  logoutBg: '#ffffff',
+  logoutBorder: '#ffdad6',
+  logoutText: '#ba1a1a',
+  versionText: '#75777d',
+  headerBg: '#ffffff',
+  headerTitle: '#091426',
+  statIconPurple: '#4b41e1',
+  statIconGreen: '#00a472',
+  statIconDark: '#091426',
+  toggleBg: '#e0e3e5',
+  toggleActiveBg: '#4b41e1',
+  toggleThumb: '#ffffff',
+  avatarBg: '#4b41e1',
+  avatarBorder: '#e2dfff',
+  avatarBadge: '#ffffff',
+  modalOverlay: 'rgba(0, 0, 0, 0.5)',
+  modalContent: '#ffffff',
+  focusChipBg: '#e2dfff',
+  goalChipBg: '#e2dfff',
+  goalChipBorder: '#4b41e1',
+  goalChipInactiveBg: '#f2f4f6',
+  goalChipInactiveBorder: '#e0e3e5',
+  difficultyBg: '#e2dfff',
+  difficultyText: '#4b41e1',
+  modalButtonBg: '#4b41e1',
+  modalButtonText: '#ffffff',
+  statBoxBg: '#ffffff',
+  statValue: '#091426',
+  statLabel: '#45474c',
+  menuItemText: '#091426',
+  chevronColor: '#75777d',
+  menuIconBg: 'rgba(75, 65, 225, 0.1)',
+  menuIconPurpleBg: 'rgba(216, 227, 251, 1)',
+  menuIconGreenBg: 'rgba(0, 164, 114, 0.1)',
+  menuIconDarkBg: 'rgba(216, 227, 251, 1)',
+};
+
+const darkColors = {
+  background: '#0a0a0a',
+  card: '#1a1a1a',
+  text: '#f0f0f0',
+  textLight: '#a0a0a0',
+  textDark: '#f0f0f0',
+  primary: '#a5b4fc',
+  primaryBg: 'rgba(165, 180, 252, 0.15)',
+  success: '#34d399',
+  successBg: 'rgba(52, 211, 153, 0.15)',
+  purpleBg: 'rgba(165, 180, 252, 0.2)',
+  greenBg: 'rgba(52, 211, 153, 0.15)',
+  border: '#2e2e2e',
+  borderLight: '#1a1a1a',
+  outline: '#555555',
+  logoutBg: '#1a1a1a',
+  logoutBorder: '#7f1d1d',
+  logoutText: '#f87171',
+  versionText: '#666666',
+  headerBg: '#0a0a0a',
+  headerTitle: '#f0f0f0',
+  statIconPurple: '#a5b4fc',
+  statIconGreen: '#34d399',
+  statIconDark: '#f0f0f0',
+  toggleBg: '#3a3a3a',
+  toggleActiveBg: '#a5b4fc',
+  toggleThumb: '#f0f0f0',
+  avatarBg: '#4b41e1',
+  avatarBorder: '#312e81',
+  avatarBadge: '#1a1a1a',
+  modalOverlay: 'rgba(0, 0, 0, 0.7)',
+  modalContent: '#1a1a1a',
+  focusChipBg: '#312e81',
+  goalChipBg: '#312e81',
+  goalChipBorder: '#a5b4fc',
+  goalChipInactiveBg: '#242424',
+  goalChipInactiveBorder: '#3a3a3a',
+  difficultyBg: '#312e81',
+  difficultyText: '#a5b4fc',
+  modalButtonBg: '#4b41e1',
+  modalButtonText: '#ffffff',
+  statBoxBg: '#1a1a1a',
+  statValue: '#f0f0f0',
+  statLabel: '#a0a0a0',
+  menuItemText: '#f0f0f0',
+  chevronColor: '#888888',
+  menuIconBg: 'rgba(165, 180, 252, 0.15)',
+  menuIconPurpleBg: 'rgba(165, 180, 252, 0.2)',
+  menuIconGreenBg: 'rgba(52, 211, 153, 0.15)',
+  menuIconDarkBg: 'rgba(165, 180, 252, 0.2)',
+};
 
 export default function ProfileScreen() {
   const { user, logout, loading } = useAuth();
   const router = useRouter();
+  const { darkMode, toggleDarkMode } = useTheme();
+  const C = darkMode ? darkColors : lightColors;
+
   const [isReady, setIsReady] = useState(false);
   const [stats, setStats] = useState({
-    currentStreak: 0,
-    longestStreak: 0,
-    totalStudyTime: 0,
     totalQuestions: 0,
     totalCorrect: 0,
+    totalTopics: 0,
+    accuracy: 0,
   });
   const [loadingStats, setLoadingStats] = useState(true);
-  const [showGoalsModal, setShowGoalsModal] = useState(false);
-  const [showDifficultyModal, setShowDifficultyModal] = useState(false);
-  const [selectedDifficulty, setSelectedDifficulty] = useState('Medium');
 
   useEffect(() => {
     if (!loading) {
@@ -38,11 +141,12 @@ export default function ProfileScreen() {
     try {
       const data = await dashboardService.getDashboardData();
       setStats({
-        currentStreak: data.user.currentStreak,
-        longestStreak: data.user.longestStreak,
-        totalStudyTime: data.user.totalStudyTime,
         totalQuestions: data.overallProgress.totalQuestions,
         totalCorrect: data.overallProgress.totalCorrect,
+        totalTopics: data.overallProgress.totalTopics,
+        accuracy: data.overallProgress.totalQuestions > 0
+          ? Math.round((data.overallProgress.totalCorrect / data.overallProgress.totalQuestions) * 100)
+          : 0,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -70,138 +174,74 @@ export default function ProfileScreen() {
   };
 
   const handleSettings = () => {
-    router.push('/profile/settings');
+    // No settings screen — the header icon is removed below
   };
 
   const handleEditProfile = () => {
     router.push('/profile/edit-profile');
   };
 
-  const handleNotifications = () => {
-    router.push('/profile/notifications');
-  };
-
   const handlePrivacySecurity = () => {
     router.push('/profile/privacy');
   };
 
-  const handleLearningGoals = () => {
-    setShowGoalsModal(true);
-  };
-
-  const handleDifficultyLevel = () => {
-    setShowDifficultyModal(true);
-  };
-
   const handleHelpCenter = () => {
-    router.push('/profile/help');
-  };
-
-  const handleContactUs = () => {
     Alert.alert(
-      'Contact Us',
-      'How would you like to contact us?',
-      [
-        {
-          text: 'Email',
-          onPress: () => {
-            Linking.openURL('mailto:support@mathmentor.ai?subject=Support Request')
-              .catch(() => Alert.alert('Error', 'Unable to open email app'));
-          },
-        },
-        {
-          text: 'Phone',
-          onPress: () => Alert.alert('Phone Support', 'Call us at: +1 (555) 123-4567'),
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
+      'Help Center',
+      'For help and support, please contact us at:\nsupport@mathmentor.ai\n\nWe typically respond within 24 hours.',
+      [{ text: 'OK' }]
     );
   };
 
   const handleAbout = () => {
     Alert.alert(
       'About MathMentor AI',
-      'Version 1.0.0\n\n' +
-      'MathMentor AI is your personalized mathematics learning companion. ' +
-      'We use advanced AI to help you master mathematics at your own pace.\n\n' +
-      '\u00A9 2024 MathMentor AI. All rights reserved.',
+      'Version 1.0.0\n\nMathMentor AI is your personalised mathematics learning companion. We use advanced AI to help you master mathematics at your own pace.\n\n\u00A9 2025 MathMentor AI. All rights reserved.',
       [{ text: 'OK' }]
     );
   };
 
-  const handleSaveGoals = (goals: string[]) => {
-    // TODO: Save to backend
-    Alert.alert('Success', 'Learning goals updated!');
-    setShowGoalsModal(false);
-  };
-
-  const handleSaveDifficulty = (difficulty: string) => {
-    setSelectedDifficulty(difficulty);
-    // TODO: Save to backend
-    Alert.alert('Success', `Difficulty level set to ${difficulty}!`);
-    setShowDifficultyModal(false);
-  };
-
-  const formatStudyTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
+  const handleDarkModeToggle = () => {
+    toggleDarkMode();
   };
 
   if (loading || !isReady || !user) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: C.background }]}>
         <Loading />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f7f9fb" />
-      
+    <View style={[styles.container, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={C.background} />
+
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity style={styles.settingsButton} onPress={handleSettings}>
-          <Ionicons name="settings-outline" size={24} color="#091426" />
-        </TouchableOpacity>
+      <View style={[styles.header, { backgroundColor: C.headerBg, borderBottomColor: C.border }]}>
+        <Text style={[styles.headerTitle, { color: C.headerTitle }]}>Profile</Text>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Card */}
-        <View style={styles.profileCard}>
+        <View style={[styles.profileCard, { backgroundColor: C.card }]}>
           <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
+            <View style={[styles.avatar, { backgroundColor: C.avatarBg, borderColor: C.avatarBorder }]}>
               <Text style={styles.avatarText}>
                 {user.displayName.charAt(0).toUpperCase()}
               </Text>
             </View>
-            <View style={styles.avatarBadge}>
-              <Ionicons name="checkmark-circle" size={24} color="#00a472" />
+            <View style={[styles.avatarBadge, { backgroundColor: C.avatarBadge }]}>
+              <Ionicons name="checkmark-circle" size={24} color={C.success} />
             </View>
           </View>
-          
-          <Text style={styles.displayName}>{user.displayName}</Text>
-          <Text style={styles.email}>{user.email}</Text>
-          
-          {user.focusAreas && user.focusAreas.length > 0 && (
-            <View style={styles.focusAreasContainer}>
-              {user.focusAreas.map((area, index) => (
-                <View key={index} style={styles.focusChip}>
-                  <Ionicons name="bookmark" size={14} color="#4b41e1" />
-                  <Text style={styles.focusChipText}>{area}</Text>
-                </View>
-              ))}
-            </View>
-          )}
+
+          <Text style={[styles.displayName, { color: C.textDark }]}>{user.displayName}</Text>
+          <Text style={[styles.email, { color: C.textLight }]}>{user.email}</Text>
         </View>
 
         {/* Stats Grid */}
@@ -211,38 +251,38 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View style={styles.statsSection}>
-            <Text style={styles.sectionTitle}>Your Statistics</Text>
+            <Text style={[styles.sectionTitle, { color: C.textDark }]}>Your Statistics</Text>
             <View style={styles.statsGrid}>
-              <View style={styles.statBox}>
-                <View style={[styles.statIconContainer, { backgroundColor: 'rgba(75, 65, 225, 0.1)' }]}>
-                  <Ionicons name="flame" size={24} color="#4b41e1" />
+              <View style={[styles.statBox, { backgroundColor: C.statBoxBg }]}>
+                <View style={[styles.statIconContainer, { backgroundColor: C.primaryBg }]}>
+                  <Ionicons name="help-circle-outline" size={24} color={C.statIconPurple} />
                 </View>
-                <Text style={styles.statValue}>{stats.currentStreak}</Text>
-                <Text style={styles.statLabel}>Day Streak</Text>
+                <Text style={[styles.statValue, { color: C.statValue }]}>{stats.totalQuestions}</Text>
+                <Text style={[styles.statLabel, { color: C.statLabel }]}>Questions</Text>
               </View>
 
-              <View style={styles.statBox}>
-                <View style={[styles.statIconContainer, { backgroundColor: 'rgba(0, 164, 114, 0.1)' }]}>
-                  <Ionicons name="trophy" size={24} color="#00a472" />
+              <View style={[styles.statBox, { backgroundColor: C.statBoxBg }]}>
+                <View style={[styles.statIconContainer, { backgroundColor: C.successBg }]}>
+                  <Ionicons name="pie-chart-outline" size={24} color={C.statIconGreen} />
                 </View>
-                <Text style={styles.statValue}>{stats.longestStreak}</Text>
-                <Text style={styles.statLabel}>Best Streak</Text>
+                <Text style={[styles.statValue, { color: C.statValue }]}>{stats.accuracy}%</Text>
+                <Text style={[styles.statLabel, { color: C.statLabel }]}>Accuracy</Text>
               </View>
 
-              <View style={styles.statBox}>
-                <View style={[styles.statIconContainer, { backgroundColor: 'rgba(216, 227, 251, 1)' }]}>
-                  <Ionicons name="time" size={24} color="#091426" />
+              <View style={[styles.statBox, { backgroundColor: C.statBoxBg }]}>
+                <View style={[styles.statIconContainer, { backgroundColor: C.purpleBg }]}>
+                  <Ionicons name="book-outline" size={24} color={C.statIconDark} />
                 </View>
-                <Text style={styles.statValue}>{formatStudyTime(stats.totalStudyTime)}</Text>
-                <Text style={styles.statLabel}>Study Time</Text>
+                <Text style={[styles.statValue, { color: C.statValue }]}>{stats.totalTopics}</Text>
+                <Text style={[styles.statLabel, { color: C.statLabel }]}>Topics</Text>
               </View>
 
-              <View style={styles.statBox}>
-                <View style={[styles.statIconContainer, { backgroundColor: 'rgba(78, 222, 163, 0.2)' }]}>
-                  <Ionicons name="checkmark-done" size={24} color="#00a472" />
+              <View style={[styles.statBox, { backgroundColor: C.statBoxBg }]}>
+                <View style={[styles.statIconContainer, { backgroundColor: C.greenBg }]}>
+                  <Ionicons name="checkmark-done" size={24} color={C.statIconGreen} />
                 </View>
-                <Text style={styles.statValue}>{stats.totalCorrect}</Text>
-                <Text style={styles.statLabel}>Solved</Text>
+                <Text style={[styles.statValue, { color: C.statValue }]}>{stats.totalCorrect}</Text>
+                <Text style={[styles.statLabel, { color: C.statLabel }]}>Correct</Text>
               </View>
             </View>
           </View>
@@ -250,63 +290,43 @@ export default function ProfileScreen() {
 
         {/* Account Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <View style={styles.menuList}>
-            <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}>
+          <Text style={[styles.sectionTitle, { color: C.textDark }]}>Account</Text>
+          <View style={[styles.menuList, { backgroundColor: C.card }]}>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: darkMode ? 0 : 1, borderBottomColor: C.borderLight }]} onPress={handleEditProfile}>
               <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: 'rgba(75, 65, 225, 0.1)' }]}>
-                  <Ionicons name="person-outline" size={20} color="#4b41e1" />
+                <View style={[styles.menuIcon, { backgroundColor: C.primaryBg }]}>
+                  <Ionicons name="person-outline" size={20} color={C.primary} />
                 </View>
-                <Text style={styles.menuItemText}>Edit Profile</Text>
+                <Text style={[styles.menuItemText, { color: C.menuItemText }]}>Edit Profile</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#75777d" />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem} onPress={handleNotifications}>
-              <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: 'rgba(0, 164, 114, 0.1)' }]}>
-                  <Ionicons name="notifications-outline" size={20} color="#00a472" />
-                </View>
-                <Text style={styles.menuItemText}>Notifications</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#75777d" />
+              <Ionicons name="chevron-forward" size={20} color={C.chevronColor} />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.menuItem} onPress={handlePrivacySecurity}>
               <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: 'rgba(216, 227, 251, 1)' }]}>
-                  <Ionicons name="lock-closed-outline" size={20} color="#091426" />
+                <View style={[styles.menuIcon, { backgroundColor: C.purpleBg }]}>
+                  <Ionicons name="lock-closed-outline" size={20} color={C.textDark} />
                 </View>
-                <Text style={styles.menuItemText}>Privacy & Security</Text>
+                <Text style={[styles.menuItemText, { color: C.menuItemText }]}>Privacy & Security</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#75777d" />
+              <Ionicons name="chevron-forward" size={20} color={C.chevronColor} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Preferences Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
-          <View style={styles.menuList}>
-            <TouchableOpacity style={styles.menuItem} onPress={handleLearningGoals}>
+          <Text style={[styles.sectionTitle, { color: C.textDark }]}>Preferences</Text>
+          <View style={[styles.menuList, { backgroundColor: C.card }]}>
+            <TouchableOpacity style={styles.menuItem} onPress={handleDarkModeToggle}>
               <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: 'rgba(75, 65, 225, 0.1)' }]}>
-                  <Ionicons name="school-outline" size={20} color="#4b41e1" />
+                <View style={[styles.menuIcon, { backgroundColor: C.primaryBg }]}>
+                  <Ionicons name={darkMode ? 'moon' : 'sunny'} size={20} color={C.primary} />
                 </View>
-                <Text style={styles.menuItemText}>Learning Goals</Text>
+                <Text style={[styles.menuItemText, { color: C.menuItemText }]}>{darkMode ? 'Dark Mode' : 'Light Mode'}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#75777d" />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem} onPress={handleDifficultyLevel}>
-              <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: 'rgba(0, 164, 114, 0.1)' }]}>
-                  <Ionicons name="speedometer-outline" size={20} color="#00a472" />
-                </View>
-                <Text style={styles.menuItemText}>Difficulty Level</Text>
-              </View>
-              <View style={styles.difficultyBadge}>
-                <Text style={styles.difficultyBadgeText}>{selectedDifficulty}</Text>
+              <View style={[styles.toggle, { backgroundColor: C.toggleBg }, darkMode && styles.toggleActive]}>
+                <View style={[styles.toggleThumb, { backgroundColor: C.toggleThumb, marginLeft: darkMode ? 20 : 0 }]} />
               </View>
             </TouchableOpacity>
           </View>
@@ -314,174 +334,40 @@ export default function ProfileScreen() {
 
         {/* Support Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
-          <View style={styles.menuList}>
-            <TouchableOpacity style={styles.menuItem} onPress={handleHelpCenter}>
+          <Text style={[styles.sectionTitle, { color: C.textDark }]}>Support</Text>
+          <View style={[styles.menuList, { backgroundColor: C.card }]}>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: darkMode ? 0 : 1, borderBottomColor: C.borderLight }]} onPress={handleHelpCenter}>
               <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: 'rgba(75, 65, 225, 0.1)' }]}>
-                  <Ionicons name="help-circle-outline" size={20} color="#4b41e1" />
+                <View style={[styles.menuIcon, { backgroundColor: C.primaryBg }]}>
+                  <Ionicons name="help-circle-outline" size={20} color={C.primary} />
                 </View>
-                <Text style={styles.menuItemText}>Help Center</Text>
+                <Text style={[styles.menuItemText, { color: C.menuItemText }]}>Help Center</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#75777d" />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem} onPress={handleContactUs}>
-              <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: 'rgba(0, 164, 114, 0.1)' }]}>
-                  <Ionicons name="mail-outline" size={20} color="#00a472" />
-                </View>
-                <Text style={styles.menuItemText}>Contact Us</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#75777d" />
+              <Ionicons name="chevron-forward" size={20} color={C.chevronColor} />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.menuItem} onPress={handleAbout}>
               <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: 'rgba(216, 227, 251, 1)' }]}>
-                  <Ionicons name="information-circle-outline" size={20} color="#091426" />
+                <View style={[styles.menuIcon, { backgroundColor: C.purpleBg }]}>
+                  <Ionicons name="information-circle-outline" size={20} color={C.textDark} />
                 </View>
-                <Text style={styles.menuItemText}>About</Text>
+                <Text style={[styles.menuItemText, { color: C.menuItemText }]}>About</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#75777d" />
+              <Ionicons name="chevron-forward" size={20} color={C.chevronColor} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color="#ba1a1a" />
-          <Text style={styles.logoutText}>Logout</Text>
+        <TouchableOpacity style={[styles.logoutButton, { backgroundColor: C.logoutBg, borderColor: C.logoutBorder }]} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={20} color={C.logoutText} />
+          <Text style={[styles.logoutText, { color: C.logoutText }]}>Logout</Text>
         </TouchableOpacity>
 
         {/* Version */}
-        <Text style={styles.versionText}>Version 1.0.0</Text>
+        <Text style={[styles.versionText, { color: C.versionText }]}>Version 1.0.0</Text>
       </ScrollView>
 
-      {/* Learning Goals Modal */}
-      <Modal
-        visible={showGoalsModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowGoalsModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Learning Goals</Text>
-              <TouchableOpacity onPress={() => setShowGoalsModal(false)}>
-                <Ionicons name="close" size={24} color="#091426" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.modalDescription}>
-              Select the topics you want to focus on:
-            </Text>
-
-            <View style={styles.goalsContainer}>
-              {['Algebra', 'Geometry', 'Trigonometry'].map((goal) => (
-                <TouchableOpacity key={goal} style={styles.goalChip}>
-                  <Ionicons name="checkbox" size={20} color="#4b41e1" />
-                  <Text style={styles.goalChipText}>{goal}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => handleSaveGoals(['Algebra', 'Calculus'])}
-            >
-              <Text style={styles.modalButtonText}>Save Goals</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Difficulty Level Modal */}
-      <Modal
-        visible={showDifficultyModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowDifficultyModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Difficulty Level</Text>
-              <TouchableOpacity onPress={() => setShowDifficultyModal(false)}>
-                <Ionicons name="close" size={24} color="#091426" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.modalDescription}>
-              Choose your preferred difficulty level:
-            </Text>
-
-            <TouchableOpacity
-              style={[
-                styles.difficultyOption,
-                selectedDifficulty === 'Easy' && styles.difficultyOptionSelected,
-              ]}
-              onPress={() => handleSaveDifficulty('Easy')}
-            >
-              <View style={styles.difficultyOptionLeft}>
-                <View style={[styles.difficultyIcon, { backgroundColor: 'rgba(0, 164, 114, 0.1)' }]}>
-                  <Ionicons name="leaf-outline" size={24} color="#00a472" />
-                </View>
-                <View>
-                  <Text style={styles.difficultyOptionTitle}>Easy</Text>
-                  <Text style={styles.difficultyOptionDesc}>Gentle learning pace</Text>
-                </View>
-              </View>
-              {selectedDifficulty === 'Easy' && (
-                <Ionicons name="checkmark-circle" size={24} color="#4b41e1" />
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.difficultyOption,
-                selectedDifficulty === 'Medium' && styles.difficultyOptionSelected,
-              ]}
-              onPress={() => handleSaveDifficulty('Medium')}
-            >
-              <View style={styles.difficultyOptionLeft}>
-                <View style={[styles.difficultyIcon, { backgroundColor: 'rgba(75, 65, 225, 0.1)' }]}>
-                  <Ionicons name="speedometer-outline" size={24} color="#4b41e1" />
-                </View>
-                <View>
-                  <Text style={styles.difficultyOptionTitle}>Medium</Text>
-                  <Text style={styles.difficultyOptionDesc}>Balanced challenge</Text>
-                </View>
-              </View>
-              {selectedDifficulty === 'Medium' && (
-                <Ionicons name="checkmark-circle" size={24} color="#4b41e1" />
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.difficultyOption,
-                selectedDifficulty === 'Hard' && styles.difficultyOptionSelected,
-              ]}
-              onPress={() => handleSaveDifficulty('Hard')}
-            >
-              <View style={styles.difficultyOptionLeft}>
-                <View style={[styles.difficultyIcon, { backgroundColor: 'rgba(186, 26, 26, 0.1)' }]}>
-                  <Ionicons name="flame-outline" size={24} color="#ba1a1a" />
-                </View>
-                <View>
-                  <Text style={styles.difficultyOptionTitle}>Hard</Text>
-                  <Text style={styles.difficultyOptionDesc}>Advanced problems</Text>
-                </View>
-              </View>
-              {selectedDifficulty === 'Hard' && (
-                <Ionicons name="checkmark-circle" size={24} color="#4b41e1" />
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -489,11 +375,9 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f7f9fb',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#f7f9fb',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -504,23 +388,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 48,
     paddingBottom: 12,
-    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e3e5',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#091426',
     letterSpacing: -0.5,
-  },
-  settingsButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f2f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   scrollView: {
     flex: 1,
@@ -530,16 +403,10 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   profileCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 24,
     padding: 24,
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 2,
   },
   avatarContainer: {
     position: 'relative',
@@ -549,11 +416,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#4b41e1',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: '#e2dfff',
   },
   avatarText: {
     fontSize: 32,
@@ -564,19 +429,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 2,
   },
   displayName: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#091426',
     marginBottom: 4,
   },
   email: {
     fontSize: 14,
-    color: '#45474c',
     marginBottom: 16,
   },
   focusAreasContainer: {
@@ -591,13 +453,11 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#e2dfff',
     borderRadius: 999,
   },
   focusChipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#4b41e1',
   },
   loadingStatsContainer: {
     paddingVertical: 40,
@@ -608,7 +468,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#091426',
     marginBottom: 12,
     paddingHorizontal: 4,
   },
@@ -620,15 +479,9 @@ const styles = StyleSheet.create({
   statBox: {
     flex: 1,
     minWidth: '47%',
-    backgroundColor: '#ffffff',
     borderRadius: 20,
     padding: 16,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 2,
   },
   statIconContainer: {
     width: 48,
@@ -641,37 +494,28 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#091426',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#45474c',
   },
   section: {
     marginBottom: 16,
   },
   menuList: {
-    backgroundColor: '#ffffff',
     borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 2,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f2f4f6',
   },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
     gap: 12,
   },
   menuIcon: {
@@ -684,10 +528,8 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#091426',
   },
   difficultyBadge: {
-    backgroundColor: '#e2dfff',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
@@ -695,40 +537,33 @@ const styles = StyleSheet.create({
   difficultyBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#4b41e1',
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#ffffff',
     paddingVertical: 16,
     borderRadius: 16,
     marginTop: 8,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#ffdad6',
   },
   logoutText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ba1a1a',
   },
   versionText: {
     textAlign: 'center',
     fontSize: 12,
-    color: '#75777d',
     marginBottom: 8,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
     marginBottom: 100
   },
   modalContent: {
-    backgroundColor: '#ffffff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -743,11 +578,9 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#091426',
   },
   modalDescription: {
     fontSize: 14,
-    color: '#45474c',
     marginBottom: 20,
   },
   goalsContainer: {
@@ -762,18 +595,19 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#e2dfff',
     borderRadius: 999,
     borderWidth: 2,
-    borderColor: '#4b41e1',
+  },
+  goalChipInactive: {
+    borderColor: '#e0e3e5',
   },
   goalChipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#4b41e1',
+  },
+  goalChipTextInactive: {
   },
   modalButton: {
-    backgroundColor: '#4b41e1',
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: 'center',
@@ -788,14 +622,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#f7f9fb',
     borderRadius: 16,
     marginBottom: 12,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   difficultyOptionSelected: {
-    backgroundColor: '#e2dfff',
     borderColor: '#4b41e1',
   },
   difficultyOptionLeft: {
@@ -813,11 +645,24 @@ const styles = StyleSheet.create({
   difficultyOptionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#091426',
     marginBottom: 2,
   },
   difficultyOptionDesc: {
     fontSize: 12,
-    color: '#45474c',
+  },
+  toggle: {
+    width: 52,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  toggleActive: {
+    backgroundColor: '#4b41e1',
+  },
+  toggleThumb: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
   },
 });

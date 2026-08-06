@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
 import { Colors } from '@/constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 
 interface WeakAreaCardProps {
   subtopic: string;
@@ -13,31 +14,33 @@ export const WeakAreaCard: React.FC<WeakAreaCardProps> = ({
   masteryPercentage,
   onPress
 }) => {
+  const { darkMode } = useTheme();
+
+  const textColor = darkMode ? '#f0f0f0' : Colors.text;
+  const trackColor = darkMode ? '#2e2e2e' : Colors.surfaceContainerHigh;
+  const pressedBg  = darkMode ? '#1e1e1e' : Colors.surfaceContainerLow;
+  const reviewColor = darkMode ? '#a5b4fc' : Colors.secondary;
+
   return (
     <Pressable
       style={({ pressed }) => [
         styles.container,
-        pressed && styles.pressed
+        pressed && { backgroundColor: pressedBg }
       ]}
       onPress={onPress}
     >
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.subtopic}>{subtopic}</Text>
+          <Text style={[styles.subtopic, { color: textColor }]}>{subtopic}</Text>
           <Text style={styles.percentage}>{masteryPercentage}% Mastery</Text>
         </View>
         
-        <View style={styles.progressBarContainer}>
-          <View
-            style={[
-              styles.progressBar,
-              { width: `${masteryPercentage}%` }
-            ]}
-          />
+        <View style={[styles.progressBarContainer, { backgroundColor: trackColor }]}>
+          <View style={[styles.progressBar, { width: `${masteryPercentage}%` }]} />
         </View>
         
         <TouchableOpacity style={styles.actionButton}>
-          <Text style={styles.actionText}>REVIEW NOW</Text>
+          <Text style={[styles.actionText, { color: reviewColor }]}>REVIEW NOW</Text>
         </TouchableOpacity>
       </View>
     </Pressable>
@@ -50,9 +53,6 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
   },
-  pressed: {
-    backgroundColor: Colors.surfaceContainerLow,
-  },
   content: {
     gap: 8,
   },
@@ -64,7 +64,6 @@ const styles = StyleSheet.create({
   subtopic: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.text,
     flex: 1,
   },
   percentage: {
@@ -75,7 +74,6 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     height: 6,
-    backgroundColor: Colors.surfaceContainerHigh,
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -92,7 +90,6 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.secondary,
     letterSpacing: 0.5,
   },
 });

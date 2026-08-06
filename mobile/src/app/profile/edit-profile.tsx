@@ -1,75 +1,135 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useState, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, BackHandler } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
+import api from '@/services/api';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const { darkMode } = useTheme();
+
+  const EP = {
+    bg: darkMode ? '#0a0a0a' : '#f7f9fb',
+    header: darkMode ? '#0a0a0a' : '#ffffff',
+    border: darkMode ? '#2e2e2e' : '#e0e3e5',
+    text: darkMode ? '#f0f0f0' : '#091426',
+    textLight: darkMode ? '#a0a0a0' : '#45474c',
+    label: darkMode ? '#a0a0a0' : '#45474c',
+    inputBg: darkMode ? '#1a1a1a' : '#ffffff',
+    inputBorder: darkMode ? '#2e2e2e' : '#e0e3e5',
+    inputText: darkMode ? '#f0f0f0' : '#091426',
+    disabledBg: darkMode ? '#242424' : '#f2f4f6',
+    disabledText: darkMode ? '#666666' : '#75777d',
+    helperText: darkMode ? '#666666' : '#75777d',
+    iconColor: darkMode ? '#888888' : '#75777d',
+    backBtnBg: darkMode ? '#1a1a1a' : '#f2f4f6',
+    deleteBg: darkMode ? '#2a2a2a' : '#d1d1d1ff',
+  };
   
   const [displayName, setDisplayName] = useState(user?.displayName || '');
-  const [email, setEmail] = useState(user?.email || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  // Detect unsaved changes
+  const hasChanges = useMemo(() => {
+    const nameChanged = displayName.trim() !== (user?.displayName || '');
+    const passwordStarted = currentPassword.length > 0 || newPassword.length > 0 || confirmPassword.length > 0;
+    return nameChanged || passwordStarted;
+  }, [displayName, currentPassword, newPassword, confirmPassword, user?.displayName]);
+
+  // Intercept Android hardware back button
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        handleBack();
+        return true; // prevent default back
+      });
+      return () => subscription.remove();
+    }, [hasChanges])
+  );
+
+  const handleBack = () => {
+    if (!hasChanges) {
+      router.back();
+      return;
+    }
+    Alert.alert(
+      'Unsaved Changes',
+      'You have unsaved changes. What would you like to do?',
+      [
+        { text: 'Keep Editing', style: 'cancel' },
+        { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+        { text: 'Save', onPress: handleSave },
+      ]
+    );
+  };
+
   const handleSave = async () => {
-    // Validate inputs
     if (!displayName.trim()) {
       Alert.alert('Error', 'Display name cannot be empty');
       return;
     }
-
     if (newPassword && newPassword !== confirmPassword) {
       Alert.alert('Error', 'New passwords do not match');
       return;
     }
-
     if (newPassword && newPassword.length < 6) {
       Alert.alert('Error', 'Password must be at least 6 characters');
+      return;
+    }
+    if (newPassword && !currentPassword) {
+      Alert.alert('Error', 'Please enter your current password to set a new one');
       return;
     }
 
     setIsSaving(true);
     try {
-      // TODO: Implement API call to update profile
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      
+      // Update display name if changed
+      if (displayName.trim() !== user?.displayName) {
+        await updateUser({ displayName: displayName.trim() });
+      }
+
+      // Change password if requested
+      if (newPassword && currentPassword) {
+        await api.put('/auth/change-password', {
+          currentPassword,
+          newPassword,
+        });
+      }
+
       Alert.alert('Success', 'Profile updated successfully!', [
-        { text: 'OK', onPress: () => router.back() }
+        { text: 'OK', onPress: () => router.back() },
       ]);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to update profile');
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || 'Failed to update profile. Please try again.';
+      Alert.alert('Error', msg);
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: EP.bg }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#091426" />
+      <View style={[styles.header, { backgroundColor: EP.header, borderBottomColor: EP.border }]}>
+        <TouchableOpacity style={[styles.backButton, { backgroundColor: EP.backBtnBg }]} onPress={handleBack}>
+          <Ionicons name="arrow-back" size={24} color={EP.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <Text style={[styles.headerTitle, { color: EP.text }]}>Edit Profile</Text>
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Avatar Section */}
         <View style={styles.avatarSection}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {displayName.charAt(0).toUpperCase()}
-              </Text>
+              <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
             </View>
             <TouchableOpacity style={styles.editAvatarButton}>
               <Ionicons name="camera" size={20} color="#ffffff" />
@@ -82,112 +142,112 @@ export default function EditProfileScreen() {
 
         {/* Personal Information */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Personal Information</Text>
+          <Text style={[styles.sectionTitle, { color: EP.text }]}>Personal Information</Text>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Display Name</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={20} color="#75777d" style={styles.inputIcon} />
+            <Text style={[styles.label, { color: EP.label }]}>Display Name</Text>
+            <View style={[styles.inputContainer, { backgroundColor: EP.inputBg, borderColor: EP.inputBorder }]}>
+              <Ionicons name="person-outline" size={20} color={EP.iconColor} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: EP.inputText }]}
                 value={displayName}
                 onChangeText={setDisplayName}
                 placeholder="Enter your display name"
-                placeholderTextColor="#b0b3b8"
+                placeholderTextColor={EP.disabledText}
               />
             </View>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email Address</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#75777d" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Enter your email"
-                placeholderTextColor="#b0b3b8"
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
+            <Text style={[styles.label, { color: EP.label }]}>Email Address</Text>
+            <View style={[styles.inputContainer, { backgroundColor: EP.disabledBg, borderColor: EP.inputBorder }]}>
+              <Ionicons name="mail-outline" size={20} color={EP.disabledText} style={styles.inputIcon} />
+              <Text style={[styles.input, { color: EP.disabledText, paddingVertical: 14 }]}>
+                {user?.email || ''}
+              </Text>
             </View>
-            <Text style={styles.helperText}>Verification email will be sent to new address</Text>
+            <Text style={[styles.helperText, { color: EP.helperText }]}>Email cannot be changed</Text>
           </View>
         </View>
 
         {/* Change Password */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Change Password</Text>
+          <Text style={[styles.sectionTitle, { color: EP.text }]}>Change Password</Text>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Current Password</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#75777d" style={styles.inputIcon} />
+            <Text style={[styles.label, { color: EP.label }]}>Current Password</Text>
+            <View style={[styles.inputContainer, { backgroundColor: EP.inputBg, borderColor: EP.inputBorder }]}>
+              <Ionicons name="lock-closed-outline" size={20} color={EP.iconColor} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: EP.inputText }]}
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
                 placeholder="Enter current password"
-                placeholderTextColor="#b0b3b8"
+                placeholderTextColor={EP.disabledText}
                 secureTextEntry
               />
             </View>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>New Password</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#75777d" style={styles.inputIcon} />
+            <Text style={[styles.label, { color: EP.label }]}>New Password</Text>
+            <View style={[styles.inputContainer, { backgroundColor: EP.inputBg, borderColor: EP.inputBorder }]}>
+              <Ionicons name="lock-closed-outline" size={20} color={EP.iconColor} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: EP.inputText }]}
                 value={newPassword}
                 onChangeText={setNewPassword}
                 placeholder="Enter new password"
-                placeholderTextColor="#b0b3b8"
+                placeholderTextColor={EP.disabledText}
                 secureTextEntry
               />
             </View>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Confirm New Password</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#75777d" style={styles.inputIcon} />
+            <Text style={[styles.label, { color: EP.label }]}>Confirm New Password</Text>
+            <View style={[styles.inputContainer, { backgroundColor: EP.inputBg, borderColor: EP.inputBorder }]}>
+              <Ionicons name="lock-closed-outline" size={20} color={EP.iconColor} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: EP.inputText }]}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 placeholder="Re-enter new password"
-                placeholderTextColor="#b0b3b8"
+                placeholderTextColor={EP.disabledText}
                 secureTextEntry
               />
             </View>
-            <Text style={styles.helperText}>Leave blank to keep current password</Text>
+            <Text style={[styles.helperText, { color: EP.helperText }]}>Leave blank to keep current password</Text>
           </View>
         </View>
 
         {/* Save Button */}
-        <TouchableOpacity 
-          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+        <TouchableOpacity
+          style={[styles.saveButton, (!hasChanges || isSaving) && styles.saveButtonDisabled]}
           onPress={handleSave}
-          disabled={isSaving}
+          disabled={!hasChanges || isSaving}
         >
-          <Text style={styles.saveButtonText}>
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </Text>
+          {isSaving ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save Changes</Text>
+          )}
         </TouchableOpacity>
 
         {/* Delete Account */}
-        <TouchableOpacity 
-          style={styles.deleteButton}
+        <TouchableOpacity
+          style={[styles.deleteButton, { backgroundColor: EP.deleteBg }]}
           onPress={() => {
             Alert.alert(
               'Delete Account',
               'Are you sure you want to delete your account? This action cannot be undone.',
               [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Delete', style: 'destructive', onPress: () => {} }
+                {
+                  text: 'Delete',
+                  style: 'destructive',
+                  onPress: () => Alert.alert('Contact Support', 'Please contact support@mathmentor.ai to delete your account.'),
+                }
               ]
             );
           }}

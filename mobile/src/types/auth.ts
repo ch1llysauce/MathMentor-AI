@@ -9,14 +9,20 @@ export interface User {
   currentStreak?: number;
   totalStudyTime?: number;
   createdAt?: string;
+  twoFactorEnabled?: boolean;
+  learningPreferences?: {
+    difficulty?: string;
+  };
 }
 
 export interface AuthResponse {
   success: boolean;
   message: string;
+  requiresTwoFactor?: boolean;
   data?: {
     user: User;
     token: string;
+    userId?: string; // present when requiresTwoFactor is true
   };
 }
 

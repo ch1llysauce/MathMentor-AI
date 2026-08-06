@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, RefreshControl, ActivityIndicator, useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
-import { Colors } from '@/constants/colors';
 import Loading from '@/components/common/Loading';
 import { dashboardService, DashboardStats, TopicProgress as TopicProgressData } from '@/services/dashboardService';
 import api from '@/services/api';
 import { PROGRESS_ENDPOINTS } from '@/constants/api';
+import { useTheme } from '@/context/ThemeContext';
 
 interface TopicProgress {
   name: string;
@@ -42,6 +42,24 @@ const TOPIC_META: Record<string, { icon: string; description: string }> = {
 export default function DashboardScreen() {
   const { user, logout, loading } = useAuth();
   const router = useRouter();
+  const { darkMode } = useTheme();
+
+  // Dynamic colors based on theme
+  const D = {
+    bg: darkMode ? '#0a0a0a' : '#f7f9fb',
+    card: darkMode ? '#1a1a1a' : '#ffffff',
+    headerBg: darkMode ? '#0a0a0a' : '#ffffff',
+    border: darkMode ? '#2e2e2e' : '#e0e3e5',
+    text: darkMode ? '#f0f0f0' : '#091426',
+    textLight: darkMode ? '#a0a0a0' : '#45474c',
+    primary: darkMode ? '#a5b4fc' : '#4b41e1',
+    itemBg: darkMode ? '#242424' : '#f2f4f6',
+    itemBorder: darkMode ? 'rgba(100,100,120,0.2)' : 'rgba(197, 198, 205, 0.3)',
+    insightsBtnBg: darkMode ? '#1a1a1a' : '#f2f4f6',
+    secondaryBtnBg: darkMode ? '#312e81' : '#e2dfff',
+    secondaryBtnText: darkMode ? '#a5b4fc' : '#3323cc',
+    radialBg: darkMode ? '#2e2e2e' : '#e0e3e5',
+  };
   const [isReady, setIsReady] = useState(false);
   const [dashboardData, setDashboardData] = useState<{
     stats: DashboardStats;
@@ -179,7 +197,7 @@ export default function DashboardScreen() {
 
   if (loading || !isReady || !user) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: D.bg }]}>
         <Loading />
       </View>
     );
@@ -190,19 +208,19 @@ export default function DashboardScreen() {
   const topics = dashboardData?.topics || defaultTopics;
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f7f9fb" />
+    <View style={[styles.container, { backgroundColor: D.bg }]}>
+      <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={D.bg} />
       
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: D.headerBg, borderBottomColor: D.border }]}>
         <View style={styles.headerLeft}>
-          <View style={styles.avatar}>
+          <View style={[styles.avatar, { borderColor: darkMode ? '#312e81' : '#e2dfff' }]}>
             <Ionicons name="person" size={20} color="#ffffff" />
           </View>
-          <Text style={styles.logoText}>MathMentor AI</Text>
+          <Text style={[styles.logoText, { color: D.text }]}>MathMentor AI</Text>
         </View>
-        <TouchableOpacity style={styles.insightsButton}>
-          <Ionicons name="stats-chart" size={24} color="#091426" />
+        <TouchableOpacity style={[styles.insightsButton, { backgroundColor: D.insightsBtnBg }]}>
+          <Ionicons name="stats-chart" size={24} color={D.text} />
         </TouchableOpacity>
       </View>
 
@@ -217,15 +235,15 @@ export default function DashboardScreen() {
         {loadingData ? (
           <View style={styles.loadingDataContainer}>
             <Loading />
-            <Text style={styles.loadingText}>Loading your progress...</Text>
+            <Text style={[styles.loadingText, { color: D.textLight }]}>Loading your progress...</Text>
           </View>
         ) : (
           <>
         {/* Welcome Section */}
         <View style={styles.welcomeSection}>
           <View>
-            <Text style={styles.welcomeTitle}>Welcome back, {firstName}.</Text>
-            <Text style={styles.welcomeSubtitle}>Ready to solve some problems today?</Text>
+            <Text style={[styles.welcomeTitle, { color: D.text }]}>Welcome back, {firstName}.</Text>
+            <Text style={[styles.welcomeSubtitle, { color: D.textLight }]}>Ready to solve some problems today?</Text>
           </View>
           <View style={styles.actionButtons}>
             <TouchableOpacity
@@ -242,9 +260,9 @@ export default function DashboardScreen() {
                 {resumeLoading ? 'Loading...' : 'Resume Tutoring'}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleDiagnosticPress}>
-              <Ionicons name="analytics" size={20} color="#3323cc" />
-              <Text style={styles.secondaryButtonText}>
+            <TouchableOpacity style={[styles.secondaryButton, { backgroundColor: D.secondaryBtnBg }]} onPress={handleDiagnosticPress}>
+              <Ionicons name="analytics" size={20} color={D.secondaryBtnText} />
+              <Text style={[styles.secondaryButtonText, { color: D.secondaryBtnText }]}>
                 {user?.diagnosticCompleted ? 'Diagnostic' : 'Take Diagnostic'}
               </Text>
             </TouchableOpacity>
@@ -345,21 +363,21 @@ export default function DashboardScreen() {
           )}
 
           {/* Learning Pulse Card */}
-          <View style={styles.pulseCard}>
-            <Text style={styles.pulseTitle}>Learning Pulse</Text>
+          <View style={[styles.pulseCard, { backgroundColor: D.card }]}>
+            <Text style={[styles.pulseTitle, { color: D.text }]}>Learning Pulse</Text>
             <View style={styles.pulseList}>
               {topics.map((topic, index) => (
-                <TouchableOpacity key={index} style={styles.pulseItem}>
+                <TouchableOpacity key={index} style={[styles.pulseItem, { backgroundColor: D.itemBg, borderColor: D.itemBorder }]}>
                   <View style={styles.pulseItemLeft}>
-                    <View style={styles.radialProgress}>
-                      <Text style={styles.radialText}>{topic.progress}%</Text>
+                    <View style={[styles.radialProgress, { backgroundColor: D.radialBg }]}>
+                      <Text style={[styles.radialText, { color: D.text }]}>{topic.progress}%</Text>
                     </View>
                     <View>
-                      <Text style={styles.pulseTopicName}>{topic.name}</Text>
-                      <Text style={styles.pulseTopicStats}>{topic.problemsSolved} Problems Solved</Text>
+                      <Text style={[styles.pulseTopicName, { color: D.text }]}>{topic.name}</Text>
+                      <Text style={[styles.pulseTopicStats, { color: D.textLight }]}>{topic.problemsSolved} Problems Solved</Text>
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#4b41e1" />
+                  <Ionicons name="chevron-forward" size={20} color={D.primary} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -367,39 +385,38 @@ export default function DashboardScreen() {
 
           {/* Stats Grid */}
           <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <View style={[styles.statIcon, { backgroundColor: 'rgba(75, 65, 225, 0.1)' }]}>
-                <Ionicons name="calendar" size={24} color="#4b41e1" />
+            <View style={[styles.statCard, { backgroundColor: D.card }]}>
+              <View style={[styles.statIcon, { backgroundColor: darkMode ? 'rgba(165,180,252,0.15)' : 'rgba(75, 65, 225, 0.1)' }]}>
+                <Ionicons name="calendar" size={24} color={darkMode ? '#a5b4fc' : '#4b41e1'} />
               </View>
-              <Text style={styles.statLabel}>Study Streak</Text>
-              <Text style={styles.statValue}>{stats.currentStreak} Days</Text>
+              <Text style={[styles.statLabel, { color: D.textLight }]}>Study Streak</Text>
+              <Text style={[styles.statValue, { color: D.text }]}>{stats.currentStreak} Days</Text>
             </View>
 
-            <View style={styles.statCard}>
-              <View style={[styles.statIcon, { backgroundColor: 'rgba(78, 222, 163, 0.2)' }]}>
-                <Ionicons name="star" size={24} color="#00a472" />
+            <View style={[styles.statCard, { backgroundColor: D.card }]}>
+              <View style={[styles.statIcon, { backgroundColor: darkMode ? 'rgba(52,211,153,0.15)' : 'rgba(78, 222, 163, 0.2)' }]}>
+                <Ionicons name="star" size={24} color={darkMode ? '#34d399' : '#00a472'} />
               </View>
-              <Text style={styles.statLabel}>XP Earned</Text>
-              <Text style={styles.statValue}>{stats.xpEarned.toLocaleString()}</Text>
+              <Text style={[styles.statLabel, { color: D.textLight }]}>XP Earned</Text>
+              <Text style={[styles.statValue, { color: D.text }]}>{stats.xpEarned.toLocaleString()}</Text>
             </View>
 
-            <View style={styles.statCard}>
-              <View style={[styles.statIcon, { backgroundColor: 'rgba(216, 227, 251, 1)' }]}>
-                <Ionicons name="checkmark-done" size={24} color="#091426" />
+            <View style={[styles.statCard, { backgroundColor: D.card }]}>
+              <View style={[styles.statIcon, { backgroundColor: darkMode ? 'rgba(165,180,252,0.2)' : 'rgba(216, 227, 251, 1)' }]}>
+                <Ionicons name="checkmark-done" size={24} color={darkMode ? '#a5b4fc' : '#091426'} />
               </View>
-              <Text style={styles.statLabel}>Accuracy</Text>
-              <Text style={styles.statValue}>{stats.accuracy}%</Text>
+              <Text style={[styles.statLabel, { color: D.textLight }]}>Accuracy</Text>
+              <Text style={[styles.statValue, { color: D.text }]}>{stats.accuracy}%</Text>
             </View>
 
-            <View style={styles.statCard}>
-              <View style={[styles.statIcon, { backgroundColor: 'rgba(255, 218, 214, 1)' }]}>
-                <Ionicons name="timer" size={24} color="#ba1a1a" />
+            <View style={[styles.statCard, { backgroundColor: D.card }]}>
+              <View style={[styles.statIcon, { backgroundColor: darkMode ? 'rgba(248,113,113,0.15)' : 'rgba(255, 218, 214, 1)' }]}>
+                <Ionicons name="timer" size={24} color={darkMode ? '#f87171' : '#ba1a1a'} />
               </View>
-              <Text style={styles.statLabel}>Avg. Speed</Text>
-              <Text style={styles.statValue}>{stats.avgSpeed}s</Text>
+              <Text style={[styles.statLabel, { color: D.textLight }]}>Avg. Speed</Text>
+              <Text style={[styles.statValue, { color: D.text }]}>{stats.avgSpeed}s</Text>
             </View>
           </View>
-
 
         </View>
         </>

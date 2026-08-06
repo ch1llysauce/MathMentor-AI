@@ -1,5 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import speakeasy from "speakeasy";
+import QRCode from "qrcode";
 import { User } from "../models/index.js";
 import { AppError, asyncHandler } from "../middleware/index.js";
 
@@ -86,6 +88,16 @@ export const login = asyncHandler(async (req, res) => {
         throw new AppError("Invalid credentials", 401);
     }
 
+    // If 2FA is enabled, don't issue token yet — require TOTP verification
+    if (user.twoFactorEnabled) {
+        return res.status(200).json({
+            success: true,
+            requiresTwoFactor: true,
+            message: "2FA verification required",
+            data: { userId: user._id }
+        });
+    }
+
     // Update last active date
     user.lastActiveDate = new Date();
     await user.save();
@@ -105,7 +117,8 @@ export const login = asyncHandler(async (req, res) => {
                 focusAreas: user.focusAreas,
                 diagnosticCompleted: user.diagnosticCompleted,
                 currentStreak: user.currentStreak,
-                totalStudyTime: user.totalStudyTime
+                totalStudyTime: user.totalStudyTime,
+                twoFactorEnabled: user.twoFactorEnabled
             },
             token
         }
@@ -207,11 +220,196 @@ export const logout = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * @desc    Generate 2FA secret and QR code for setup
+ * @route   POST /api/auth/2fa/setup
+ * @access  Private
+ */
+export const setup2FA = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (user.twoFactorEnabled) {
+        throw new AppError("Two-factor authentication is already enabled", 400);
+    }
+
+    // Generate a new TOTP secret
+    const secret = speakeasy.generateSecret({
+        name: `MathMentor AI (${user.email})`,
+        issuer: "MathMentor AI",
+        length: 20
+    });
+
+    // Temporarily store the secret (not enabled yet — user must verify first)
+    user.twoFactorSecret = secret.base32;
+    await user.save();
+
+    // Generate QR code as data URL
+    const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
+
+    res.status(200).json({
+        success: true,
+        message: "Scan the QR code with your authenticator app, then verify with a code",
+        data: {
+            secret: secret.base32,
+            qrCode: qrCodeUrl
+        }
+    });
+});
+
+/**
+ * @desc    Verify TOTP code and enable 2FA
+ * @route   POST /api/auth/2fa/verify
+ * @access  Private
+ */
+export const verify2FA = asyncHandler(async (req, res) => {
+    const { token } = req.body;
+
+    if (!token) {
+        throw new AppError("Verification code is required", 400);
+    }
+
+    const user = await User.findById(req.user._id);
+
+    if (!user.twoFactorSecret) {
+        throw new AppError("Please set up 2FA first", 400);
+    }
+
+    if (user.twoFactorEnabled) {
+        throw new AppError("Two-factor authentication is already enabled", 400);
+    }
+
+    // Verify the provided TOTP code against the stored secret
+    const isValid = speakeasy.totp.verify({
+        secret: user.twoFactorSecret,
+        encoding: "base32",
+        token: token.toString(),
+        window: 1 // allow 30s clock drift
+    });
+
+    if (!isValid) {
+        throw new AppError("Invalid verification code. Please try again.", 400);
+    }
+
+    // Enable 2FA
+    user.twoFactorEnabled = true;
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: "Two-factor authentication has been enabled successfully"
+    });
+});
+
+/**
+ * @desc    Validate TOTP code during login (exchange for JWT)
+ * @route   POST /api/auth/2fa/validate
+ * @access  Public
+ */
+export const validate2FA = asyncHandler(async (req, res) => {
+    const { userId, token } = req.body;
+
+    if (!userId || !token) {
+        throw new AppError("User ID and verification code are required", 400);
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
+        throw new AppError("Invalid request", 400);
+    }
+
+    if (!user.isActive) {
+        throw new AppError("Account has been deactivated", 403);
+    }
+
+    // Verify the TOTP code
+    const isValid = speakeasy.totp.verify({
+        secret: user.twoFactorSecret,
+        encoding: "base32",
+        token: token.toString(),
+        window: 1
+    });
+
+    if (!isValid) {
+        throw new AppError("Invalid verification code. Please try again.", 400);
+    }
+
+    // Update last active date
+    user.lastActiveDate = new Date();
+    await user.save();
+
+    // Issue the JWT token
+    const jwtToken = generateToken(user._id);
+
+    res.status(200).json({
+        success: true,
+        message: "Login successful",
+        data: {
+            user: {
+                id: user._id,
+                displayName: user.displayName,
+                email: user.email,
+                gradeLevel: user.gradeLevel,
+                focusAreas: user.focusAreas,
+                diagnosticCompleted: user.diagnosticCompleted,
+                currentStreak: user.currentStreak,
+                totalStudyTime: user.totalStudyTime,
+                twoFactorEnabled: user.twoFactorEnabled
+            },
+            token: jwtToken
+        }
+    });
+});
+
+/**
+ * @desc    Disable 2FA
+ * @route   POST /api/auth/2fa/disable
+ * @access  Private
+ */
+export const disable2FA = asyncHandler(async (req, res) => {
+    const { token } = req.body;
+
+    if (!token) {
+        throw new AppError("Verification code is required to disable 2FA", 400);
+    }
+
+    const user = await User.findById(req.user._id);
+
+    if (!user.twoFactorEnabled) {
+        throw new AppError("Two-factor authentication is not enabled", 400);
+    }
+
+    // Require a valid TOTP code to disable (security check)
+    const isValid = speakeasy.totp.verify({
+        secret: user.twoFactorSecret,
+        encoding: "base32",
+        token: token.toString(),
+        window: 1
+    });
+
+    if (!isValid) {
+        throw new AppError("Invalid verification code", 400);
+    }
+
+    user.twoFactorEnabled = false;
+    user.twoFactorSecret = null;
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: "Two-factor authentication has been disabled"
+    });
+});
+
 export default {
     register,
     login,
     getProfile,
     updateProfile,
     changePassword,
-    logout
+    logout,
+    setup2FA,
+    verify2FA,
+    validate2FA,
+    disable2FA
 };

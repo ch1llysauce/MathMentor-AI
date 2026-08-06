@@ -16,6 +16,7 @@ import { Colors } from '@/constants/colors';
 import { lessonService } from '@/services/lessonService';
 import { generateProblems } from '@/services/clientProblemGenerator';
 import { PracticeProblem } from '@/types/lesson';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function ProblemsScreen() {
 const { lessonId, difficulty, category, count, title, topic, isDaily } = useLocalSearchParams<{
@@ -28,7 +29,31 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
     isDaily?: string;
   }>();
   const router = useRouter();
+  const { darkMode } = useTheme();
   const todayKey = new Date().toISOString().slice(0, 10);
+
+  const PR = {
+    bg: darkMode ? '#0a0a0a' : Colors.background,
+    header: darkMode ? '#0a0a0a' : Colors.white,
+    border: darkMode ? '#2e2e2e' : Colors.borderLight,
+    text: darkMode ? '#f0f0f0' : Colors.text,
+    textLight: darkMode ? '#a0a0a0' : Colors.textLight,
+    card: darkMode ? '#1a1a1a' : Colors.white,
+    surface: darkMode ? '#2e2e2e' : Colors.surfaceContainer,
+    footer: darkMode ? '#0a0a0a' : Colors.white,
+    backIconBg: darkMode ? '#2a2a2a' : Colors.surface,
+    backIconColor: darkMode ? '#f0f0f0' : '#091426',
+    optionCard: darkMode ? '#1a1a1a' : Colors.white,
+    optionBorder: darkMode ? '#2e2e2e' : Colors.surfaceContainer,
+    optionText: darkMode ? '#f0f0f0' : Colors.text,
+    inputBg: darkMode ? '#1a1a1a' : Colors.white,
+    inputBorder: darkMode ? '#2e2e2e' : Colors.surfaceContainer,
+    explanationBg: darkMode ? '#1a1a1a' : Colors.white,
+    hintBg: darkMode ? '#2d2a00' : '#fef3c7',
+    hintBorder: '#fcd34d',
+    hintText: darkMode ? '#fcd34d' : '#92400e',
+    hintBody: darkMode ? '#fbbf24' : '#78350f',
+  };
 
   const [problems, setProblems] = useState<PracticeProblem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -176,18 +201,18 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: PR.bg }]}>
         <ActivityIndicator size="large" color="#4b41e1" />
-        <Text style={styles.loadingText}>Loading problems...</Text>
+        <Text style={[styles.loadingText, { color: PR.textLight }]}>Loading problems...</Text>
       </View>
     );
   }
 
   if (problems.length === 0) {
     return (
-      <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle-outline" size={64} color={Colors.textLight} />
-        <Text style={styles.errorText}>No problems available</Text>
+      <View style={[styles.errorContainer, { backgroundColor: PR.bg }]}>
+        <Ionicons name="alert-circle-outline" size={64} color={PR.textLight} />
+        <Text style={[styles.errorText, { color: PR.text }]}>No problems available</Text>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
@@ -196,15 +221,15 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: PR.bg }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#091426" />
+      <View style={[styles.header, { backgroundColor: PR.header, borderBottomColor: PR.border }]}>
+        <TouchableOpacity style={[styles.backIcon, { backgroundColor: PR.backIconBg }]} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color={PR.backIconColor} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={styles.headerSubtitle}>{title || 'Practice Problems'}</Text>
-          <Text style={styles.headerTitle}>
+          <Text style={[styles.headerSubtitle, { color: PR.textLight }]}>{title || 'Practice Problems'}</Text>
+          <Text style={[styles.headerTitle, { color: PR.text }]}>
             Problem {currentIndex + 1} of {problems.length}
           </Text>
         </View>
@@ -216,44 +241,35 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
       </View>
 
       {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View
-            style={[
-              styles.progressFill,
-              { width: `${((currentIndex + 1) / problems.length) * 100}%` }
-            ]}
-          />
+      <View style={[styles.progressContainer, { backgroundColor: PR.header }]}>
+        <View style={[styles.progressBar, { backgroundColor: PR.surface }]}>
+          <View style={[styles.progressFill, { width: `${((currentIndex + 1) / problems.length) * 100}%` }]} />
         </View>
       </View>
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Problem Card */}
-        <View style={styles.problemCard}>
+        <View style={[styles.problemCard, { backgroundColor: PR.card }]}>
           <View style={styles.problemHeader}>
             <Ionicons name="help-circle" size={24} color="#4b41e1" />
-            <Text style={styles.problemLabel}>Question</Text>
+            <Text style={[styles.problemLabel, { color: PR.text }]}>Question</Text>
           </View>
-          <Text style={styles.problemText}>{currentProblem.problem.text}</Text>
+          <Text style={[styles.problemText, { color: PR.text }]}>{currentProblem.problem.text}</Text>
         </View>
 
-        {/* Options */}
+        {/* Multiple Choice Options */}
         {currentProblem.type === 'multiple-choice' && currentProblem.options && (
           <View style={styles.optionsContainer}>
-            <Text style={styles.optionsLabel}>Select your answer:</Text>
+            <Text style={[styles.optionsLabel, { color: PR.textLight }]}>Select your answer:</Text>
             {currentProblem.options.map((option, index) => {
               const optionLabel = String.fromCharCode(65 + index);
               const isSelected = selectedAnswer === option.text;
-              
               return (
                 <TouchableOpacity
                   key={index}
                   style={[
                     styles.optionCard,
+                    { backgroundColor: PR.optionCard, borderColor: PR.optionBorder },
                     isSelected && !showExplanation && styles.optionCardSelected,
                     showExplanation && isSelected && isCorrect && styles.optionCardCorrect,
                     showExplanation && isSelected && !isCorrect && styles.optionCardWrong,
@@ -264,12 +280,12 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
                 >
                   <View style={[
                     styles.optionBubble,
+                    { backgroundColor: PR.surface },
                     isSelected && !showExplanation && styles.optionBubbleSelected,
                     showExplanation && isSelected && isCorrect && styles.optionBubbleCorrect,
                     showExplanation && isSelected && !isCorrect && styles.optionBubbleWrong,
                   ]}>
-                    <Text style={[
-                      styles.optionBubbleText,
+                    <Text style={[styles.optionBubbleText, { color: PR.textLight },
                       (isSelected && !showExplanation) && styles.optionBubbleTextActive,
                       (showExplanation && isSelected && isCorrect) && styles.optionBubbleTextActive,
                       (showExplanation && isSelected && !isCorrect) && styles.optionBubbleTextActive,
@@ -277,16 +293,10 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
                       {optionLabel}
                     </Text>
                   </View>
-                  <Text style={styles.optionText}>{option.text}</Text>
-                  {showExplanation && isSelected && isCorrect && (
-                    <Ionicons name="checkmark-circle" size={24} color="#00a472" />
-                  )}
-                  {showExplanation && isSelected && !isCorrect && (
-                    <Ionicons name="close-circle" size={24} color="#ef4444" />
-                  )}
-                  {showExplanation && !isSelected && option.isCorrect && (
-                    <Ionicons name="checkmark-circle" size={24} color="#00a472" />
-                  )}
+                  <Text style={[styles.optionText, { color: PR.optionText }]}>{option.text}</Text>
+                  {showExplanation && isSelected && isCorrect && <Ionicons name="checkmark-circle" size={24} color="#00a472" />}
+                  {showExplanation && isSelected && !isCorrect && <Ionicons name="close-circle" size={24} color="#ef4444" />}
+                  {showExplanation && !isSelected && option.isCorrect && <Ionicons name="checkmark-circle" size={24} color="#00a472" />}
                 </TouchableOpacity>
               );
             })}
@@ -296,15 +306,14 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
         {/* Free Response */}
         {currentProblem.type === 'free-response' && (
           <View style={styles.freeResponseContainer}>
-            <Text style={styles.freeResponseLabel}>Type your answer:</Text>
+            <Text style={[styles.freeResponseLabel, { color: PR.textLight }]}>Type your answer:</Text>
             <TextInput
-              style={[
-                styles.freeResponseInput,
-                showExplanation && isCorrect  && styles.freeResponseCorrect,
+              style={[styles.freeResponseInput, { backgroundColor: PR.inputBg, borderColor: PR.inputBorder, color: PR.text },
+                showExplanation && isCorrect && styles.freeResponseCorrect,
                 showExplanation && !isCorrect && styles.freeResponseWrong,
               ]}
               placeholder="e.g. 7  or  x = 7"
-              placeholderTextColor={Colors.textLight}
+              placeholderTextColor={PR.textLight}
               value={selectedAnswer ?? ''}
               onChangeText={(text) => !showExplanation && setSelectedAnswer(text)}
               editable={!showExplanation}
@@ -314,9 +323,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
             {showExplanation && !isCorrect && (
               <View style={styles.correctAnswerHint}>
                 <Ionicons name="checkmark-circle" size={16} color="#00a472" />
-                <Text style={styles.correctAnswerText}>
-                  Correct answer: {currentProblem.correctAnswer}
-                </Text>
+                <Text style={styles.correctAnswerText}>Correct answer: {currentProblem.correctAnswer}</Text>
               </View>
             )}
           </View>
@@ -328,12 +335,12 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
             {['True', 'False'].map((opt) => {
               const isSelected = selectedAnswer === opt;
               const isCorrectOpt = opt === currentProblem.correctAnswer;
-              let bg = Colors.white;
-              let border = Colors.surfaceContainer;
-              let textColor = Colors.text;
+              let bg = PR.card;
+              let border = PR.surface;
+              let textColor = PR.text;
               if (showExplanation) {
-                if (isSelected && isCorrect)   { bg = '#f0fdf4'; border = '#00a472'; textColor = '#00a472'; }
-                if (isSelected && !isCorrect)  { bg = '#fef2f2'; border = '#ef4444'; textColor = '#ef4444'; }
+                if (isSelected && isCorrect)    { bg = '#f0fdf4'; border = '#00a472'; textColor = '#00a472'; }
+                if (isSelected && !isCorrect)   { bg = '#fef2f2'; border = '#ef4444'; textColor = '#ef4444'; }
                 if (!isSelected && isCorrectOpt){ bg = '#f0fdf4'; border = '#00a472'; textColor = '#00a472'; }
               } else if (isSelected) {
                 bg = '#f5f4ff'; border = '#4b41e1'; textColor = '#4b41e1';
@@ -348,7 +355,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
                 >
                   <Text style={[styles.tfButtonText, { color: textColor }]}>{opt}</Text>
                   {showExplanation && isSelected && isCorrect  && <Ionicons name="checkmark-circle" size={22} color="#00a472" />}
-                  {showExplanation && isSelected && !isCorrect && <Ionicons name="close-circle"     size={22} color="#ef4444" />}
+                  {showExplanation && isSelected && !isCorrect && <Ionicons name="close-circle" size={22} color="#ef4444" />}
                   {showExplanation && !isSelected && isCorrectOpt && <Ionicons name="checkmark-circle" size={22} color="#00a472" />}
                 </TouchableOpacity>
               );
@@ -360,23 +367,18 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
         {currentProblem.hints && currentProblem.hints.length > 0 && !showExplanation && (
           <View style={styles.hintsSection}>
             {!showHint ? (
-              <TouchableOpacity
-                style={styles.hintButton}
-                onPress={() => {
-                  setShowHint(true);
-                  setHintsUsed(hintsUsed + 1);
-                }}
-              >
+              <TouchableOpacity style={[styles.hintButton, { backgroundColor: PR.hintBg, borderColor: PR.hintBorder }]}
+                onPress={() => { setShowHint(true); setHintsUsed(hintsUsed + 1); }}>
                 <Ionicons name="bulb-outline" size={20} color="#f59e0b" />
-                <Text style={styles.hintButtonText}>Show Hint</Text>
+                <Text style={[styles.hintButtonText, { color: PR.hintText }]}>Show Hint</Text>
               </TouchableOpacity>
             ) : (
-              <View style={styles.hintCard}>
+              <View style={[styles.hintCard, { backgroundColor: PR.hintBg, borderLeftColor: '#f59e0b' }]}>
                 <View style={styles.hintHeader}>
                   <Ionicons name="bulb" size={20} color="#f59e0b" />
-                  <Text style={styles.hintLabel}>Hint</Text>
+                  <Text style={[styles.hintLabel, { color: PR.hintText }]}>Hint</Text>
                 </View>
-                <Text style={styles.hintText}>
+                <Text style={[styles.hintText, { color: PR.hintBody }]}>
                   {currentProblem.hints[hintsUsed - 1] || currentProblem.hints[0]}
                 </Text>
               </View>
@@ -384,46 +386,32 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
           </View>
         )}
 
-        {/* Explanation Modal Content */}
+        {/* Explanation */}
         {showExplanation && (
-          <View style={styles.explanationCard}>
-            <View style={[
-              styles.explanationHeader,
-              { backgroundColor: isCorrect ? '#d1fae5' : '#fee2e2' }
-            ]}>
-              <Ionicons
-                name={isCorrect ? 'checkmark-circle' : 'close-circle'}
-                size={32}
-                color={isCorrect ? '#00a472' : '#ef4444'}
-              />
-              <Text style={[
-                styles.explanationTitle,
-                { color: isCorrect ? '#00a472' : '#ef4444' }
-              ]}>
+          <View style={[styles.explanationCard, { backgroundColor: PR.explanationBg }]}>
+            <View style={[styles.explanationHeader, { backgroundColor: isCorrect ? '#d1fae5' : '#fee2e2' }]}>
+              <Ionicons name={isCorrect ? 'checkmark-circle' : 'close-circle'} size={32} color={isCorrect ? '#00a472' : '#ef4444'} />
+              <Text style={[styles.explanationTitle, { color: isCorrect ? '#00a472' : '#ef4444' }]}>
                 {isCorrect ? 'Correct!' : 'Incorrect'}
               </Text>
             </View>
-            
             <View style={styles.explanationContent}>
-              <Text style={styles.explanationLabel}>Explanation:</Text>
-              <Text style={styles.explanationText}>{currentProblem.explanation}</Text>
-              
+              <Text style={[styles.explanationLabel, { color: PR.text }]}>Explanation:</Text>
+              <Text style={[styles.explanationText, { color: PR.text }]}>{currentProblem.explanation}</Text>
               {currentProblem.solution && (
-                <View style={styles.solutionSection}>
-                  <Text style={styles.solutionLabel}>Solution Steps:</Text>
+                <View style={[styles.solutionSection, { borderTopColor: PR.surface }]}>
+                  <Text style={[styles.solutionLabel, { color: PR.text }]}>Solution Steps:</Text>
                   {currentProblem.solution.steps.map((step, index) => (
                     <View key={index} style={styles.solutionStep}>
                       <View style={styles.stepNumber}>
                         <Text style={styles.stepNumberText}>{index + 1}</Text>
                       </View>
-                      <Text style={styles.stepText}>{step}</Text>
+                      <Text style={[styles.stepText, { color: PR.text }]}>{step}</Text>
                     </View>
                   ))}
-                  <View style={styles.finalAnswer}>
-                    <Text style={styles.finalAnswerLabel}>Final Answer:</Text>
-                    <Text style={styles.finalAnswerText}>
-                      {currentProblem.solution.finalAnswer}
-                    </Text>
+                  <View style={[styles.finalAnswer, { borderTopColor: PR.surface }]}>
+                    <Text style={[styles.finalAnswerLabel, { color: PR.text }]}>Final Answer:</Text>
+                    <Text style={styles.finalAnswerText}>{currentProblem.solution.finalAnswer}</Text>
                   </View>
                 </View>
               )}
@@ -432,8 +420,8 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
         )}
       </ScrollView>
 
-      {/* Footer Actions */}
-      <View style={styles.footer}>
+      {/* Footer */}
+      <View style={[styles.footer, { backgroundColor: PR.footer, borderTopColor: PR.border }]}>
         {!showExplanation ? (
           <TouchableOpacity
             style={[styles.submitButton, !selectedAnswer?.trim() && styles.submitButtonDisabled]}
@@ -450,10 +438,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
             )}
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity
-            style={styles.nextButton}
-            onPress={handleNextProblem}
-          >
+          <TouchableOpacity style={styles.nextButton} onPress={handleNextProblem}>
             <Text style={styles.nextButtonText}>
               {currentIndex < problems.length - 1 ? 'Next Problem' : 'Finish'}
             </Text>

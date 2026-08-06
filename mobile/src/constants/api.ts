@@ -31,6 +31,10 @@ export const AUTH_ENDPOINTS = {
   PROFILE: '/auth/profile',
   UPDATE_PROFILE: '/auth/profile',
   LOGOUT: '/auth/logout',
+  TWO_FA_SETUP: '/auth/2fa/setup',
+  TWO_FA_VERIFY: '/auth/2fa/verify',
+  TWO_FA_VALIDATE: '/auth/2fa/validate',
+  TWO_FA_DISABLE: '/auth/2fa/disable',
 };
 
 export const QUESTION_ENDPOINTS = {

@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/colors';
 import diagnosticService from '@/services/diagnosticService';
 import { lessonService } from '@/services/lessonService';
+import { useTheme } from '@/context/ThemeContext';
 
 type TopicFilter = 'all' | 'weak' | 'strong';
 
@@ -30,6 +31,23 @@ interface Topic {
 
 export default function PracticeScreen() {
   const router = useRouter();
+  const { darkMode } = useTheme();
+
+  const P = {
+    bg: darkMode ? '#0a0a0a' : Colors.background,
+    card: darkMode ? '#1a1a1a' : Colors.white,
+    text: darkMode ? '#f0f0f0' : Colors.text,
+    textLight: darkMode ? '#a0a0a0' : Colors.textLight,
+    primary: darkMode ? '#a5b4fc' : Colors.primary,
+    secondary: darkMode ? '#a5b4fc' : Colors.secondary,
+    border: darkMode ? '#2e2e2e' : Colors.border,
+    surface: darkMode ? '#242424' : Colors.surfaceContainer,
+    chipBg: darkMode ? '#1a1a1a' : Colors.white,
+    chipActiveBg: darkMode ? '#312e81' : Colors.primary,
+    chipActiveText: darkMode ? '#a5b4fc' : Colors.white,
+    inputBg: darkMode ? '#1a1a1a' : Colors.white,
+    tagBg: darkMode ? '#2e2e2e' : Colors.surfaceContainer,
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<TopicFilter>('all');
   const [loading, setLoading] = useState(true);
@@ -222,39 +240,39 @@ export default function PracticeScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: P.bg }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.secondary} />
-          <Text style={styles.loadingText}>Loading topics...</Text>
+          <ActivityIndicator size="large" color={P.secondary} />
+          <Text style={[styles.loadingText, { color: P.textLight }]}>Loading topics...</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: P.bg }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>Practice</Text>
-            <Text style={styles.subtitle}>Choose a topic to master</Text>
+            <Text style={[styles.title, { color: P.text }]}>Practice</Text>
+            <Text style={[styles.subtitle, { color: P.textLight }]}>Choose a topic to master</Text>
           </View>
         </View>
 
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color={Colors.textLight} style={styles.searchIcon} />
+        <View style={[styles.searchContainer, { backgroundColor: P.inputBg }]}>
+          <Ionicons name="search" size={20} color={P.textLight} style={styles.searchIcon} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: P.text }]}
             placeholder="Search topics or subtopics..."
-            placeholderTextColor={Colors.textLight}
+            placeholderTextColor={P.textLight}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color={Colors.textLight} />
+              <Ionicons name="close-circle" size={20} color={P.textLight} />
             </TouchableOpacity>
           )}
         </View>
@@ -266,49 +284,40 @@ export default function PracticeScreen() {
           contentContainerStyle={styles.filterContainer}
         >
           <TouchableOpacity
-            style={[styles.filterChip, selectedFilter === 'all' && styles.filterChipActive]}
+            style={[styles.filterChip, { backgroundColor: P.chipBg, borderColor: P.border }, selectedFilter === 'all' && { backgroundColor: P.chipActiveBg, borderColor: P.chipActiveBg }]}
             onPress={() => setSelectedFilter('all')}
           >
-            <Text style={[
-              styles.filterChipText,
-              selectedFilter === 'all' && styles.filterChipTextActive
-            ]}>
+            <Text style={[styles.filterChipText, { color: P.text }, selectedFilter === 'all' && { color: P.chipActiveText }]}>
               All Topics
             </Text>
           </TouchableOpacity>
           
           <TouchableOpacity
-            style={[styles.filterChip, selectedFilter === 'weak' && styles.filterChipActive]}
+            style={[styles.filterChip, { backgroundColor: P.chipBg, borderColor: P.border }, selectedFilter === 'weak' && { backgroundColor: P.chipActiveBg, borderColor: P.chipActiveBg }]}
             onPress={() => setSelectedFilter('weak')}
           >
             <Ionicons 
               name="arrow-down" 
               size={14} 
-              color={selectedFilter === 'weak' ? Colors.white : Colors.textLight}
+              color={selectedFilter === 'weak' ? P.chipActiveText : P.textLight}
               style={{ marginRight: 4 }}
             />
-            <Text style={[
-              styles.filterChipText,
-              selectedFilter === 'weak' && styles.filterChipTextActive
-            ]}>
+            <Text style={[styles.filterChipText, { color: P.text }, selectedFilter === 'weak' && { color: P.chipActiveText }]}>
               Need Practice
             </Text>
           </TouchableOpacity>
           
           <TouchableOpacity
-            style={[styles.filterChip, selectedFilter === 'strong' && styles.filterChipActive]}
+            style={[styles.filterChip, { backgroundColor: P.chipBg, borderColor: P.border }, selectedFilter === 'strong' && { backgroundColor: P.chipActiveBg, borderColor: P.chipActiveBg }]}
             onPress={() => setSelectedFilter('strong')}
           >
             <Ionicons 
               name="arrow-up" 
               size={14} 
-              color={selectedFilter === 'strong' ? Colors.white : Colors.textLight}
+              color={selectedFilter === 'strong' ? P.chipActiveText : P.textLight}
               style={{ marginRight: 4 }}
             />
-            <Text style={[
-              styles.filterChipText,
-              selectedFilter === 'strong' && styles.filterChipTextActive
-            ]}>
+            <Text style={[styles.filterChipText, { color: P.text }, selectedFilter === 'strong' && { color: P.chipActiveText }]}>
               Strong Areas
             </Text>
           </TouchableOpacity>
@@ -318,9 +327,9 @@ export default function PracticeScreen() {
         <View style={styles.topicsList}>
           {filteredTopics.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="search" size={64} color={Colors.textLight} />
-              <Text style={styles.emptyText}>No topics found</Text>
-              <Text style={styles.emptySubtext}>Try adjusting your search or filter</Text>
+              <Ionicons name="search" size={64} color={P.textLight} />
+              <Text style={[styles.emptyText, { color: P.text }]}>No topics found</Text>
+              <Text style={[styles.emptySubtext, { color: P.textLight }]}>Try adjusting your search or filter</Text>
             </View>
           ) : (
             filteredTopics.map((topic) => {
@@ -328,7 +337,7 @@ export default function PracticeScreen() {
               return (
                 <TouchableOpacity
                   key={topic.id}
-                  style={styles.topicCard}
+                  style={[styles.topicCard, { backgroundColor: P.card }]}
                   onPress={() => handleTopicPress(topic)}
                   activeOpacity={0.7}
                 >
@@ -339,34 +348,34 @@ export default function PracticeScreen() {
                     </View>
                     
                     <View style={styles.topicInfo}>
-                      <Text style={styles.topicName}>{topic.name}</Text>
+                      <Text style={[styles.topicName, { color: P.text }]}>{topic.name}</Text>
                       <View style={styles.topicMeta}>
                         <View style={styles.metaItem}>
-                          <Ionicons name="book-outline" size={14} color={Colors.textLight} />
-                          <Text style={styles.metaText}>{topic.lessons} lessons</Text>
+                          <Ionicons name="book-outline" size={14} color={P.textLight} />
+                          <Text style={[styles.metaText, { color: P.textLight }]}>{topic.lessons} lessons</Text>
                         </View>
                         <View style={styles.metaItem}>
-                          <Ionicons name="create-outline" size={14} color={Colors.textLight} />
-                          <Text style={styles.metaText}>{topic.problems} problems</Text>
+                          <Ionicons name="create-outline" size={14} color={P.textLight} />
+                          <Text style={[styles.metaText, { color: P.textLight }]}>{topic.problems} problems</Text>
                         </View>
                       </View>
                     </View>
                     
-                    <Ionicons name="chevron-forward" size={20} color={Colors.textLight} />
+                    <Ionicons name="chevron-forward" size={20} color={P.textLight} />
                   </View>
 
                   {/* Progress Bar */}
                   <View style={styles.progressSection}>
                     <View style={styles.progressHeader}>
-                      <Text style={styles.progressLabel}>Mastery Level</Text>
+                      <Text style={[styles.progressLabel, { color: P.textLight }]}>Mastery Level</Text>
                       <View style={styles.masteryBadge}>
                         <Text style={[styles.masteryText, { color: masteryInfo.color }]}>
                           {masteryInfo.label}
                         </Text>
-                        <Text style={styles.masteryPercent}>{topic.mastery}%</Text>
+                        <Text style={[styles.masteryPercent, { color: P.text }]}>{topic.mastery}%</Text>
                       </View>
                     </View>
-                    <View style={styles.progressBarContainer}>
+                    <View style={[styles.progressBarContainer, { backgroundColor: P.surface }]}>
                       <View 
                         style={[
                           styles.progressBar,
@@ -380,17 +389,17 @@ export default function PracticeScreen() {
                   </View>
 
                   {/* Subtopics */}
-                  <View style={styles.subtopicsSection}>
-                    <Text style={styles.subtopicsLabel}>Key Subtopics:</Text>
+                  <View style={[styles.subtopicsSection, { borderTopColor: P.surface }]}>
+                    <Text style={[styles.subtopicsLabel, { color: P.text }]}>Key Subtopics:</Text>
                     <View style={styles.subtopicsContainer}>
                       {topic.subtopics.slice(0, 3).map((subtopic, index) => (
-                        <View key={index} style={styles.subtopicTag}>
-                          <Text style={styles.subtopicText}>{subtopic}</Text>
+                        <View key={index} style={[styles.subtopicTag, { backgroundColor: P.tagBg }]}>
+                          <Text style={[styles.subtopicText, { color: P.text }]}>{subtopic}</Text>
                         </View>
                       ))}
                       {topic.subtopics.length > 3 && (
-                        <View style={styles.subtopicTag}>
-                          <Text style={styles.subtopicText}>+{topic.subtopics.length - 3}</Text>
+                        <View style={[styles.subtopicTag, { backgroundColor: P.tagBg }]}>
+                          <Text style={[styles.subtopicText, { color: P.text }]}>+{topic.subtopics.length - 3}</Text>
                         </View>
                       )}
                     </View>
@@ -403,10 +412,10 @@ export default function PracticeScreen() {
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>
-          <Text style={styles.quickActionsTitle}>Quick Actions</Text>
+          <Text style={[styles.quickActionsTitle, { color: P.text }]}>Quick Actions</Text>
 
           <TouchableOpacity
-            style={[styles.actionCard, dailyDone && styles.actionCardDone]}
+            style={[styles.actionCard, { backgroundColor: P.card }, dailyDone && styles.actionCardDone]}
             onPress={dailyDone ? undefined : handleDailyChallenge}
             activeOpacity={dailyDone ? 1 : 0.7}
             disabled={dailyDone}
@@ -420,14 +429,14 @@ export default function PracticeScreen() {
             </View>
             <View style={styles.actionContent}>
               <View style={styles.actionTitleRow}>
-                <Text style={styles.actionTitle}>Daily Challenge</Text>
+                <Text style={[styles.actionTitle, { color: P.text }]}>Daily Challenge</Text>
                 {dailyDone && (
                   <View style={styles.doneBadge}>
                     <Text style={styles.doneBadgeText}>Done ✓</Text>
                   </View>
                 )}
               </View>
-              <Text style={styles.actionSubtitle}>
+              <Text style={[styles.actionSubtitle, { color: P.textLight }]}>
                 {dailyDone
                   ? 'Come back tomorrow for a new challenge!'
                   : `Today: ${dailyTopicLabel} — 10 mixed problems`}
@@ -436,7 +445,7 @@ export default function PracticeScreen() {
             {dailyDone ? (
               <Ionicons name="lock-closed" size={18} color="#00a472" />
             ) : (
-              <Ionicons name="chevron-forward" size={20} color={Colors.textLight} />
+              <Ionicons name="chevron-forward" size={20} color={P.textLight} />
             )}
           </TouchableOpacity>
         </View>

@@ -18,11 +18,34 @@ import { WeakAreaCard } from '@/components/WeakAreaCard';
 import { TimelineChart } from '@/components/TimelineChart';
 import diagnosticService from '@/services/diagnosticService';
 import { DiagnosticResult, WeakTopic } from '@/types/diagnostic';
+import { useTheme } from '@/context/ThemeContext';
 
 type TimelinePeriod = 'week' | 'month' | '6months';
 
 export default function DiagnosticScreen() {
   const router = useRouter();
+  const { darkMode } = useTheme();
+
+  const DX = {
+    bg: darkMode ? '#0a0a0a' : Colors.background,
+    card: darkMode ? '#1a1a1a' : Colors.white,
+    text: darkMode ? '#f0f0f0' : Colors.primary,
+    textBody: darkMode ? '#f0f0f0' : Colors.text,
+    textLight: darkMode ? '#a0a0a0' : Colors.textLight,
+    secondary: darkMode ? '#a5b4fc' : Colors.secondary,
+    surface: darkMode ? '#242424' : Colors.surfaceContainerLow,
+    border: darkMode ? '#2e2e2e' : Colors.border,
+    badgeBg: darkMode ? '#312e81' : Colors.secondaryFixed,
+    badgeText: darkMode ? '#a5b4fc' : Colors.onSecondaryFixedVariant,
+    recBg: darkMode ? '#1e1e2e' : Colors.surfaceContainerLow,
+    recBorder: darkMode ? '#a5b4fc' : Colors.secondary,
+    ctaBg: darkMode ? '#1a1a2e' : Colors.primary,
+    ctaBtn: darkMode ? '#4b41e1' : Colors.secondary,
+    periodBg: darkMode ? '#242424' : Colors.surfaceContainerLow,
+    periodActiveBg: darkMode ? '#1a1a1a' : Colors.white,
+    periodText: darkMode ? '#a0a0a0' : Colors.textLight,
+    periodActiveText: darkMode ? '#f0f0f0' : Colors.primary,
+  };
   const [diagnostic, setDiagnostic] = useState<DiagnosticResult | null>(null);
   const [timelineData, setTimelineData] = useState<any[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<TimelinePeriod>('week');
@@ -133,10 +156,10 @@ export default function DiagnosticScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: DX.bg }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.secondary} />
-          <Text style={styles.loadingText}>Loading diagnostic data...</Text>
+          <ActivityIndicator size="large" color={DX.secondary} />
+          <Text style={[styles.loadingText, { color: DX.textLight }]}>Loading diagnostic data...</Text>
         </View>
       </SafeAreaView>
     );
@@ -144,20 +167,20 @@ export default function DiagnosticScreen() {
 
   if (!diagnostic) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: DX.bg }]}>
         <ScrollView
           contentContainerStyle={styles.emptyContainer}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
-          <MaterialIcons name="analytics" size={80} color={Colors.secondary} />
-          <Text style={styles.emptyTitle}>Start Your Journey</Text>
-          <Text style={styles.emptySubtitle}>
+          <MaterialIcons name="analytics" size={80} color={DX.secondary} />
+          <Text style={[styles.emptyTitle, { color: DX.text }]}>Start Your Journey</Text>
+          <Text style={[styles.emptySubtitle, { color: DX.textLight }]}>
             Complete a diagnostic test to unlock personalized learning paths and track your progress
           </Text>
           <TouchableOpacity
-            style={styles.startButton}
+            style={[styles.startButton, { backgroundColor: DX.secondary }]}
             onPress={handleStartDiagnostic}
           >
             <Text style={styles.startButtonText}>START DIAGNOSTIC</Text>
@@ -169,6 +192,7 @@ export default function DiagnosticScreen() {
 
   return (
       <ScrollView
+        style={{ backgroundColor: DX.bg }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -177,24 +201,24 @@ export default function DiagnosticScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>Knowledge Map</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.title, { color: DX.text }]}>Knowledge Map</Text>
+            <Text style={[styles.subtitle, { color: DX.textLight }]}>
               Visualizing your path to mathematical excellence
             </Text>
           </View>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
+          <View style={[styles.badge, { backgroundColor: DX.badgeBg }]}>
+            <Text style={[styles.badgeText, { color: DX.badgeText }]}>
               Overall {diagnostic.overallScore}%
             </Text>
           </View>
         </View>
 
         {/* Topic Mastery Section */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: DX.card }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Topic Mastery</Text>
+            <Text style={[styles.sectionTitle, { color: DX.text }]}>Topic Mastery</Text>
             <TouchableOpacity onPress={handleViewAllTopics}>
-              <Text style={styles.viewDetails}>VIEW DETAILS →</Text>
+              <Text style={[styles.viewDetails, { color: DX.secondary }]}>VIEW DETAILS →</Text>
             </TouchableOpacity>
           </View>
 
@@ -224,11 +248,11 @@ export default function DiagnosticScreen() {
           </ScrollView>
 
           {/* AI Recommendation */}
-          <View style={styles.recommendationCard}>
-            <MaterialIcons name="psychology" size={24} color={Colors.secondary} />
+          <View style={[styles.recommendationCard, { backgroundColor: DX.recBg, borderLeftColor: DX.recBorder }]}>
+            <MaterialIcons name="psychology" size={24} color={DX.secondary} />
             <View style={styles.recommendationContent}>
-              <Text style={styles.recommendationTitle}>AI Recommendation</Text>
-              <Text style={styles.recommendationText}>
+              <Text style={[styles.recommendationTitle, { color: DX.text }]}>AI Recommendation</Text>
+              <Text style={[styles.recommendationText, { color: DX.textBody }]}>
                 {getRecommendation()}
               </Text>
             </View>
@@ -236,16 +260,18 @@ export default function DiagnosticScreen() {
         </View>
 
         {/* Weak Areas Section */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: DX.card }]}>
           <View style={styles.sectionHeader}>
             <View style={styles.weakAreasHeader}>
               <MaterialIcons name="warning" size={20} color={Colors.error} />
-              <Text style={styles.sectionTitle}>Weak Areas</Text>
+              <Text style={[styles.sectionTitle, { color: DX.text }]}>Weak Areas</Text>
             </View>
           </View>
 
           {diagnostic.weakTopics && diagnostic.weakTopics.length > 0 ? (
-            diagnostic.weakTopics.slice(0, 3).map((weak, index) => (
+            Array.from(
+              new Map(diagnostic.weakTopics.map(w => [w.topic, w])).values()
+            ).slice(0, 3).map((weak, index) => (
               <WeakAreaCard
                 key={index}
                 subtopic={weak.topic}
@@ -262,19 +288,19 @@ export default function DiagnosticScreen() {
               />
             ))
           ) : (
-            <Text style={styles.noWeakAreas}>
+            <Text style={[styles.noWeakAreas, { color: DX.textLight }]}>
               Great work! No weak areas identified.
             </Text>
           )}
 
           {/* CTA Card */}
-          <View style={styles.ctaCard}>
+          <View style={[styles.ctaCard, { backgroundColor: DX.ctaBg }]}>
             <Text style={styles.ctaTitle}>Ready for a challenge?</Text>
             <Text style={styles.ctaSubtitle}>
               Retake the diagnostic to update your personalized learning path
             </Text>
             <TouchableOpacity
-              style={styles.ctaButton}
+              style={[styles.ctaButton, { backgroundColor: DX.ctaBtn }]}
               onPress={handleStartDiagnostic}
             >
               <Text style={styles.ctaButtonText}>RETAKE DIAGNOSTIC</Text>
@@ -283,31 +309,32 @@ export default function DiagnosticScreen() {
         </View>
 
         {/* Mastery Timeline Section */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: DX.card }]}>
           <View style={styles.sectionHeader}>
             <View>
-              <Text style={styles.sectionTitle}>Mastery Timeline</Text>
-              <Text style={styles.sectionSubtitle}>
+              <Text style={[styles.sectionTitle, { color: DX.text }]}>Mastery Timeline</Text>
+              <Text style={[styles.sectionSubtitle, { color: DX.textLight }]}>
                 Tracking your growth over time
               </Text>
             </View>
           </View>
 
           {/* Period Selector */}
-          <View style={styles.periodSelector}>
+          <View style={[styles.periodSelector, { backgroundColor: DX.periodBg }]}>
             {(['week', 'month', '6months'] as TimelinePeriod[]).map((period) => (
               <TouchableOpacity
                 key={period}
                 style={[
                   styles.periodButton,
-                  selectedPeriod === period && styles.periodButtonActive
+                  selectedPeriod === period && [styles.periodButtonActive, { backgroundColor: DX.periodActiveBg }]
                 ]}
                 onPress={() => setSelectedPeriod(period)}
               >
                 <Text
                   style={[
                     styles.periodButtonText,
-                    selectedPeriod === period && styles.periodButtonTextActive
+                    { color: DX.periodText },
+                    selectedPeriod === period && [styles.periodButtonTextActive, { color: DX.periodActiveText }]
                   ]}
                 >
                   {period === 'week' ? 'W' : period === 'month' ? 'M' : '6M'}

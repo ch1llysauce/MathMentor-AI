@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { lessonService } from '@/services/lessonService';
 import { Lesson } from '@/types/lesson';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function LessonScreen() {
   const { lessonId, topicName, mastery } = useLocalSearchParams<{
@@ -13,6 +14,26 @@ export default function LessonScreen() {
     mastery?: string;
   }>();
   const router = useRouter();
+  const { darkMode } = useTheme();
+
+  const L = {
+    bg: darkMode ? '#0a0a0a' : Colors.background,
+    header: darkMode ? '#0a0a0a' : Colors.white,
+    border: darkMode ? '#2e2e2e' : Colors.borderLight,
+    text: darkMode ? '#f0f0f0' : Colors.text,
+    textLight: darkMode ? '#a0a0a0' : Colors.textLight,
+    primary: darkMode ? '#a5b4fc' : '#4b41e1',
+    card: darkMode ? '#1a1a1a' : Colors.white,
+    surface: darkMode ? '#2a2a2a' : Colors.surface,
+    badgeBg: darkMode ? '#312e81' : '#e2dfff',
+    badgeText: darkMode ? '#a5b4fc' : '#4b41e1',
+    footer: darkMode ? '#0a0a0a' : Colors.white,
+    navBtnBg: darkMode ? '#2e2e2e' : Colors.surfaceContainer,
+    exampleBg: darkMode ? '#2d2a00' : '#fef3c7',
+    exampleBorder: '#f59e0b',
+    exampleText: darkMode ? '#fcd34d' : '#92400e',
+    exampleBody: darkMode ? '#fbbf24' : '#78350f',
+  };
   
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
@@ -120,18 +141,18 @@ export default function LessonScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4b41e1" />
-        <Text style={styles.loadingText}>Loading lesson...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: L.bg }]}>
+        <ActivityIndicator size="large" color={L.primary} />
+        <Text style={[styles.loadingText, { color: L.textLight }]}>Loading lesson...</Text>
       </View>
     );
   }
 
   if (!lesson) {
     return (
-      <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle-outline" size={64} color={Colors.textLight} />
-        <Text style={styles.errorText}>Lesson not found</Text>
+      <View style={[styles.errorContainer, { backgroundColor: L.bg }]}>
+        <Ionicons name="alert-circle-outline" size={64} color={L.textLight} />
+        <Text style={[styles.errorText, { color: L.text }]}>Lesson not found</Text>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
@@ -142,36 +163,33 @@ export default function LessonScreen() {
   const isCompleted = lesson.userProgress?.status === 'completed';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: L.bg }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backIcon} onPress={() => router.replace({
-    pathname: '/practice/topic',
-    params: { topicName: lesson.topic, mastery },
-  })}>
-          <Ionicons name="arrow-back" size={24} color="#091426" />
+      <View style={[styles.header, { backgroundColor: L.header, borderBottomColor: L.border }]}>
+        <TouchableOpacity style={[styles.backIcon, { backgroundColor: L.surface }]} onPress={() => router.replace({
+          pathname: '/practice/topic',
+          params: { topicName: lesson.topic, mastery },
+        })}>
+          <Ionicons name="arrow-back" size={24} color={L.text} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={styles.headerSubtitle}>{lesson.topic} • {lesson.subtopic}</Text>
-          <Text style={styles.headerTitle}>{lesson.title}</Text>
+          <Text style={[styles.headerSubtitle, { color: L.textLight }]}>{lesson.topic} • {lesson.subtopic}</Text>
+          <Text style={[styles.headerTitle, { color: L.text }]}>{lesson.title}</Text>
         </View>
       </View>
 
       {/* Content */}
-      <ScrollView 
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Lesson Info */}
-        <View style={styles.infoCard}>
+        <View style={[styles.infoCard, { backgroundColor: L.card }]}>
           <View style={styles.infoRow}>
-            <View style={styles.infoBadge}>
-              <Ionicons name="trending-up" size={16} color="#4b41e1" />
-              <Text style={styles.infoBadgeText}>{lesson.difficulty}</Text>
+            <View style={[styles.infoBadge, { backgroundColor: L.badgeBg }]}>
+              <Ionicons name="trending-up" size={16} color={L.primary} />
+              <Text style={[styles.infoBadgeText, { color: L.badgeText }]}>{lesson.difficulty}</Text>
             </View>
-            <View style={styles.infoBadge}>
-              <Ionicons name="time-outline" size={16} color="#4b41e1" />
-              <Text style={styles.infoBadgeText}>{lesson.estimatedTime} min</Text>
+            <View style={[styles.infoBadge, { backgroundColor: L.badgeBg }]}>
+              <Ionicons name="time-outline" size={16} color={L.primary} />
+              <Text style={[styles.infoBadgeText, { color: L.badgeText }]}>{lesson.estimatedTime} min</Text>
             </View>
             {isCompleted && (
               <View style={[styles.infoBadge, styles.completedBadge]}>
@@ -180,50 +198,47 @@ export default function LessonScreen() {
               </View>
             )}
           </View>
-          <Text style={styles.description}>{lesson.description}</Text>
+          <Text style={[styles.description, { color: L.textLight }]}>{lesson.description}</Text>
         </View>
 
         {/* Introduction */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Introduction</Text>
-          <Text style={styles.sectionContent}>{lesson.content.introduction}</Text>
+          <Text style={[styles.sectionTitle, { color: L.text }]}>Introduction</Text>
+          <Text style={[styles.sectionContent, { color: L.text }]}>{lesson.content.introduction}</Text>
         </View>
 
         {/* Sections */}
         {lesson.content.sections.map((section, index) => (
           <View key={index} style={styles.section}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-            <Text style={styles.sectionContent}>{section.content}</Text>
+            <Text style={[styles.sectionTitle, { color: L.text }]}>{section.title}</Text>
+            <Text style={[styles.sectionContent, { color: L.text }]}>{section.content}</Text>
 
-            {/* Examples */}
             {section.examples && section.examples.length > 0 && (
               <View style={styles.examplesContainer}>
-                <Text style={styles.examplesTitle}>Examples:</Text>
+                <Text style={[styles.examplesTitle, { color: L.text }]}>Examples:</Text>
                 {section.examples.map((example, exIndex) => (
-                  <View key={exIndex} style={styles.exampleCard}>
+                  <View key={exIndex} style={[styles.exampleCard, { backgroundColor: L.exampleBg, borderLeftColor: L.exampleBorder }]}>
                     <View style={styles.exampleHeader}>
                       <Ionicons name="bulb-outline" size={20} color="#f59e0b" />
-                      <Text style={styles.exampleLabel}>Example {exIndex + 1}</Text>
+                      <Text style={[styles.exampleLabel, { color: L.exampleText }]}>Example {exIndex + 1}</Text>
                     </View>
-                    <Text style={styles.exampleProblem}>{example.problem}</Text>
-                    
+                    <Text style={[styles.exampleProblem, { color: L.exampleBody }]}>{example.problem}</Text>
                     {example.steps && example.steps.length > 0 && (
                       <View style={styles.stepsContainer}>
-                        <Text style={styles.stepsTitle}>Solution Steps:</Text>
+                        <Text style={[styles.stepsTitle, { color: L.exampleText }]}>Solution Steps:</Text>
                         {example.steps.map((step, stepIndex) => (
                           <View key={stepIndex} style={styles.stepRow}>
                             <View style={styles.stepNumber}>
                               <Text style={styles.stepNumberText}>{stepIndex + 1}</Text>
                             </View>
-                            <Text style={styles.stepText}>{step}</Text>
+                            <Text style={[styles.stepText, { color: L.exampleBody }]}>{step}</Text>
                           </View>
                         ))}
                       </View>
                     )}
-                    
-                    <View style={styles.solutionRow}>
-                      <Text style={styles.solutionLabel}>Answer:</Text>
-                      <Text style={styles.solutionText}>{example.solution}</Text>
+                    <View style={[styles.solutionRow, { borderTopColor: darkMode ? '#854d0e' : '#fcd34d' }]}>
+                      <Text style={[styles.solutionLabel, { color: L.exampleText }]}>Answer:</Text>
+                      <Text style={[styles.solutionText, { color: L.exampleBody }]}>{example.solution}</Text>
                     </View>
                   </View>
                 ))}
@@ -234,33 +249,28 @@ export default function LessonScreen() {
 
         {/* Summary */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Summary</Text>
-          <Text style={styles.sectionContent}>{lesson.content.summary}</Text>
+          <Text style={[styles.sectionTitle, { color: L.text }]}>Summary</Text>
+          <Text style={[styles.sectionContent, { color: L.text }]}>{lesson.content.summary}</Text>
         </View>
 
         {/* Key Takeaways */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Key Takeaways</Text>
+          <Text style={[styles.sectionTitle, { color: L.text }]}>Key Takeaways</Text>
           {lesson.content.keyTakeaways.map((takeaway, index) => (
             <View key={index} style={styles.takeawayRow}>
               <Ionicons name="checkmark-circle" size={20} color="#10b981" />
-              <Text style={styles.takeawayText}>{takeaway}</Text>
+              <Text style={[styles.takeawayText, { color: L.text }]}>{takeaway}</Text>
             </View>
           ))}
         </View>
 
-        {/* Extra padding at bottom to avoid tab bar overlap */}
         <View style={{ height: 200 }} />
       </ScrollView>
 
       {/* Footer */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: L.footer }]}>
         <TouchableOpacity
-          style={[
-            styles.completeButton,
-            completing && styles.completeButtonDisabled,
-            isCompleted && styles.incompleteButton
-          ]}
+          style={[styles.completeButton, completing && styles.completeButtonDisabled, isCompleted && styles.incompleteButton]}
           onPress={handleCompleteLesson}
           disabled={completing}
         >
@@ -268,11 +278,7 @@ export default function LessonScreen() {
             <ActivityIndicator size="small" color="#ffffff" />
           ) : (
             <>
-              <Ionicons 
-                name={isCompleted ? "close-circle-outline" : "checkmark-circle-outline"} 
-                size={24} 
-                color="#ffffff" 
-              />
+              <Ionicons name={isCompleted ? "close-circle-outline" : "checkmark-circle-outline"} size={24} color="#ffffff" />
               <Text style={styles.completeButtonText}>
                 {isCompleted ? "Mark as Incomplete" : "Mark as Complete"}
               </Text>
@@ -281,29 +287,28 @@ export default function LessonScreen() {
         </TouchableOpacity>
         <View style={styles.navButtonsContainer}>
           <TouchableOpacity
-            style={[styles.navButton, currentIndex === 0 && styles.navButtonDisabled]}
+            style={[styles.navButton, { backgroundColor: L.navBtnBg }, currentIndex === 0 && styles.navButtonDisabled]}
             onPress={handlePreviousLesson}
             disabled={currentIndex === 0}
             activeOpacity={0.7}
           >
-            <Ionicons name="arrow-back" size={20} color={currentIndex === 0 ? Colors.textLight : Colors.primary} />
-            <Text style={[styles.navButtonText, currentIndex === 0 && { color: Colors.textLight }]}>Previous</Text>
+            <Ionicons name="arrow-back" size={20} color={currentIndex === 0 ? L.textLight : L.primary} />
+            <Text style={[styles.navButtonText, { color: currentIndex === 0 ? L.textLight : L.primary }]}>Previous</Text>
           </TouchableOpacity>
-          <Text style={styles.navIndicator}>
+          <Text style={[styles.navIndicator, { color: L.textLight }]}>
             {currentIndex + 1} / {lessonList.length}
           </Text>
           <TouchableOpacity
-            style={[styles.navButton, currentIndex >= lessonList.length - 1 && styles.navButtonDisabled]}
+            style={[styles.navButton, { backgroundColor: L.navBtnBg }, currentIndex >= lessonList.length - 1 && styles.navButtonDisabled]}
             onPress={handleNextLesson}
             disabled={currentIndex >= lessonList.length - 1}
             activeOpacity={0.7}
           >
-            <Text style={[styles.navButtonText, currentIndex >= lessonList.length - 1 ? { color: Colors.textLight } : { color: Colors.primary }]}>Next</Text>
-            <Ionicons name="arrow-forward" size={20} color={currentIndex >= lessonList.length - 1 ? Colors.textLight : Colors.primary} />
+            <Text style={[styles.navButtonText, { color: currentIndex >= lessonList.length - 1 ? L.textLight : L.primary }]}>Next</Text>
+            <Ionicons name="arrow-forward" size={20} color={currentIndex >= lessonList.length - 1 ? L.textLight : L.primary} />
           </TouchableOpacity>
         </View>
       </View>
-      
     </View>
   );
 }

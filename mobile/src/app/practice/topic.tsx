@@ -12,6 +12,7 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { lessonService } from '@/services/lessonService';
+import { useTheme } from '@/context/ThemeContext';
 
 type TabType = 'lessons' | 'practice';
 
@@ -34,6 +35,21 @@ interface PracticeSet {
 export default function TopicScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { darkMode } = useTheme();
+
+  const T = {
+    bg: darkMode ? '#0a0a0a' : '#f7f9fb',
+    header: darkMode ? '#0a0a0a' : '#ffffff',
+    border: darkMode ? '#2e2e2e' : '#e2e8f0',
+    text: darkMode ? '#f0f0f0' : Colors.text,
+    textLight: darkMode ? '#a0a0a0' : Colors.textLight,
+    primary: darkMode ? '#a5b4fc' : Colors.primary,
+    card: darkMode ? '#1a1a1a' : Colors.white,
+    surface: darkMode ? '#2e2e2e' : Colors.surfaceContainer,
+    tabBg: darkMode ? '#242424' : Colors.surfaceContainerLow,
+    tabActive: darkMode ? '#1a1a1a' : Colors.white,
+    backIcon: darkMode ? '#2a2a2a' : Colors.surface,
+  };
   const [selectedTab, setSelectedTab] = useState<TabType>('lessons');
   const [loading, setLoading] = useState(true);
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -156,9 +172,9 @@ export default function TopicScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={{ marginTop: 12, fontSize: 14, color: Colors.textLight }}>
+      <View style={[styles.container, { backgroundColor: T.bg, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={T.primary} />
+        <Text style={{ marginTop: 12, fontSize: 14, color: T.textLight }}>
           Loading {topicName}...
         </Text>
       </View>
@@ -166,76 +182,70 @@ export default function TopicScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <View style={[styles.container, { backgroundColor: T.bg }]}>
+      <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={T.header} />
       
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: T.header, borderBottomColor: T.border }]}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => router.replace('/(tabs)/practice')}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color={Colors.text} />
+          <Ionicons name="arrow-back" size={24} color={T.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{topicName}</Text>
+        <Text style={[styles.headerTitle, { color: T.text }]}>{topicName}</Text>
         <View style={styles.placeholder} />
       </View>
 
       {/* Topic Stats Card */}
-      <View style={styles.statsCard}>
+      <View style={[styles.statsCard, { backgroundColor: T.card }]}>
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>{mastery}%</Text>
-          <Text style={styles.statLabel}>Mastery</Text>
+          <Text style={[styles.statValue, { color: T.primary }]}>{mastery}%</Text>
+          <Text style={[styles.statLabel, { color: T.textLight }]}>Mastery</Text>
         </View>
-        <View style={styles.statDivider} />
+        <View style={[styles.statDivider, { backgroundColor: T.surface }]} />
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>{lessons.filter(l => l.completed).length}/{lessons.length}</Text>
-          <Text style={styles.statLabel}>Lessons</Text>
+          <Text style={[styles.statValue, { color: T.primary }]}>{lessons.filter(l => l.completed).length}/{lessons.length}</Text>
+          <Text style={[styles.statLabel, { color: T.textLight }]}>Lessons</Text>
         </View>
-        <View style={styles.statDivider} />
+        <View style={[styles.statDivider, { backgroundColor: T.surface }]} />
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>
+          <Text style={[styles.statValue, { color: T.primary }]}>
             {practiceSets.reduce((acc, p) => acc + p.completed, 0)}
           </Text>
-          <Text style={styles.statLabel}>Problems Solved</Text>
+          <Text style={[styles.statLabel, { color: T.textLight }]}>Problems Solved</Text>
         </View>
       </View>
 
       {/* Tabs */}
-      <View style={styles.tabsContainer}>
+      <View style={[styles.tabsContainer, { backgroundColor: T.tabBg }]}>
         <TouchableOpacity
-          style={[styles.tab, selectedTab === 'lessons' && styles.tabActive]}
+          style={[styles.tab, selectedTab === 'lessons' && [styles.tabActive, { backgroundColor: T.tabActive }]]}
           onPress={() => setSelectedTab('lessons')}
           activeOpacity={0.7}
         >
           <Ionicons 
             name="book" 
             size={20} 
-            color={selectedTab === 'lessons' ? Colors.primary : Colors.textLight}
+            color={selectedTab === 'lessons' ? T.primary : T.textLight}
           />
-          <Text style={[
-            styles.tabText,
-            selectedTab === 'lessons' && styles.tabTextActive
-          ]}>
+          <Text style={[styles.tabText, { color: T.textLight }, selectedTab === 'lessons' && { color: T.primary, fontWeight: '600' }]}>
             Lessons
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.tab, selectedTab === 'practice' && styles.tabActive]}
+          style={[styles.tab, selectedTab === 'practice' && [styles.tabActive, { backgroundColor: T.tabActive }]]}
           onPress={() => setSelectedTab('practice')}
           activeOpacity={0.7}
         >
           <Ionicons 
             name="create" 
             size={20} 
-            color={selectedTab === 'practice' ? Colors.primary : Colors.textLight}
+            color={selectedTab === 'practice' ? T.primary : T.textLight}
           />
-          <Text style={[
-            styles.tabText,
-            selectedTab === 'practice' && styles.tabTextActive
-          ]}>
+          <Text style={[styles.tabText, { color: T.textLight }, selectedTab === 'practice' && { color: T.primary, fontWeight: '600' }]}>
             Practice
           </Text>
         </TouchableOpacity>
@@ -252,39 +262,33 @@ export default function TopicScreen() {
             {lessons.map((lesson, index) => (
               <TouchableOpacity
                 key={lesson.id}
-                style={[
-                  styles.lessonCard,
-                  lesson.locked && styles.lessonCardLocked
-                ]}
+                style={[styles.lessonCard, { backgroundColor: T.card }, lesson.locked && styles.lessonCardLocked]}
                 onPress={() => handleLessonPress(lesson)}
                 activeOpacity={lesson.locked ? 1 : 0.7}
                 disabled={lesson.locked}
               >
-                <View style={styles.lessonNumber}>
+                <View style={[styles.lessonNumber, { backgroundColor: T.surface }]}>
                   {lesson.completed ? (
                     <Ionicons name="checkmark-circle" size={24} color="#00a472" />
                   ) : lesson.locked ? (
-                    <Ionicons name="lock-closed" size={20} color={Colors.textLight} />
+                    <Ionicons name="lock-closed" size={20} color={T.textLight} />
                   ) : (
-                    <Text style={styles.lessonNumberText}>{index + 1}</Text>
+                    <Text style={[styles.lessonNumberText, { color: T.primary }]}>{index + 1}</Text>
                   )}
                 </View>
 
                 <View style={styles.lessonContent}>
-                  <Text style={[
-                    styles.lessonTitle,
-                    lesson.locked && styles.lessonTitleLocked
-                  ]}>
+                  <Text style={[styles.lessonTitle, { color: lesson.locked ? T.textLight : T.text }]}>
                     {lesson.title}
                   </Text>
                   <View style={styles.lessonMeta}>
-                    <Ionicons name="time-outline" size={14} color={Colors.textLight} />
-                    <Text style={styles.lessonDuration}>{lesson.duration}</Text>
+                    <Ionicons name="time-outline" size={14} color={T.textLight} />
+                    <Text style={[styles.lessonDuration, { color: T.textLight }]}>{lesson.duration}</Text>
                   </View>
                 </View>
 
                 {!lesson.locked && (
-                  <Ionicons name="chevron-forward" size={20} color={Colors.textLight} />
+                  <Ionicons name="chevron-forward" size={20} color={T.textLight} />
                 )}
               </TouchableOpacity>
             ))}
@@ -293,60 +297,43 @@ export default function TopicScreen() {
           <View style={styles.contentSection}>
             {practiceSets.map((practice) => {
               const completionPercent = (practice.completed / practice.problems) * 100;
-              
               return (
                 <TouchableOpacity
                   key={practice.id}
-                  style={styles.practiceCard}
+                  style={[styles.practiceCard, { backgroundColor: T.card }]}
                   onPress={() => handlePracticePress(practice)}
                   activeOpacity={0.7}
                 >
                   <View style={styles.practiceHeader}>
                     <View style={styles.practiceInfo}>
-                      <Text style={styles.practiceTitle}>{practice.title}</Text>
+                      <Text style={[styles.practiceTitle, { color: T.text }]}>{practice.title}</Text>
                       <View style={styles.practiceMeta}>
                         <View style={styles.metaItem}>
-                          <Ionicons name="help-circle-outline" size={14} color={Colors.textLight} />
-                          <Text style={styles.metaText}>{practice.problems} problems</Text>
+                          <Ionicons name="help-circle-outline" size={14} color={T.textLight} />
+                          <Text style={[styles.metaText, { color: T.textLight }]}>{practice.problems} problems</Text>
                         </View>
-                        <View style={[
-                          styles.difficultyBadge,
-                          { backgroundColor: getDifficultyColor(practice.difficulty) + '20' }
-                        ]}>
-                          <Text style={[
-                            styles.difficultyText,
-                            { color: getDifficultyColor(practice.difficulty) }
-                          ]}>
+                        <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(practice.difficulty) + '20' }]}>
+                          <Text style={[styles.difficultyText, { color: getDifficultyColor(practice.difficulty) }]}>
                             {practice.difficulty}
                           </Text>
                         </View>
                       </View>
                     </View>
-                    
-                    <Ionicons name="chevron-forward" size={20} color={Colors.textLight} />
+                    <Ionicons name="chevron-forward" size={20} color={T.textLight} />
                   </View>
 
-                  {/* Progress */}
                   {practice.completed > 0 && (
-                    <View style={styles.practiceProgress}>
+                    <View style={[styles.practiceProgress, { borderTopColor: T.surface }]}>
                       <View style={styles.progressInfo}>
-                        <Text style={styles.progressText}>
+                        <Text style={[styles.progressText, { color: T.textLight }]}>
                           {practice.completed}/{practice.problems} completed
                         </Text>
-                        <Text style={styles.progressPercent}>
+                        <Text style={[styles.progressPercent, { color: T.text }]}>
                           {Math.round(completionPercent)}%
                         </Text>
                       </View>
-                      <View style={styles.progressBarContainer}>
-                        <View 
-                          style={[
-                            styles.progressBar,
-                            { 
-                              width: `${completionPercent}%`,
-                              backgroundColor: getDifficultyColor(practice.difficulty)
-                            }
-                          ]} 
-                        />
+                      <View style={[styles.progressBarContainer, { backgroundColor: T.surface }]}>
+                        <View style={[styles.progressBar, { width: `${completionPercent}%`, backgroundColor: getDifficultyColor(practice.difficulty) }]} />
                       </View>
                     </View>
                   )}
@@ -355,7 +342,6 @@ export default function TopicScreen() {
             })}
           </View>
         )}
-
         <View style={{ height: 75 }} />
       </ScrollView>
     </View>

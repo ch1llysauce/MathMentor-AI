@@ -5,10 +5,30 @@ import { Colors } from '@/constants/colors';
 import { tutorService } from '@/services/tutorService';
 import { Message, QuickAction } from '@/types/tutor';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function TutorScreen() {
   const { user } = useAuth();
+  const { darkMode } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
+
+  const T = {
+    bg: darkMode ? '#0a0a0a' : Colors.background,
+    headerBg: darkMode ? '#0a0a0a' : Colors.white,
+    border: darkMode ? '#2e2e2e' : Colors.borderLight,
+    text: darkMode ? '#f0f0f0' : Colors.text,
+    textLight: darkMode ? '#a0a0a0' : Colors.textLight,
+    iconContainerBg: darkMode ? '#312e81' : '#e2dfff',
+    clearBtnBg: darkMode ? '#1a1a1a' : Colors.surface,
+    clearBtnIcon: darkMode ? '#f0f0f0' : '#091426',
+    aiBubbleBg: darkMode ? '#1a1a1a' : Colors.white,
+    inputBg: darkMode ? '#1a1a1a' : Colors.white,
+    inputFieldBg: darkMode ? '#2a2a2a' : Colors.surface,
+    inputText: darkMode ? '#f0f0f0' : Colors.text,
+    quickCardBg: darkMode ? '#1a1a1a' : Colors.white,
+    quickIconBg: darkMode ? '#312e81' : '#e2dfff',
+    placeholder: darkMode ? '#666666' : '#b0b3b8',
+  };
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -162,8 +182,11 @@ export default function TutorScreen() {
             <Ionicons name="sparkles" size={16} color="#ffffff" />
           </View>
         )}
-        <View style={[styles.messageContent, isUser ? styles.userContent : styles.aiContent]}>
-          <Text style={[styles.messageText, isUser ? styles.userText : styles.aiText]}>
+        <View style={[
+          styles.messageContent,
+          isUser ? styles.userContent : [styles.aiContent, { backgroundColor: T.aiBubbleBg }]
+        ]}>
+          <Text style={[styles.messageText, isUser ? styles.userText : [styles.aiText, { color: T.text }]]}>
             {message.content}
           </Text>
         </View>
@@ -172,20 +195,20 @@ export default function TutorScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: T.bg }]}>
       {/* Header - Fixed Position */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: T.headerBg, borderBottomColor: T.border }]}>
         <View style={styles.headerLeft}>
-          <View style={styles.headerIconContainer}>
+          <View style={[styles.headerIconContainer, { backgroundColor: T.iconContainerBg }]}>
             <Ionicons name="sparkles" size={24} color="#4b41e1" />
           </View>
           <View>
-            <Text style={styles.headerTitle}>AI Tutor</Text>
-            <Text style={styles.headerSubtitle}>Ask me anything about math</Text>
+            <Text style={[styles.headerTitle, { color: T.text }]}>AI Tutor</Text>
+            <Text style={[styles.headerSubtitle, { color: T.textLight }]}>Ask me anything about math</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.clearButton} onPress={handleClearConversation}>
-          <Ionicons name="refresh-outline" size={24} color="#091426" />
+        <TouchableOpacity style={[styles.clearButton, { backgroundColor: T.clearBtnBg }]} onPress={handleClearConversation}>
+          <Ionicons name="refresh-outline" size={24} color={T.clearBtnIcon} />
         </TouchableOpacity>
       </View>
 
@@ -213,9 +236,9 @@ export default function TutorScreen() {
             <View style={styles.aiAvatar}>
               <Ionicons name="sparkles" size={16} color="#ffffff" />
             </View>
-            <View style={styles.loadingContent}>
+            <View style={[styles.loadingContent, { backgroundColor: T.aiBubbleBg }]}>
               <ActivityIndicator size="small" color="#4b41e1" />
-              <Text style={styles.loadingText}>Thinking...</Text>
+              <Text style={[styles.loadingText, { color: T.textLight }]}>Thinking...</Text>
             </View>
           </View>
         )}
@@ -223,18 +246,18 @@ export default function TutorScreen() {
         {/* Quick Actions */}
         {messages.length === 1 && !isLoading && (
           <View style={styles.quickActionsContainer}>
-            <Text style={styles.quickActionsTitle}>Quick Actions</Text>
+            <Text style={[styles.quickActionsTitle, { color: T.textLight }]}>Quick Actions</Text>
             <View style={styles.quickActionsGrid}>
               {quickActions.map((action) => (
                 <TouchableOpacity
                   key={action.id}
-                  style={styles.quickActionCard}
+                  style={[styles.quickActionCard, { backgroundColor: T.quickCardBg }]}
                   onPress={() => handleSendMessage(action.message)}
                 >
-                  <View style={styles.quickActionIcon}>
+                  <View style={[styles.quickActionIcon, { backgroundColor: T.quickIconBg }]}>
                     <Ionicons name={action.icon as any} size={20} color="#4b41e1" />
                   </View>
-                  <Text style={styles.quickActionLabel}>{action.label}</Text>
+                  <Text style={[styles.quickActionLabel, { color: T.text }]}>{action.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -245,12 +268,12 @@ export default function TutorScreen() {
       </ScrollView>
 
       {/* Input */}
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { backgroundColor: T.inputBg, borderTopColor: T.border }]}>
         <View style={styles.inputWrapper}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: T.inputFieldBg, color: T.inputText }]}
             placeholder="Ask me anything..."
-            placeholderTextColor="#b0b3b8"
+            placeholderTextColor={T.placeholder}
             value={inputText}
             onChangeText={setInputText}
             multiline

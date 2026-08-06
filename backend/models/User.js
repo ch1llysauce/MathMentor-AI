@@ -94,6 +94,16 @@ const userSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+
+    twoFactorEnabled: {
+        type: Boolean,
+        default: false
+    },
+
+    twoFactorSecret: {
+        type: String,
+        default: null
     }
 
 }, {

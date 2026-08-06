@@ -15,6 +15,7 @@ import { Colors } from '@/constants/colors';
 import api from '@/services/api';
 import diagnosticService from '@/services/diagnosticService';
 import { TopicScores } from '@/types/diagnostic';
+import { useTheme } from '@/context/ThemeContext';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface DiagQuestion {
@@ -83,6 +84,36 @@ function buildTopicScores(
 // ── Component ──────────────────────────────────────────────────────────────
 export default function RetakeDiagnosticScreen() {
   const router = useRouter();
+  const { darkMode } = useTheme();
+
+  const RK = {
+    bg: darkMode ? '#0a0a0a' : '#f7f9fb',
+    header: darkMode ? '#0a0a0a' : '#fff',
+    border: darkMode ? '#2e2e2e' : '#e2e8f0',
+    text: darkMode ? '#f0f0f0' : Colors.text,
+    textLight: darkMode ? '#a0a0a0' : Colors.textLight,
+    primary: darkMode ? '#a5b4fc' : Colors.primary,
+    secondary: darkMode ? '#a5b4fc' : Colors.secondary,
+    card: darkMode ? '#1a1a1a' : '#fff',
+    surface: darkMode ? '#2e2e2e' : '#f2f4f6',
+    chipBg: darkMode ? '#312e81' : Colors.secondary + '20',
+    chipText: darkMode ? '#a5b4fc' : Colors.secondary,
+    choiceCard: darkMode ? '#1a1a1a' : '#fff',
+    choiceBorder: darkMode ? '#2e2e2e' : '#e2e8f0',
+    choiceText: darkMode ? '#f0f0f0' : Colors.text,
+    hintBg: darkMode ? '#2d2a00' : '#fef3c7',
+    hintBorder: '#fcd34d',
+    hintText: darkMode ? '#fcd34d' : '#92400e',
+    hintBody: darkMode ? '#fbbf24' : '#78350f',
+    explBg: darkMode ? '#1a1a1a' : '#fff',
+    explText: darkMode ? '#f0f0f0' : Colors.text,
+    tipsCard: darkMode ? '#2d2a00' : '#fffbeb',
+    tipsBorder: '#f59e0b',
+    tipsText: darkMode ? '#fcd34d' : Colors.text,
+    footerBg: darkMode ? '#0a0a0a' : '#fff',
+    infoCard: darkMode ? '#1a1a1a' : '#fff',
+    expectIcon: darkMode ? '#242424' : undefined,
+  };
 
   const [screen, setScreen] = useState<Screen>('intro');
   const [questions, setQuestions] = useState<DiagQuestion[]>([]);
@@ -164,7 +195,7 @@ export default function RetakeDiagnosticScreen() {
       });
 
       Alert.alert(
-        'Diagnostic Complete! 🎉',
+        'Diagnostic Complete!',
         'Your knowledge map has been updated. Check your results in the Diagnostic tab.',
         [{ text: 'View Results', onPress: () => router.replace('/(tabs)/diagnostic') }]
       );
@@ -177,10 +208,10 @@ export default function RetakeDiagnosticScreen() {
   // ── Render: Submitting ───────────────────────────────────────────────────
   if (screen === 'submitting') {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={Colors.secondary} />
-        <Text style={styles.submittingText}>Analysing your results…</Text>
-        <Text style={styles.submittingSubtext}>Building your personalised learning path</Text>
+      <View style={[styles.centered, { backgroundColor: RK.bg }]}>
+        <ActivityIndicator size="large" color={RK.secondary} />
+        <Text style={[styles.submittingText, { color: RK.primary }]}>Analysing your results…</Text>
+        <Text style={[styles.submittingSubtext, { color: RK.textLight }]}>Building your personalised learning path</Text>
       </View>
     );
   }
@@ -192,50 +223,47 @@ export default function RetakeDiagnosticScreen() {
       currentQuestion.difficulty === 'Hard' ? '#ef4444' : '#f59e0b';
 
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <View style={[styles.container, { backgroundColor: RK.bg }]}>
+        <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={RK.header} />
 
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: RK.header, borderBottomColor: RK.border }]}>
           <TouchableOpacity style={styles.backButton} onPress={() =>
             Alert.alert('Quit Test?', 'Progress will be lost.', [
               { text: 'Continue Test', style: 'cancel' },
               { text: 'Quit', style: 'destructive', onPress: () => router.back() },
             ])
           }>
-            <Ionicons name="close" size={24} color={Colors.text} />
+            <Ionicons name="close" size={24} color={RK.text} />
           </TouchableOpacity>
 
           <View style={styles.headerCenter}>
-            <Text style={styles.headerProgress}>
+            <Text style={[styles.headerProgress, { color: RK.primary }]}>
               {currentIndex + 1} / {questions.length}
             </Text>
-            <Text style={styles.headerTopic}>{currentQuestion.topic}</Text>
+            <Text style={[styles.headerTopic, { color: RK.textLight }]}>{currentQuestion.topic}</Text>
           </View>
 
           <View style={[styles.diffBadge, { backgroundColor: diffColor + '20' }]}>
-            <Text style={[styles.diffText, { color: diffColor }]}>
-              {currentQuestion.difficulty}
-            </Text>
+            <Text style={[styles.diffText, { color: diffColor }]}>{currentQuestion.difficulty}</Text>
           </View>
         </View>
 
         {/* Progress bar */}
-        <View style={styles.progressTrack}>
+        <View style={[styles.progressTrack, { backgroundColor: RK.border }]}>
           <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
         </View>
 
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
           {/* Subtopic chip */}
-          <View style={styles.subtopicChip}>
-            <Text style={styles.subtopicChipText}>{currentQuestion.subtopic}</Text>
+          <View style={[styles.subtopicChip, { backgroundColor: RK.chipBg }]}>
+            <Text style={[styles.subtopicChipText, { color: RK.chipText }]}>{currentQuestion.subtopic}</Text>
           </View>
 
           {/* Question */}
-          <View style={styles.questionCard}>
-            <Text style={styles.questionText}>{currentQuestion.question}</Text>
+          <View style={[styles.questionCard, { backgroundColor: RK.card }]}>
+            <Text style={[styles.questionText, { color: RK.text }]}>{currentQuestion.question}</Text>
           </View>
 
           {/* Multiple choice */}
@@ -245,23 +273,26 @@ export default function RetakeDiagnosticScreen() {
                 const letter = String.fromCharCode(65 + idx);
                 const isSelected = selectedAnswer === choice;
                 const isCorrectChoice = choice.trim().toLowerCase() === currentQuestion.correctAnswer.trim().toLowerCase();
-                let cardStyle = styles.choiceCard;
-                let bubbleStyle = styles.choiceBubble;
-                let bubbleTextStyle = styles.choiceBubbleText;
+                let cardBg = RK.choiceCard;
+                let cardBorder = RK.choiceBorder;
+                let bubbleBg = RK.surface;
+                let bubbleTextColor = RK.textLight;
+                let cardTextColor = RK.choiceText;
                 if (showExplanation) {
-                  if (isSelected && isCorrect) { cardStyle = { ...cardStyle, ...styles.choiceCorrect }; bubbleStyle = { ...bubbleStyle, ...styles.bubbleCorrect }; bubbleTextStyle = { ...bubbleTextStyle, color: '#fff' }; }
-                  else if (isSelected && !isCorrect) { cardStyle = { ...cardStyle, ...styles.choiceWrong }; bubbleStyle = { ...bubbleStyle, ...styles.bubbleWrong }; bubbleTextStyle = { ...bubbleTextStyle, color: '#fff' }; }
-                  else if (!isSelected && isCorrectChoice) { cardStyle = { ...cardStyle, ...styles.choiceCorrect }; }
+                  if (isSelected && isCorrect)    { cardBg = '#f0fdf4'; cardBorder = '#00a472'; bubbleBg = '#00a472'; bubbleTextColor = '#fff'; }
+                  else if (isSelected && !isCorrect) { cardBg = '#fef2f2'; cardBorder = '#ef4444'; bubbleBg = '#ef4444'; bubbleTextColor = '#fff'; }
+                  else if (!isSelected && isCorrectChoice) { cardBg = '#f0fdf4'; cardBorder = '#00a472'; }
                 } else if (isSelected) {
-                  cardStyle = { ...cardStyle, ...styles.choiceSelected };
-                  bubbleStyle = { ...bubbleStyle, ...styles.bubbleSelected };
-                  bubbleTextStyle = { ...bubbleTextStyle, color: '#fff' };
+                  cardBg = '#f5f4ff'; cardBorder = '#4b41e1'; bubbleBg = '#4b41e1'; bubbleTextColor = '#fff';
                 }
                 return (
-                  <TouchableOpacity key={idx} style={cardStyle}
+                  <TouchableOpacity key={idx}
+                    style={[styles.choiceCard, { backgroundColor: cardBg, borderColor: cardBorder }]}
                     onPress={() => handleSelectAnswer(choice)} disabled={showExplanation} activeOpacity={0.7}>
-                    <View style={bubbleStyle}><Text style={bubbleTextStyle}>{letter}</Text></View>
-                    <Text style={styles.choiceText}>{choice}</Text>
+                    <View style={[styles.choiceBubble, { backgroundColor: bubbleBg }]}>
+                      <Text style={[styles.choiceBubbleText, { color: bubbleTextColor }]}>{letter}</Text>
+                    </View>
+                    <Text style={[styles.choiceText, { color: cardTextColor }]}>{choice}</Text>
                     {showExplanation && isSelected && isCorrect && <Ionicons name="checkmark-circle" size={22} color="#00a472" />}
                     {showExplanation && isSelected && !isCorrect && <Ionicons name="close-circle" size={22} color="#ef4444" />}
                     {showExplanation && !isSelected && isCorrectChoice && <Ionicons name="checkmark-circle" size={22} color="#00a472" />}
@@ -275,14 +306,14 @@ export default function RetakeDiagnosticScreen() {
           {!showExplanation && currentQuestion.hints?.length > 0 && (
             <View style={styles.hintSection}>
               {!showHint ? (
-                <TouchableOpacity style={styles.hintButton} onPress={() => setShowHint(true)}>
+                <TouchableOpacity style={[styles.hintButton, { backgroundColor: RK.hintBg, borderColor: RK.hintBorder }]} onPress={() => setShowHint(true)}>
                   <Ionicons name="bulb-outline" size={18} color="#f59e0b" />
-                  <Text style={styles.hintButtonText}>Show Hint</Text>
+                  <Text style={[styles.hintButtonText, { color: RK.hintText }]}>Show Hint</Text>
                 </TouchableOpacity>
               ) : (
-                <View style={styles.hintCard}>
+                <View style={[styles.hintCard, { backgroundColor: RK.hintBg }]}>
                   <Ionicons name="bulb" size={18} color="#f59e0b" />
-                  <Text style={styles.hintText}>{currentQuestion.hints[0]}</Text>
+                  <Text style={[styles.hintText, { color: RK.hintBody }]}>{currentQuestion.hints[0]}</Text>
                 </View>
               )}
             </View>
@@ -290,17 +321,13 @@ export default function RetakeDiagnosticScreen() {
 
           {/* Explanation */}
           {showExplanation && (
-            <View style={[styles.explanationCard,
-              { borderLeftColor: isCorrect ? '#00a472' : '#ef4444' }]}>
-              <Text style={[styles.explanationResult,
-                { color: isCorrect ? '#00a472' : '#ef4444' }]}>
+            <View style={[styles.explanationCard, { backgroundColor: RK.explBg, borderLeftColor: isCorrect ? '#00a472' : '#ef4444' }]}>
+              <Text style={[styles.explanationResult, { color: isCorrect ? '#00a472' : '#ef4444' }]}>
                 {isCorrect ? '✓ Correct!' : '✗ Incorrect'}
               </Text>
-              <Text style={styles.explanationText}>{currentQuestion.explanation}</Text>
+              <Text style={[styles.explanationText, { color: RK.explText }]}>{currentQuestion.explanation}</Text>
               {!isCorrect && (
-                <Text style={styles.correctAnswerText}>
-                  Correct answer: {currentQuestion.correctAnswer}
-                </Text>
+                <Text style={styles.correctAnswerText}>Correct answer: {currentQuestion.correctAnswer}</Text>
               )}
             </View>
           )}
@@ -309,10 +336,10 @@ export default function RetakeDiagnosticScreen() {
         </ScrollView>
 
         {/* Footer */}
-        <View style={styles.footer}>
+        <View style={[styles.footer, { backgroundColor: RK.footerBg, borderTopColor: RK.border }]}>
           {!showExplanation ? (
             <TouchableOpacity
-              style={[styles.footerButton, !selectedAnswer && styles.footerButtonDisabled]}
+              style={[styles.footerButton, { backgroundColor: RK.primary }, !selectedAnswer && styles.footerButtonDisabled]}
               onPress={handleConfirmAnswer} disabled={!selectedAnswer} activeOpacity={0.9}>
               <Text style={styles.footerButtonText}>Confirm Answer</Text>
             </TouchableOpacity>
@@ -328,30 +355,28 @@ export default function RetakeDiagnosticScreen() {
           <View style={{ height: 50 }} />
         </View>
       </View>
-      
     );
   }
 
   // ── Render: Intro ─────────────────────────────────────────────────────────
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <View style={[styles.container, { backgroundColor: RK.bg }]}>
+      <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={RK.header} />
 
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: RK.header, borderBottomColor: RK.border }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={Colors.text} />
+          <Ionicons name="arrow-back" size={24} color={RK.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Diagnostic Test</Text>
+        <Text style={[styles.headerTitle, { color: RK.text }]}>Diagnostic Test</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-        <View style={styles.infoCard}>
-          <Ionicons name="analytics" size={52} color={Colors.secondary} />
-          <Text style={styles.infoTitle}>Update Your Knowledge Map</Text>
-          <Text style={styles.infoText}>
+        <View style={[styles.infoCard, { backgroundColor: RK.infoCard }]}>
+          <Ionicons name="analytics" size={52} color={RK.secondary} />
+          <Text style={[styles.infoTitle, { color: RK.primary }]}>Update Your Knowledge Map</Text>
+          <Text style={[styles.infoText, { color: RK.textLight }]}>
             15 questions across Algebra, Geometry, and Trigonometry. Takes around 15–20 minutes.
             Your personalised learning path will be updated when you finish.
           </Text>
@@ -359,7 +384,7 @@ export default function RetakeDiagnosticScreen() {
 
         {/* What to expect */}
         <View style={styles.expectSection}>
-          <Text style={styles.expectTitle}>What to expect</Text>
+          <Text style={[styles.expectTitle, { color: RK.text }]}>What to expect</Text>
           {[
             { icon: 'help-circle', color: '#4b41e1', title: '15 questions', sub: 'Balanced across all three topics' },
             { icon: 'bulb', color: '#f59e0b', title: 'Hints available', sub: 'One hint per question if you need it' },
@@ -370,21 +395,21 @@ export default function RetakeDiagnosticScreen() {
                 <Ionicons name={item.icon as any} size={22} color={item.color} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.expectItemTitle}>{item.title}</Text>
-                <Text style={styles.expectItemSub}>{item.sub}</Text>
+                <Text style={[styles.expectItemTitle, { color: RK.text }]}>{item.title}</Text>
+                <Text style={[styles.expectItemSub, { color: RK.textLight }]}>{item.sub}</Text>
               </View>
             </View>
           ))}
         </View>
 
-        <View style={styles.tipsCard}>
-          <Text style={styles.tipsTitle}>Tips for best results</Text>
-          <Text style={styles.tipsText}>
+        <View style={[styles.tipsCard, { backgroundColor: RK.tipsCard, borderLeftColor: RK.tipsBorder }]}>
+          <Text style={[styles.tipsTitle, { color: RK.text }]}>Tips for best results</Text>
+          <Text style={[styles.tipsText, { color: RK.tipsText }]}>
             {'• Find a quiet spot with no distractions\n• Have paper handy for calculations\n• Answer honestly — the path is built around your results'}
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.startButton} onPress={startTest}
+        <TouchableOpacity style={[styles.startButton, { backgroundColor: RK.primary }]} onPress={startTest}
           disabled={loadingQuestions} activeOpacity={0.9}>
           {loadingQuestions
             ? <ActivityIndicator color="#fff" />

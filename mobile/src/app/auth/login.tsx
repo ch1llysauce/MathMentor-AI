@@ -11,6 +11,7 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,12 +19,19 @@ import { useAuth } from '@/hooks/useAuth';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, validate2FA } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
+  // 2FA modal state
+  const [twoFAModalVisible, setTwoFAModalVisible] = useState(false);
+  const [twoFAUserId, setTwoFAUserId] = useState('');
+  const [twoFACode, setTwoFACode] = useState('');
+  const [twoFALoading, setTwoFALoading] = useState(false);
 
   const handleLogin = async () => {
     const trimmedEmail = email.trim();
@@ -43,7 +51,15 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const response = await login(trimmedEmail, trimmedPassword);
-      
+
+      if (response.requiresTwoFactor) {
+        // Server needs 2FA verification before issuing token
+        setTwoFAUserId(response.data?.userId || '');
+        setTwoFAModalVisible(true);
+        setLoading(false);
+        return;
+      }
+
       if (response.success) {
         setTimeout(() => {
           router.replace('/(tabs)/dashboard');
@@ -58,10 +74,33 @@ export default function LoginScreen() {
     }
   };
 
+  const handle2FASubmit = async () => {
+    if (twoFACode.trim().length !== 6) {
+      Alert.alert('Error', 'Please enter a 6-digit verification code');
+      return;
+    }
+
+    setTwoFALoading(true);
+    try {
+      const response = await validate2FA(twoFAUserId, twoFACode.trim());
+
+      if (response.success) {
+        setTwoFAModalVisible(false);
+        setTwoFACode('');
+        setTimeout(() => router.replace('/(tabs)/dashboard'), 200);
+      } else {
+        Alert.alert('Invalid Code', response.message || 'Verification failed');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.message || 'Invalid verification code');
+    } finally {
+      setTwoFALoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#f7f9fb" />
-      {/* Ambient Glows */}
       <View style={[styles.ambientGlow, styles.glowTopLeft]} />
       <View style={[styles.ambientGlow, styles.glowBottomRight]} />
 
@@ -69,7 +108,7 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
@@ -142,7 +181,7 @@ export default function LoginScreen() {
 
                 {/* Remember Me & Forgot Password */}
                 <View style={styles.optionsRow}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.checkboxContainer}
                     onPress={() => setRememberMe(!rememberMe)}
                     activeOpacity={0.7}
@@ -200,242 +239,167 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* 2FA Verification Modal */}
+      <Modal
+        visible={twoFAModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setTwoFAModalVisible(false);
+          setTwoFACode('');
+          setLoading(false);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalIconContainer}>
+              <Ionicons name="shield-checkmark" size={40} color="#4b41e1" />
+            </View>
+            <Text style={styles.modalTitle}>Two-Factor Authentication</Text>
+            <Text style={styles.modalSubtitle}>
+              Enter the 6-digit code from your authenticator app
+            </Text>
+
+            <TextInput
+              style={styles.codeInput}
+              value={twoFACode}
+              onChangeText={setTwoFACode}
+              keyboardType="number-pad"
+              maxLength={6}
+              placeholder="000000"
+              placeholderTextColor="#75777d"
+              textAlign="center"
+              autoFocus
+            />
+
+            <TouchableOpacity
+              style={[styles.verifyButton, twoFALoading && styles.buttonDisabled]}
+              onPress={handle2FASubmit}
+              disabled={twoFALoading}
+              activeOpacity={0.9}
+            >
+              {twoFALoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.verifyButtonText}>Verify</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => {
+                setTwoFAModalVisible(false);
+                setTwoFACode('');
+                setLoading(false);
+              }}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f7f9fb',
-  },
+  container: { flex: 1, backgroundColor: '#f7f9fb' },
   ambientGlow: {
-    position: 'absolute',
-    width: 400,
-    height: 400,
-    borderRadius: 200,
-    backgroundColor: 'rgba(75, 65, 225, 0.08)',
-    zIndex: -1,
+    position: 'absolute', width: 400, height: 400,
+    borderRadius: 200, backgroundColor: 'rgba(75, 65, 225, 0.08)', zIndex: -1,
   },
-  glowTopLeft: {
-    top: -200,
-    left: -200,
-  },
-  glowBottomRight: {
-    bottom: -200,
-    right: -200,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 16,
-  },
-  header: {
-    paddingTop: 100,
-    paddingBottom: 24,
-    alignItems: 'center',
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
+  glowTopLeft: { top: -200, left: -200 },
+  glowBottomRight: { bottom: -200, right: -200 },
+  keyboardView: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 16 },
+  header: { paddingTop: 100, paddingBottom: 24, alignItems: 'center' },
+  logoContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   logoBox: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#4b41e1',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#4b41e1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    width: 40, height: 40, backgroundColor: '#4b41e1', borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#4b41e1', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2, shadowRadius: 8, elevation: 4,
   },
-  logoText: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#091426',
-    letterSpacing: -0.5,
-  },
-  mainContent: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingBottom: 40,
-  },
+  logoText: { fontSize: 28, fontWeight: '600', color: '#091426', letterSpacing: -0.5 },
+  mainContent: { flex: 1, justifyContent: 'center', paddingBottom: 40 },
   formCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 24,
-    padding: 32,
-    shadowColor: '#4b41e1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 24,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    backgroundColor: '#ffffff', borderRadius: 24, padding: 32,
+    shadowColor: '#4b41e1', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06, shadowRadius: 24, elevation: 4,
+    borderWidth: 1, borderColor: '#e2e8f0',
   },
-  formHeader: {
-    marginBottom: 32,
-  },
-  welcomeTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#091426',
-    marginBottom: 4,
-    lineHeight: 28,
-  },
-  welcomeSubtitle: {
-    fontSize: 14,
-    color: '#45474c',
-    lineHeight: 20,
-  },
-  form: {
-    gap: 20,
-  },
-  inputGroup: {
-    gap: 6,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#45474c',
-    letterSpacing: 0.3,
-    marginLeft: 4,
-    lineHeight: 20,
-  },
-  inputWrapper: {
-    position: 'relative',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  inputIcon: {
-    position: 'absolute',
-    left: 16,
-    zIndex: 1,
-  },
+  formHeader: { marginBottom: 32 },
+  welcomeTitle: { fontSize: 20, fontWeight: '600', color: '#091426', marginBottom: 4, lineHeight: 28 },
+  welcomeSubtitle: { fontSize: 14, color: '#45474c', lineHeight: 20 },
+  form: { gap: 20 },
+  inputGroup: { gap: 6 },
+  label: { fontSize: 14, fontWeight: '500', color: '#45474c', letterSpacing: 0.3, marginLeft: 4, lineHeight: 20 },
+  inputWrapper: { position: 'relative', flexDirection: 'row', alignItems: 'center' },
+  inputIcon: { position: 'absolute', left: 16, zIndex: 1 },
   input: {
-    flex: 1,
-    height: 52,
-    paddingLeft: 48,
-    paddingRight: 16,
-    fontSize: 16,
-    color: '#191c1e',
-    backgroundColor: '#f2f4f6',
-    borderWidth: 1,
-    borderColor: '#c5c6cd',
-    borderRadius: 12,
-    lineHeight: 24,
+    flex: 1, height: 52, paddingLeft: 48, paddingRight: 16,
+    fontSize: 16, color: '#191c1e', backgroundColor: '#f2f4f6',
+    borderWidth: 1, borderColor: '#c5c6cd', borderRadius: 12, lineHeight: 24,
   },
-  passwordInput: {
-    paddingRight: 48,
-  },
-  eyeIcon: {
-    position: 'absolute',
-    right: 16,
-    width: 40,
-    height: 52,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  optionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
+  passwordInput: { paddingRight: 48 },
+  eyeIcon: { position: 'absolute', right: 16, width: 40, height: 52, justifyContent: 'center', alignItems: 'center' },
+  optionsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
+  checkboxContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 1.5,
-    borderColor: '#c5c6cd',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    width: 20, height: 20, borderRadius: 4, borderWidth: 1.5,
+    borderColor: '#c5c6cd', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff',
   },
-  checkboxChecked: {
-    backgroundColor: '#4b41e1',
-    borderColor: '#4b41e1',
-  },
-  checkboxLabel: {
-    fontSize: 14,
-    color: '#45474c',
-    lineHeight: 20,
-  },
-  forgotPassword: {
-    fontSize: 14,
-    color: '#4b41e1',
-    lineHeight: 20,
-  },
-  buttonContainer: {
-    gap: 12,
-    paddingTop: 16,
-  },
+  checkboxChecked: { backgroundColor: '#4b41e1', borderColor: '#4b41e1' },
+  checkboxLabel: { fontSize: 14, color: '#45474c', lineHeight: 20 },
+  forgotPassword: { fontSize: 14, color: '#4b41e1', lineHeight: 20 },
+  buttonContainer: { gap: 12, paddingTop: 16 },
   signInButton: {
-    height: 56,
-    backgroundColor: '#4b41e1',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#4b41e1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    height: 56, backgroundColor: '#4b41e1', borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#4b41e1', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2, shadowRadius: 8, elevation: 4,
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  signInButtonText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#ffffff',
-    lineHeight: 28,
-  },
+  buttonDisabled: { opacity: 0.6 },
+  signInButtonText: { fontSize: 20, fontWeight: '600', color: '#ffffff', lineHeight: 28 },
   createAccountButton: {
-    height: 56,
-    backgroundColor: '#e2dfff',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    height: 56, backgroundColor: '#e2dfff', borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
   },
-  createAccountButtonText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#3323cc',
-    lineHeight: 28,
+  createAccountButtonText: { fontSize: 20, fontWeight: '600', color: '#3323cc', lineHeight: 28 },
+  footer: { marginTop: 32, alignItems: 'center', gap: 8 },
+  footerText: { fontSize: 14, color: '#45474c', lineHeight: 20 },
+  footerLinks: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  footerLink: { fontSize: 12, color: '#75777d', letterSpacing: 0.3 },
+  footerDivider: { fontSize: 12, color: '#c5c6cd' },
+
+  // 2FA Modal
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
   },
-  footer: {
-    marginTop: 32,
-    alignItems: 'center',
-    gap: 8,
+  modalContent: {
+    backgroundColor: '#ffffff', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    padding: 32, alignItems: 'center', paddingBottom: 48,
   },
-  footerText: {
-    fontSize: 14,
-    color: '#45474c',
-    lineHeight: 20,
+  modalIconContainer: {
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: 'rgba(75, 65, 225, 0.1)',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
-  footerLinks: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
+  modalTitle: { fontSize: 22, fontWeight: '700', color: '#091426', marginBottom: 8 },
+  modalSubtitle: { fontSize: 14, color: '#45474c', textAlign: 'center', marginBottom: 28, lineHeight: 20 },
+  codeInput: {
+    width: '100%', height: 64, backgroundColor: '#f2f4f6',
+    borderRadius: 16, borderWidth: 1, borderColor: '#c5c6cd',
+    fontSize: 32, fontWeight: '700', color: '#091426',
+    letterSpacing: 12, marginBottom: 24,
   },
-  footerLink: {
-    fontSize: 12,
-    color: '#75777d',
-    letterSpacing: 0.3,
+  verifyButton: {
+    width: '100%', height: 56, backgroundColor: '#4b41e1',
+    borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 12,
   },
-  footerDivider: {
-    fontSize: 12,
-    color: '#c5c6cd',
-  },
+  verifyButtonText: { fontSize: 18, fontWeight: '600', color: '#ffffff' },
+  cancelButton: { paddingVertical: 12 },
+  cancelButtonText: { fontSize: 16, color: '#75777d' },
 });

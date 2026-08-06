@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { MasteryRing } from '@/components/MasteryRing';
 import { TopicScore } from '@/types/diagnostic';
+import { useTheme } from '@/context/ThemeContext';
 
 // Map topic name → subtopics defined in the curriculum
 const TOPIC_SUBTOPICS: Record<string, string[]> = {
@@ -42,6 +43,23 @@ function toSubtopicKey(name: string): string {
 export default function TopicDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { darkMode } = useTheme();
+
+  const TD = {
+    bg: darkMode ? '#0a0a0a' : '#f7f9fb',
+    header: darkMode ? '#0a0a0a' : '#fff',
+    border: darkMode ? '#2e2e2e' : '#e2e8f0',
+    text: darkMode ? '#f0f0f0' : Colors.text,
+    textLight: darkMode ? '#a0a0a0' : Colors.textLight,
+    primary: darkMode ? '#a5b4fc' : Colors.primary,
+    card: darkMode ? '#1a1a1a' : '#fff',
+    surface: darkMode ? '#2e2e2e' : Colors.surfaceContainer,
+    recBg: darkMode ? '#2d2a00' : '#fffbeb',
+    recBorder: '#f59e0b',
+    recText: darkMode ? '#fcd34d' : Colors.text,
+    secBtn: darkMode ? '#2e2e2e' : Colors.surfaceContainer,
+    secBtnText: darkMode ? '#a5b4fc' : Colors.primary,
+  };
 
   const topic     = (params.topic as string) || 'Algebra';
   const score     = parseInt(params.score as string) || 0;
@@ -82,87 +100,81 @@ export default function TopicDetailScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <View style={[styles.container, { backgroundColor: TD.bg }]}>
+      <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={TD.header} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: TD.header, borderBottomColor: TD.border }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={Colors.text} />
+          <Ionicons name="arrow-back" size={24} color={TD.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{topic}</Text>
+        <Text style={[styles.headerTitle, { color: TD.text }]}>{topic}</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
         {/* Overall card */}
-        <View style={styles.overallCard}>
-          <MasteryRing percentage={score} size={120} strokeWidth={10}
-            topic={topic} subtitle={getScoreLabel(score)} />
+        <View style={[styles.overallCard, { backgroundColor: TD.card }]}>
+          <MasteryRing percentage={score} size={120} strokeWidth={10} topic={topic} subtitle={getScoreLabel(score)} />
           <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Text style={styles.statValue}>{totalQuestions}</Text>
-              <Text style={styles.statLabel}>Questions</Text>
+            <View style={[styles.statBox, { backgroundColor: TD.surface }]}>
+              <Text style={[styles.statValue, { color: TD.primary }]}>{totalQuestions}</Text>
+              <Text style={[styles.statLabel, { color: TD.textLight }]}>Questions</Text>
             </View>
-            <View style={styles.statBox}>
+            <View style={[styles.statBox, { backgroundColor: TD.surface }]}>
               <Text style={[styles.statValue, { color: '#00a472' }]}>{totalCorrect}</Text>
-              <Text style={styles.statLabel}>Correct</Text>
+              <Text style={[styles.statLabel, { color: TD.textLight }]}>Correct</Text>
             </View>
-            <View style={styles.statBox}>
+            <View style={[styles.statBox, { backgroundColor: TD.surface }]}>
               <Text style={[styles.statValue, { color: '#ef4444' }]}>{totalIncorrect}</Text>
-              <Text style={styles.statLabel}>Incorrect</Text>
+              <Text style={[styles.statLabel, { color: TD.textLight }]}>Incorrect</Text>
             </View>
           </View>
         </View>
 
         {/* Subtopics breakdown */}
-        <Text style={styles.sectionTitle}>Subtopics Breakdown</Text>
+        <Text style={[styles.sectionTitle, { color: TD.text }]}>Subtopics Breakdown</Text>
         {subtopics.map((st, i) => (
-          <View key={i} style={styles.subtopicCard}>
+          <View key={i} style={[styles.subtopicCard, { backgroundColor: TD.card }]}>
             <View style={styles.subtopicHeader}>
-              <Text style={styles.subtopicName}>{st.name}</Text>
+              <Text style={[styles.subtopicName, { color: TD.text }]}>{st.name}</Text>
               {st.score !== null ? (
-                <Text style={[styles.subtopicScore, { color: getScoreColor(st.score) }]}>
-                  {st.score}%
-                </Text>
+                <Text style={[styles.subtopicScore, { color: getScoreColor(st.score) }]}>{st.score}%</Text>
               ) : (
-                <Text style={styles.subtopicNoData}>Not tested</Text>
+                <Text style={[styles.subtopicNoData, { color: TD.textLight }]}>Not tested</Text>
               )}
             </View>
             {st.score !== null ? (
-              <View style={styles.progressBarContainer}>
-                <View style={[styles.progressBar, {
-                  width: `${st.score}%`, backgroundColor: getScoreColor(st.score)
-                }]} />
+              <View style={[styles.progressBarContainer, { backgroundColor: TD.surface }]}>
+                <View style={[styles.progressBar, { width: `${st.score}%`, backgroundColor: getScoreColor(st.score) }]} />
               </View>
             ) : (
-              <View style={[styles.progressBarContainer, { opacity: 0.3 }]}>
-                <View style={[styles.progressBar, { width: '0%', backgroundColor: Colors.textLight }]} />
+              <View style={[styles.progressBarContainer, { backgroundColor: TD.surface, opacity: 0.3 }]}>
+                <View style={[styles.progressBar, { width: '0%', backgroundColor: TD.textLight }]} />
               </View>
             )}
             {st.score !== null && (
-              <Text style={styles.subtopicLabel}>{getScoreLabel(st.score)}</Text>
+              <Text style={[styles.subtopicLabel, { color: TD.textLight }]}>{getScoreLabel(st.score)}</Text>
             )}
           </View>
         ))}
 
         {/* Recommendation */}
-        <Text style={styles.sectionTitle}>Recommendation</Text>
-        <View style={styles.recCard}>
+        <Text style={[styles.sectionTitle, { color: TD.text }]}>Recommendation</Text>
+        <View style={[styles.recCard, { backgroundColor: TD.recBg, borderLeftColor: TD.recBorder }]}>
           <Ionicons name="bulb" size={22} color="#f59e0b" />
-          <Text style={styles.recText}>{recommendation}</Text>
+          <Text style={[styles.recText, { color: TD.recText }]}>{recommendation}</Text>
         </View>
 
         {/* Actions */}
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.primaryButton} onPress={handlePractice} activeOpacity={0.9}>
+          <TouchableOpacity style={[styles.primaryButton, { backgroundColor: TD.primary }]} onPress={handlePractice} activeOpacity={0.9}>
             <Ionicons name="play" size={18} color="#fff" />
             <Text style={styles.primaryButtonText}>Practice {topic}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryButton} onPress={() => router.back()} activeOpacity={0.9}>
-            <Text style={styles.secondaryButtonText}>Back to Knowledge Map</Text>
+          <TouchableOpacity style={[styles.secondaryButton, { backgroundColor: TD.secBtn }]} onPress={() => router.back()} activeOpacity={0.9}>
+            <Text style={[styles.secondaryButtonText, { color: TD.secBtnText }]}>Back to Knowledge Map</Text>
           </TouchableOpacity>
         </View>
 

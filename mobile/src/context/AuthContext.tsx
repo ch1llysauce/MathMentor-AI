@@ -9,6 +9,7 @@ interface AuthContextType {
   register: (userData: RegisterData) => Promise<AuthResponse>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<AuthResponse>;
+  validate2FA: (userId: string, token: string) => Promise<AuthResponse>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,23 +41,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const login = async (email: string, password: string): Promise<AuthResponse> => {
-    console.log('🔐 AuthContext: Login called');
     const response = await authService.login(email, password);
-    if (response.success && response.data) {
-      console.log('✅ AuthContext: Setting user state:', response.data.user.displayName);
+    if (response.success && response.data && !response.requiresTwoFactor) {
       setUser(response.data.user);
-      console.log('✅ AuthContext: User state updated');
+    }
+    return response;
+  };
+
+  const validate2FA = async (userId: string, token: string): Promise<AuthResponse> => {
+    const response = await authService.validate2FA(userId, token);
+    if (response.success && response.data) {
+      setUser(response.data.user);
     }
     return response;
   };
 
   const register = async (userData: RegisterData): Promise<AuthResponse> => {
-    console.log('📝 AuthContext: Register called');
-    const response = await authService.register(userData);
-    // Don't automatically log in after registration
-    // User will need to login manually
-    console.log('✅ AuthContext: Registration complete, user needs to login');
-    return response;
+    return authService.register(userData);
   };
 
   const logout = async () => {
@@ -73,16 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        login,
-        register,
-        logout,
-        updateUser,
-      }}
-    >
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser, validate2FA }}>
       {children}
     </AuthContext.Provider>
   );

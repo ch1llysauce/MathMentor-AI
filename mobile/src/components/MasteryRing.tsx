@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Colors } from '@/constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 
 interface MasteryRingProps {
   percentage: number;
@@ -22,6 +23,7 @@ export const MasteryRing: React.FC<MasteryRingProps> = ({
   subtitle,
   onPress
 }) => {
+  const { darkMode } = useTheme();
   const animatedValue = useRef(new Animated.Value(0)).current;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -39,6 +41,11 @@ export const MasteryRing: React.FC<MasteryRingProps> = ({
     outputRange: [circumference, 0],
   });
 
+  const trackColor = darkMode ? '#2e2e2e' : Colors.surfaceContainerHigh;
+  const percentageColor = darkMode ? '#f0f0f0' : Colors.primary;
+  const topicColor = darkMode ? '#f0f0f0' : Colors.text;
+  const subtitleColor = darkMode ? '#a0a0a0' : Colors.textLight;
+
   const content = (
     <View style={styles.container}>
       <View style={[styles.ringContainer, { width: size, height: size }]}>
@@ -48,7 +55,7 @@ export const MasteryRing: React.FC<MasteryRingProps> = ({
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke={Colors.surfaceContainerHigh}
+            stroke={trackColor}
             strokeWidth={strokeWidth}
             fill="transparent"
           />
@@ -70,12 +77,12 @@ export const MasteryRing: React.FC<MasteryRingProps> = ({
         </Svg>
         
         <View style={styles.percentageContainer}>
-          <Text style={styles.percentage}>{Math.round(percentage)}%</Text>
+          <Text style={[styles.percentage, { color: percentageColor }]}>{Math.round(percentage)}%</Text>
         </View>
       </View>
       
-      <Text style={styles.topic}>{topic}</Text>
-      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      <Text style={[styles.topic, { color: topicColor }]}>{topic}</Text>
+      {subtitle && <Text style={[styles.subtitle, { color: subtitleColor }]}>{subtitle}</Text>}
     </View>
   );
 
