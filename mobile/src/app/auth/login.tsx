@@ -19,7 +19,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, validate2FA } = useAuth();
+  const { login, validate2FA, loginWithGoogle } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -70,6 +70,27 @@ export default function LoginScreen() {
       }
     } catch (error: any) {
       Alert.alert('Login Failed', 'Incorrect email or password.');
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      const response = await loginWithGoogle();
+      if (response.success) {
+        setTimeout(() => router.replace('/(tabs)/dashboard'), 200);
+      }
+    } catch (error: any) {
+      const { statusCodes } = await import('@react-native-google-signin/google-signin');
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // user cancelled — silent
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        // already in progress — silent
+      } else {
+        Alert.alert('Google Sign-In Failed', error.message || 'Something went wrong');
+      }
+    } finally {
       setLoading(false);
     }
   };
@@ -209,6 +230,24 @@ export default function LoginScreen() {
                     ) : (
                       <Text style={styles.signInButtonText}>Sign In</Text>
                     )}
+                  </TouchableOpacity>
+
+                  {/* Divider */}
+                  <View style={styles.divider}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>or</Text>
+                    <View style={styles.dividerLine} />
+                  </View>
+
+                  {/* Google Sign-In */}
+                  <TouchableOpacity
+                    style={[styles.googleButton, loading && styles.buttonDisabled]}
+                    onPress={handleGoogleSignIn}
+                    disabled={loading}
+                    activeOpacity={0.9}
+                  >
+                    <Text style={styles.googleIcon}>G</Text>
+                    <Text style={styles.googleButtonText}>Continue with Google</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -361,6 +400,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2, shadowRadius: 8, elevation: 4,
   },
   buttonDisabled: { opacity: 0.6 },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#e0e3e5' },
+  dividerText: { fontSize: 13, color: '#75777d' },
+  googleButton: {
+    height: 56,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderWidth: 1.5,
+    borderColor: '#e0e3e5',
+  },
+  googleIcon: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#4285F4',
+    lineHeight: 24,
+  },
+  googleButtonText: { fontSize: 16, fontWeight: '600', color: '#091426' },
   signInButtonText: { fontSize: 20, fontWeight: '600', color: '#ffffff', lineHeight: 28 },
   createAccountButton: {
     height: 56, backgroundColor: '#e2dfff', borderRadius: 12,

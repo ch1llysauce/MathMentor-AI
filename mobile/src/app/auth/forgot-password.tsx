@@ -34,11 +34,11 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
     try {
       await api.post(AUTH_ENDPOINTS.FORGOT_PASSWORD, { email: trimmed });
-      // Always advance — server hides whether account exists
       setStep('otp');
     } catch (error: any) {
+      const status = error.response?.status;
       const msg = error.response?.data?.message || error.message || 'Failed to send reset code. Please try again.';
-      Alert.alert('Error', msg);
+      Alert.alert(status === 429 ? 'Too Many Requests' : 'Error', msg);
     } finally {
       setLoading(false);
     }

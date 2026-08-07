@@ -19,7 +19,8 @@ const userSchema = new mongoose.Schema({
 
     password: {
         type: String,
-        required: true
+        required: false,
+        default: null
     },
 
     profileImage: {
@@ -114,6 +115,17 @@ const userSchema = new mongoose.Schema({
     passwordResetExpiry: {
         type: Date,
         default: null
+    },
+
+    passwordResetLastSent: {
+        type: Date,
+        default: null
+    },
+
+    googleId: {
+        type: String,
+        default: null,
+        sparse: true  // allows multiple null values but enforces uniqueness for non-null
     }
 
 }, {

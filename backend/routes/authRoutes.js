@@ -1,4 +1,5 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import {
     register,
     login,
@@ -17,7 +18,8 @@ import {
     revokeOtherSessions,
     forgotPassword,
     verifyResetOtp,
-    resetPassword
+    resetPassword,
+    googleAuth
 } from "../controllers/authController.js";
 import {
     authenticate,
@@ -25,16 +27,30 @@ import {
     validateLogin
 } from "../middleware/index.js";
 
+// Rate limiter: max 5 forgot-password requests per IP per 15 minutes
+const forgotPasswordLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: {
+        success: false,
+        message: "Too many password reset requests from this device. Please try again in 15 minutes."
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: false,
+});
+
 const router = express.Router();
 
 // Public routes
 router.post("/register", validateRegister, register);
 router.post("/login", validateLogin, login);
+router.post("/google", googleAuth);
 router.post("/2fa/validate", validate2FA);
 
-// Password reset (public — no auth needed)
-router.post("/forgot-password", forgotPassword);
-router.post("/verify-reset-otp", verifyResetOtp);
+// Password reset (public — no auth needed, rate limited)
+router.post("/forgot-password", forgotPasswordLimiter, forgotPassword);
+router.post("/verify-reset-otp", forgotPasswordLimiter, verifyResetOtp);
 router.post("/reset-password", resetPassword);
 
 // Protected routes

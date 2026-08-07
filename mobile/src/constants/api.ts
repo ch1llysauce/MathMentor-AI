@@ -28,6 +28,7 @@ export const API_BASE_URL = USE_LOCAL ? LOCAL_URL : PRODUCTION_URL;
 export const AUTH_ENDPOINTS = {
   LOGIN: '/auth/login',
   REGISTER: '/auth/register',
+  GOOGLE: '/auth/google',
   PROFILE: '/auth/profile',
   UPDATE_PROFILE: '/auth/profile',
   LOGOUT: '/auth/logout',

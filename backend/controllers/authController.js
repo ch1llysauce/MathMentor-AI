@@ -2,12 +2,14 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { Resend } from "resend";
+import { OAuth2Client } from "google-auth-library";
 import speakeasy from "speakeasy";
 import QRCode from "qrcode";
 import { User, Progress, DiagnosticResult, LoginSession } from "../models/index.js";
 import { AppError, asyncHandler } from "../middleware/index.js";
 
 const getResend = () => new Resend(process.env.RESEND_API_KEY);
+const googleClient = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
 
 /**
  * Generate JWT Token with unique jti
@@ -632,6 +634,19 @@ export const forgotPassword = asyncHandler(async (req, res) => {
         });
     }
 
+    // Per-email rate limit: max 1 email per 60 seconds, max 5 per hour
+    const now = new Date();
+    if (user.passwordResetLastSent) {
+        const secondsSinceLast = (now - new Date(user.passwordResetLastSent)) / 1000;
+        if (secondsSinceLast < 60) {
+            const waitSeconds = Math.ceil(60 - secondsSinceLast);
+            throw new AppError(
+                `Please wait ${waitSeconds} second${waitSeconds !== 1 ? 's' : ''} before requesting another code.`,
+                429
+            );
+        }
+    }
+
     // Generate a 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
@@ -640,6 +655,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     user.passwordResetOtp = await bcrypt.hash(otp, salt);
     user.passwordResetExpiry = expiry;
+    user.passwordResetLastSent = now;
     await user.save();
 
     // Send email via Resend
@@ -767,6 +783,101 @@ export const resetPassword = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * @desc    Sign in / register with Google
+ * @route   POST /api/auth/google
+ * @access  Public
+ */
+export const googleAuth = asyncHandler(async (req, res) => {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+        throw new AppError("Google ID token is required", 400);
+    }
+
+    // Verify the token with Google
+    let payload;
+    try {
+        const ticket = await googleClient.verifyIdToken({
+            idToken,
+            audience: process.env.GOOGLE_WEB_CLIENT_ID,
+        });
+        payload = ticket.getPayload();
+    } catch (err) {
+        throw new AppError("Invalid Google token", 401);
+    }
+
+    const { sub: googleId, email, name, picture } = payload;
+
+    if (!email) {
+        throw new AppError("Google account has no email address", 400);
+    }
+
+    // Find existing user by Google ID or email
+    let user = await User.findOne({ $or: [{ googleId }, { email }] });
+
+    if (user) {
+        // Link Google ID if they previously signed up with email
+        if (!user.googleId) {
+            user.googleId = googleId;
+            await user.save();
+        }
+    } else {
+        // Create new account from Google profile
+        user = await User.create({
+            displayName: name || email.split("@")[0],
+            email,
+            googleId,
+            profileImage: picture || "",
+            isVerified: true, // Google accounts are pre-verified
+        });
+    }
+
+    if (!user.isActive) {
+        throw new AppError("Account has been deactivated", 403);
+    }
+
+    // Update last active
+    user.lastActiveDate = new Date();
+    await user.save();
+
+    // Issue JWT with session tracking
+    const tokenId = uuidv4();
+    const token = generateToken(user._id, tokenId);
+
+    await LoginSession.create({
+        user: user._id,
+        tokenId,
+        deviceInfo: parseDeviceInfo(req.headers["user-agent"]),
+        ipAddress: req.ip || req.connection?.remoteAddress || "",
+        lastActiveAt: new Date(),
+    });
+
+    // If new user hasn't set grade/focus, flag it so the app can redirect to onboarding
+    const isNewUser = !user.gradeLevel;
+
+    res.status(200).json({
+        success: true,
+        message: "Google sign-in successful",
+        data: {
+            user: {
+                id: user._id,
+                displayName: user.displayName,
+                email: user.email,
+                gradeLevel: user.gradeLevel,
+                focusAreas: user.focusAreas,
+                diagnosticCompleted: user.diagnosticCompleted,
+                currentStreak: user.currentStreak,
+                totalStudyTime: user.totalStudyTime,
+                twoFactorEnabled: user.twoFactorEnabled,
+                profileImage: user.profileImage,
+                isNewUser,
+            },
+            token,
+        },
+    });
+});
+
 export default {
     register,
     login,
@@ -785,5 +896,6 @@ export default {
     revokeOtherSessions,
     forgotPassword,
     verifyResetOtp,
-    resetPassword
+    resetPassword,
+    googleAuth
 };
