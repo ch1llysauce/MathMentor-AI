@@ -174,7 +174,7 @@ export const getLearningPath = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const getNextTopic = asyncHandler(async (req, res) => {
-    const [progress, diagnosticResult, totalLessons, completedLessons] = await Promise.all([
+    const [progress, diagnosticResult, totalLessons, completedLessonsCount] = await Promise.all([
         Progress.find({ user: req.user._id }),
         DiagnosticResult.findOne({ user: req.user._id }).sort({ createdAt: -1 }),
         Lesson.countDocuments(),
@@ -185,7 +185,7 @@ export const getNextTopic = asyncHandler(async (req, res) => {
     ]);
 
     const progressPercentage = totalLessons > 0
-        ? Math.round((completedLessons / totalLessons) * 100)
+        ? Math.round((completedLessonsCount / totalLessons) * 100)
         : 0;
 
     // If no diagnostic yet, return lesson progress without a recommendation
@@ -195,58 +195,96 @@ export const getNextTopic = asyncHandler(async (req, res) => {
             data: {
                 nextStep: null,
                 progressPercentage,
-                completedLessons,
+                completedLessons: completedLessonsCount,
                 totalLessons
             }
         });
     }
 
-    const recommendation = getNextRecommendation(progress, diagnosticResult);
+    // Build the learning path
+    const learningPathData = generateLearningPath(diagnosticResult);
+    const { learningPath } = learningPathData;
 
-    // Replace nextStep.currentScore with real lesson-completion-based progress
-    // so the dashboard card shows actual progress instead of the frozen diagnostic score
-    if (recommendation.nextStep) {
-        const { topic, subtopic } = recommendation.nextStep;
+    // For every unique topic+subtopic in the learning path, check lesson completion
+    // This is the source of truth — not Progress.masteryLevel which is never updated by lesson completion
+    const uniqueSubtopics = [...new Set(learningPath.map(s => `${s.topic}||${s.subtopic}`))];
 
-        // Use a partial match because DB stores subtopic as "Module N: SubtopicName"
-        // while the learning path uses just "SubtopicName"
-        const subtopicLessons = await Lesson.find({
-            topic,
-            subtopic: { $regex: subtopic, $options: 'i' }
-        }).select('_id');
-        const subtopicLessonIds = subtopicLessons.map(l => l._id);
+    const subtopicCompletionMap = {};
+    await Promise.all(
+        uniqueSubtopics.map(async (key) => {
+            const [topic, subtopic] = key.split('||');
+            const subtopicLessons = await Lesson.find({
+                topic,
+                subtopic: { $regex: subtopic, $options: 'i' }
+            }).select('_id');
+            const ids = subtopicLessons.map(l => l._id);
+            const completed = ids.length > 0
+                ? await UserLessonProgress.countDocuments({
+                    user: req.user._id,
+                    lesson: { $in: ids },
+                    status: 'completed'
+                })
+                : 0;
+            subtopicCompletionMap[key] = {
+                total: ids.length,
+                completed,
+                ids,
+                lessonBasedScore: ids.length > 0 ? Math.round((completed / ids.length) * 100) : 0,
+                isComplete: ids.length > 0 && completed === ids.length
+            };
+        })
+    );
 
-        const subtopicCompletedCount = subtopicLessonIds.length > 0
-            ? await UserLessonProgress.countDocuments({
-                user: req.user._id,
-                lesson: { $in: subtopicLessonIds },
-                status: 'completed'
-            })
-            : 0;
+    // Find the next step: first learning path entry that is NOT 100% lesson-complete
+    const nextStep = learningPath.find(step => {
+        const key = `${step.topic}||${step.subtopic}`;
+        const stats = subtopicCompletionMap[key];
+        // If no lessons exist for this subtopic, fall back to mastery check
+        if (!stats || stats.total === 0) {
+            return progress.every(p =>
+                !(p.topic === step.topic && p.masteryLevel >= 70)
+            );
+        }
+        return !stats.isComplete;
+    });
 
-        const lessonBasedScore = subtopicLessonIds.length > 0
-            ? Math.round((subtopicCompletedCount / subtopicLessonIds.length) * 100)
-            : 0;
-
-        // Use lesson-based score; fall back to diagnostic score only if no lessons exist
-        recommendation.nextStep = {
-            ...recommendation.nextStep,
-            currentScore: lessonBasedScore,
-            completedLessons: subtopicCompletedCount,
-            totalLessonsInSubtopic: subtopicLessonIds.length,
-            reason: subtopicCompletedCount > 0
-                ? `${subtopicCompletedCount} of ${subtopicLessonIds.length} lessons completed`
-                : recommendation.nextStep.reason
-        };
+    if (!nextStep) {
+        return res.status(200).json({
+            success: true,
+            data: {
+                nextStep: null,
+                progressPercentage,
+                completedLessons: completedLessonsCount,
+                totalLessons
+            }
+        });
     }
+
+    // Enrich the nextStep with real lesson-based score
+    const key = `${nextStep.topic}||${nextStep.subtopic}`;
+    const stats = subtopicCompletionMap[key];
+    const enrichedNextStep = {
+        ...nextStep,
+        currentScore: stats?.lessonBasedScore ?? nextStep.currentScore,
+        completedLessons: stats?.completed ?? 0,
+        totalLessonsInSubtopic: stats?.total ?? 0,
+        reason: stats && stats.completed > 0
+            ? `${stats.completed} of ${stats.total} lessons completed`
+            : nextStep.reason
+    };
 
     res.status(200).json({
         success: true,
         data: {
-            ...recommendation,
+            nextStep: enrichedNextStep,
             progressPercentage,
-            completedLessons,
-            totalLessons
+            completedLessons: completedLessonsCount,
+            totalLessons,
+            completedSteps: learningPath.filter(s => {
+                const k = `${s.topic}||${s.subtopic}`;
+                return subtopicCompletionMap[k]?.isComplete;
+            }).length,
+            totalSteps: learningPath.length
         }
     });
 });

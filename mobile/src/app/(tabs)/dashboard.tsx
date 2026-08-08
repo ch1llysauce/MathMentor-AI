@@ -116,14 +116,16 @@ export default function DashboardScreen() {
       const recommendation = response.data.data;
 
       // Navigate to the recommended topic
-      const topicName = recommendation.topic || recommendation.nextTopic || 'Algebra';
-      const mastery = recommendation.masteryLevel ?? 0;
+      const topicName = recommendation.nextStep?.topic || recommendation.topic || 'Algebra';
+      const mastery = recommendation.nextStep?.currentScore ?? recommendation.masteryLevel ?? 0;
+      const subtopicFilter = recommendation.nextStep?.subtopic ?? '';
 
       router.push({
         pathname: '/practice/topic',
         params: {
           topicName,
           mastery: mastery.toString(),
+          subtopicFilter,
         },
       });
     } catch (error: any) {
@@ -314,6 +316,7 @@ export default function DashboardScreen() {
                   params: {
                     topicName: nextStep.topic,
                     mastery: nextStep.currentScore.toString(),
+                    subtopicFilter: nextStep.subtopic,
                   },
                 })
               }
