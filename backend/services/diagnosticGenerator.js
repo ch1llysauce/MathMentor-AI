@@ -23,10 +23,10 @@ const Algebra_Easy = [
         const a = randInt(1, 12), x = randInt(1, 20), b = x + a;
         return {
             subtopic: "Linear Equations",
-            question: `Solve for $x$: $x + ${a} = ${b}$`,
+            question: `Solve for x:\n$$x + ${a} = ${b}$$`,
             correctAnswer: `${x}`,
             choices: mc(`${x}`, [`${x+1}`, `${x-1}`, `${b}`]),
-            explanation: `Subtract ${a} from both sides: $x = ${x}$.`,
+            explanation: `Subtract ${a} from both sides: x = ${b} − ${a} = ${x}.`,
             hints: ["Isolate x by subtracting the same number from both sides."],
         };
     },
@@ -34,10 +34,10 @@ const Algebra_Easy = [
         const a = randInt(2, 9), x = randInt(2, 12), b = a * x;
         return {
             subtopic: "Linear Equations",
-            question: `Solve for $x$: $${a}x = ${b}$`,
+            question: `Solve for x:\n$$${a}x = ${b}$$`,
             correctAnswer: `${x}`,
             choices: mc(`${x}`, [`${x+2}`, `${x-1}`, `${a+x}`]),
-            explanation: `Divide both sides by ${a}: $x = ${x}$.`,
+            explanation: `Divide both sides by ${a}: x = ${b} ÷ ${a} = ${x}.`,
             hints: ["Divide both sides by the coefficient of x."],
         };
     },
@@ -45,10 +45,10 @@ const Algebra_Easy = [
         const n = randInt(2, 9), d = randInt(2, 9);
         return {
             subtopic: "Fractions",
-            question: `Simplify the fraction $\\frac{${n*2}}{${d*2}}$.`,
+            question: `Simplify the fraction:\n$$\\frac{${n*2}}{${d*2}}$$`,
             correctAnswer: `${n}/${d}`,
             choices: mc(`${n}/${d}`, [`${n+1}/${d}`, `${n}/${d+1}`, `${n*2-1}/${d*2}`]),
-            explanation: `Divide numerator and denominator by 2: $\\frac{${n}}{${d}}$.`,
+            explanation: `Divide numerator and denominator by 2: ${n*2}/${d*2} = ${n}/${d}.`,
             hints: ["Divide both the numerator and denominator by their GCD."],
         };
     },
@@ -59,10 +59,10 @@ const Algebra_Medium = [
         const a = randInt(2, 7), b = randInt(1, 8), x = randInt(1, 10), c = a*x + b;
         return {
             subtopic: "Linear Equations",
-            question: `Solve for $x$: $${a}x + ${b} = ${c}$`,
+            question: `Solve for x:\n$$${a}x + ${b} = ${c}$$`,
             correctAnswer: `${x}`,
             choices: mc(`${x}`, [`${x+1}`, `${x-1}`, `${x+3}`]),
-            explanation: `Subtract ${b}: $${a}x = ${c-b}$. Divide by ${a}: $x = ${x}$.`,
+            explanation: `Subtract ${b}: ${a}x = ${c-b}. Divide by ${a}: x = ${x}.`,
             hints: ["Move the constant to the right side first, then divide."],
         };
     },
@@ -73,10 +73,10 @@ const Algebra_Medium = [
         const cs = C >= 0 ? `+ ${C}` : `- ${Math.abs(C)}`;
         return {
             subtopic: "Factoring",
-            question: `Solve: $x^2 ${bs}x ${cs} = 0$`,
+            question: `Solve:\n$$x^2 ${bs}x ${cs} = 0$$`,
             correctAnswer: `x = ${p} or x = ${q}`,
             choices: mc(`x = ${p} or x = ${q}`, [`x = ${-p} or x = ${-q}`, `x = ${p}`, `x = ${q}`]),
-            explanation: `Factor: $(x - ${p})(x - ${q}) = 0$, so $x = ${p}$ or $x = ${q}$.`,
+            explanation: `Factor: (x − ${p})(x − ${q}) = 0, so x = ${p} or x = ${q}.`,
             hints: ["Find two numbers that multiply to the constant and add to the x coefficient."],
         };
     },
@@ -84,10 +84,10 @@ const Algebra_Medium = [
         const a = randInt(2, 6), b = randInt(1, 8), x = randInt(1, 8), rhs = a*(x+b);
         return {
             subtopic: "Linear Equations",
-            question: `Solve for $x$: $${a}(x + ${b}) = ${rhs}$`,
+            question: `Solve for x:\n$$${a}(x + ${b}) = ${rhs}$$`,
             correctAnswer: `${x}`,
             choices: mc(`${x}`, [`${x+2}`, `${x-2}`, `${rhs}`]),
-            explanation: `Distribute: $${a}x + ${a*b} = ${rhs}$. Subtract ${a*b}: $x = ${x}$.`,
+            explanation: `Distribute: ${a}x + ${a*b} = ${rhs}. Subtract ${a*b}: x = ${x}.`,
             hints: ["Expand the brackets first, then solve."],
         };
     },
@@ -101,10 +101,10 @@ const Algebra_Hard = [
         const cs = C > 0 ? `+ ${C}` : `- ${Math.abs(C)}`;
         return {
             subtopic: "Factoring",
-            question: `Factor and solve: $x^2 ${bs}x ${cs} = 0$`,
+            question: `Factor and solve:\n$$x^2 ${bs}x ${cs} = 0$$`,
             correctAnswer: `x = ${-p} or x = ${-q}`,
             choices: mc(`x = ${-p} or x = ${-q}`, [`x = ${p} or x = ${q}`, `x = ${-p}`, `No real solutions`]),
-            explanation: `$(x + ${p})(x + ${q}) = 0 \\Rightarrow x = ${-p}$ or $x = ${-q}$.`,
+            explanation: `(x + ${p})(x + ${q}) = 0, so x = ${-p} or x = ${-q}.`,
             hints: ["Numbers that multiply to the constant and add to the x coefficient."],
         };
     },
@@ -112,10 +112,10 @@ const Algebra_Hard = [
         const base = randChoice([2, 3, 4]), exp = randInt(2, 5), result = Math.pow(base, exp);
         return {
             subtopic: "Factoring",
-            question: `Solve for $x$: $${base}^x = ${result}$`,
+            question: `Solve for x:\n$$${base}^x = ${result}$$`,
             correctAnswer: `x = ${exp}`,
             choices: mc(`x = ${exp}`, [`x = ${exp+1}`, `x = ${exp-1}`, `x = ${result}`]),
-            explanation: `$${result} = ${base}^{${exp}}$, so $x = ${exp}$.`,
+            explanation: `${result} = ${base}^${exp}, so x = ${exp}.`,
             hints: ["Express the right side as a power of the base on the left."],
         };
     },
@@ -124,10 +124,10 @@ const Algebra_Hard = [
         const rhs = b + k*X, lhsCoef = a, rhsCoef = a - k;
         return {
             subtopic: "Linear Equations",
-            question: `Solve: $${lhsCoef}x + ${b} = ${rhsCoef}x + ${rhs}$`,
+            question: `Solve:\n$$${lhsCoef}x + ${b} = ${rhsCoef}x + ${rhs}$$`,
             correctAnswer: `x = ${X}`,
             choices: mc(`x = ${X}`, [`x = ${X+2}`, `x = ${X-1}`, `x = ${-X}`]),
-            explanation: `Move x terms: $${k}x = ${k*X}$. Divide: $x = ${X}$.`,
+            explanation: `Move x terms: ${k}x = ${k*X}. Divide: x = ${X}.`,
             hints: ["Collect all x terms on one side and constants on the other."],
         };
     },
@@ -140,10 +140,10 @@ const Geometry_Easy = [
         const a1 = randInt(20, 80), a2 = 180 - a1;
         return {
             subtopic: "Angles",
-            question: `Two angles are supplementary. One measures $${a1}°$. What is the other?`,
+            question: `Two angles are supplementary. One measures ${a1}°. What is the other?`,
             correctAnswer: `${a2}°`,
             choices: mc(`${a2}°`, [`${90-a1}°`, `${a2+5}°`, `${a2-5}°`]),
-            explanation: `Supplementary angles add to $180°$. $180 - ${a1} = ${a2}°$.`,
+            explanation: `Supplementary angles add to 180°. 180 − ${a1} = ${a2}°.`,
             hints: ["Supplementary angles sum to 180°."],
         };
     },
@@ -151,10 +151,10 @@ const Geometry_Easy = [
         const a = randInt(30, 80), b = randInt(20, 60), c = 180 - a - b;
         return {
             subtopic: "Triangles",
-            question: `A triangle has two angles of $${a}°$ and $${b}°$. What is the third angle?`,
+            question: `A triangle has two angles of ${a}° and ${b}°. What is the third angle?`,
             correctAnswer: `${c}°`,
             choices: mc(`${c}°`, [`${c+5}°`, `${c-5}°`, `${180-a}°`]),
-            explanation: `Triangle angles sum to $180°$. Third $= 180 - ${a} - ${b} = ${c}°$.`,
+            explanation: `Triangle angles sum to 180°. Third = 180 − ${a} − ${b} = ${c}°.`,
             hints: ["All three angles of a triangle add up to 180°."],
         };
     },
@@ -162,10 +162,10 @@ const Geometry_Easy = [
         const v = randInt(15, 75);
         return {
             subtopic: "Angles",
-            question: `Two lines intersect. One vertical angle is $${v}°$. What is the opposite vertical angle?`,
+            question: `Two lines intersect. One vertical angle is ${v}°. What is the opposite vertical angle?`,
             correctAnswer: `${v}°`,
             choices: mc(`${v}°`, [`${180-v}°`, `${90-v}°`, `${v+10}°`]),
-            explanation: `Vertical angles are equal, so the opposite angle is also $${v}°$.`,
+            explanation: `Vertical angles are equal, so the opposite angle is also ${v}°.`,
             hints: ["Vertical angles are always equal."],
         };
     },
@@ -176,10 +176,10 @@ const Geometry_Medium = [
         const l = randInt(5, 20), w = randInt(3, 15);
         return {
             subtopic: "Area",
-            question: `Find the area of a rectangle: length $${l}$ cm, width $${w}$ cm.`,
+            question: `Find the area of a rectangle: length ${l} cm, width ${w} cm.\n$$A = l \\times w$$`,
             correctAnswer: `${l*w} cm²`,
             choices: mc(`${l*w} cm²`, [`${2*(l+w)} cm²`, `${l*w+5} cm²`, `${l*w-3} cm²`]),
-            explanation: `$A = l \\times w = ${l} \\times ${w} = ${l*w}$ cm².`,
+            explanation: `A = l × w = ${l} × ${w} = ${l*w} cm².`,
             hints: ["Area of rectangle = length × width."],
         };
     },
@@ -188,10 +188,10 @@ const Geometry_Medium = [
         const [a, b, c] = randChoice(triples);
         return {
             subtopic: "Triangles",
-            question: `A right triangle has legs $${a}$ cm and $${b}$ cm. Find the hypotenuse.`,
+            question: `A right triangle has legs ${a} cm and ${b} cm. Find the hypotenuse.\n$$a^2 + b^2 = c^2$$`,
             correctAnswer: `${c} cm`,
             choices: mc(`${c} cm`, [`${c+2} cm`, `${c-1} cm`, `${a+b} cm`]),
-            explanation: `$c^2 = ${a}^2 + ${b}^2 = ${a*a+b*b}$, so $c = ${c}$ cm.`,
+            explanation: `c² = ${a}² + ${b}² = ${a*a+b*b}, so c = ${c} cm.`,
             hints: ["Use the Pythagorean theorem: a² + b² = c²."],
         };
     },
@@ -199,10 +199,10 @@ const Geometry_Medium = [
         const b = randInt(4, 20), h = randInt(3, 15), area = (b*h)/2;
         return {
             subtopic: "Area",
-            question: `Find the area of a triangle: base $${b}$ m, height $${h}$ m.`,
+            question: `Find the area of a triangle: base ${b} m, height ${h} m.\n$$A = \\frac{1}{2}bh$$`,
             correctAnswer: `${area} m²`,
             choices: mc(`${area} m²`, [`${b*h} m²`, `${area+4} m²`, `${area-2} m²`]),
-            explanation: `$A = \\frac{1}{2} \\times ${b} \\times ${h} = ${area}$ m².`,
+            explanation: `A = ½ × ${b} × ${h} = ${area} m².`,
             hints: ["Area of triangle = ½ × base × height."],
         };
     },
@@ -213,10 +213,10 @@ const Geometry_Hard = [
         const r = randInt(3, 12), area = parseFloat((3.14*r*r).toFixed(1));
         return {
             subtopic: "Basic Circles",
-            question: `Find the area of a circle with radius $${r}$ cm. ($\\pi \\approx 3.14$)`,
+            question: `Find the area of a circle with radius ${r} cm, where π ≈ 3.14.\n$$A = \\pi r^2$$`,
             correctAnswer: `${area} cm²`,
             choices: mc(`${area} cm²`, [`${parseFloat((2*3.14*r).toFixed(1))} cm²`, `${area+6} cm²`, `${parseFloat((3.14*(r+1)*(r+1)).toFixed(1))} cm²`]),
-            explanation: `$A = \\pi r^2 = 3.14 \\times ${r}^2 = ${area}$ cm².`,
+            explanation: `Using A = πr²: substitute r = ${r} to get A = 3.14 × ${r}² = ${area} cm².`,
             hints: ["Area of circle = π × r²."],
         };
     },
@@ -224,10 +224,10 @@ const Geometry_Hard = [
         const b1 = randInt(4, 12), b2 = randInt(8, 18), h = randInt(3, 10), area = ((b1+b2)*h)/2;
         return {
             subtopic: "Area",
-            question: `Trapezoid with parallel sides $${b1}$ m and $${b2}$ m, height $${h}$ m. Find the area.`,
+            question: `Trapezoid with parallel sides ${b1} m and ${b2} m, height ${h} m. Find the area.\n$$A = \\frac{1}{2}(b_1 + b_2)h$$`,
             correctAnswer: `${area} m²`,
             choices: mc(`${area} m²`, [`${(b1+b2)*h} m²`, `${area+5} m²`, `${area-4} m²`]),
-            explanation: `$A = \\frac{1}{2}(${b1} + ${b2}) \\times ${h} = ${area}$ m².`,
+            explanation: `A = ½(${b1} + ${b2}) × ${h} = ${area} m².`,
             hints: ["Trapezoid area = ½ × (sum of parallel sides) × height."],
         };
     },
@@ -235,10 +235,10 @@ const Geometry_Hard = [
         const r = randInt(3, 10), circ = parseFloat((2*3.14*r).toFixed(1));
         return {
             subtopic: "Basic Circles",
-            question: `Find the circumference of a circle with radius $${r}$ cm. ($\\pi \\approx 3.14$)`,
+            question: `Find the circumference of a circle with radius ${r} cm, where π ≈ 3.14.\n$$C = 2\\pi r$$`,
             correctAnswer: `${circ} cm`,
             choices: mc(`${circ} cm`, [`${parseFloat((3.14*r*r).toFixed(1))} cm²`, `${circ+3} cm`, `${circ-2} cm`]),
-            explanation: `$C = 2\\pi r = 2 \\times 3.14 \\times ${r} = ${circ}$ cm.`,
+            explanation: `C = 2πr = 2 × 3.14 × ${r} = ${circ} cm.`,
             hints: ["Circumference = 2πr."],
         };
     },
@@ -260,10 +260,10 @@ const Trigonometry_Easy = [
         const p = randChoice(pairs);
         return {
             subtopic: "Basic Trig Ratios",
-            question: `What is $\\${p.ratio}(${p.angle}°)$?`,
+            question: `What is \\${p.ratio}(${p.angle}°)?`,
             correctAnswer: p.answer,
             choices: mc(p.answer, p.wrongs),
-            explanation: `$\\${p.ratio}(${p.angle}°) = ${p.answer}$. Standard unit circle value.`,
+            explanation: `\\${p.ratio}(${p.angle}°) = ${p.answer}. Standard unit circle value.`,
             hints: ["Memorise: sin(0°)=0, sin(30°)=1/2, sin(45°)=√2/2, sin(60°)=√3/2, sin(90°)=1."],
         };
     },
@@ -276,10 +276,10 @@ const Trigonometry_Easy = [
         const d = randChoice(defs);
         return {
             subtopic: "SOH-CAH-TOA",
-            question: `In a right triangle, $${d.ratio}$ is defined as:`,
+            question: `In a right triangle, ${d.ratio} is defined as:`,
             correctAnswer: d.answer,
             choices: mc(d.answer, d.wrongs),
-            explanation: `$${d.ratio} = ${d.answer}$. Remember SOH-CAH-TOA.`,
+            explanation: `${d.ratio} = ${d.answer}. Remember SOH-CAH-TOA.`,
             hints: ["SOH = Sin/Opp/Hyp, CAH = Cos/Adj/Hyp, TOA = Tan/Opp/Adj."],
         };
     },
@@ -293,10 +293,10 @@ const Trigonometry_Easy = [
         const d = randChoice(angData);
         return {
             subtopic: "SOH-CAH-TOA",
-            question: `Right triangle: hypotenuse = $${hyp}$ cm, angle = $${d.angle}°$. Find the opposite side. ($\\sin ${d.angle}° \\approx ${d.sin}$)`,
+            question: `Right triangle: hypotenuse = ${hyp} cm, angle = ${d.angle}°. Find the opposite side. (\\sin ${d.angle}° \\approx ${d.sin})`,
             correctAnswer: `${d.opp} cm`,
             choices: mc(`${d.opp} cm`, [`${d.opp+2} cm`, `${d.opp-2} cm`, `${parseFloat((hyp-d.opp).toFixed(1))} cm`]),
-            explanation: `$\\text{opp} = ${hyp} \\times \\sin(${d.angle}°) \\approx ${d.opp}$ cm.`,
+            explanation: `\\text{opp} = ${hyp} \\times \\sin(${d.angle}°) \\approx ${d.opp} cm.`,
             hints: ["SOH: sin = opp / hyp, so opp = hyp × sin(angle)."],
         };
     },
@@ -308,10 +308,10 @@ const Trigonometry_Medium = [
         const [o, a, h] = randChoice(triples);
         return {
             subtopic: "Basic Trig Ratios",
-            question: `Right triangle: opposite = $${o}$, adjacent = $${a}$, hypotenuse = $${h}$. What is $\\sin(\\theta)$?`,
+            question: `Right triangle: opposite = ${o}, adjacent = ${a}, hypotenuse = ${h}. What is \\sin(\\theta)?`,
             correctAnswer: `${o}/${h}`,
             choices: mc(`${o}/${h}`, [`${a}/${h}`, `${o}/${a}`, `${h}/${o}`]),
-            explanation: `$\\sin(\\theta) = \\frac{\\text{opp}}{\\text{hyp}} = \\frac{${o}}{${h}}$.`,
+            explanation: `\\sin(\\theta) = \\frac{\\text{opp}}{\\text{hyp}} = \\frac{${o}}{${h}}.`,
             hints: ["SOH: sin = Opposite / Hypotenuse."],
         };
     },
@@ -325,10 +325,10 @@ const Trigonometry_Medium = [
         const d = randChoice(angData);
         return {
             subtopic: "SOH-CAH-TOA",
-            question: `From the top of a $${cliff}$ m cliff, the angle of depression to a boat is $${d.angle}°$. How far is the boat from the base? ($\\tan ${d.angle}° \\approx ${d.tan}$)`,
+            question: `From the top of a ${cliff} m cliff, the angle of depression to a boat is ${d.angle}°. How far is the boat from the base? (\\tan ${d.angle}° \\approx ${d.tan})`,
             correctAnswer: `${d.dist} m`,
             choices: mc(`${d.dist} m`, [`${d.dist+10} m`, `${parseFloat((d.dist/2).toFixed(1))} m`, `${cliff} m`]),
-            explanation: `$\\tan(${d.angle}°) = \\frac{${cliff}}{d} \\Rightarrow d = \\frac{${cliff}}{${d.tan}} \\approx ${d.dist}$ m.`,
+            explanation: `\\tan(${d.angle}°) = \\frac{${cliff}}{d} \\Rightarrow d = \\frac{${cliff}}{${d.tan}} \\approx ${d.dist} m.`,
             hints: ["The cliff height is the opposite side; the horizontal distance is adjacent."],
         };
     },
@@ -337,10 +337,10 @@ const Trigonometry_Medium = [
         const comp = 90 - angle;
         return {
             subtopic: "Basic Trig Ratios",
-            question: `What is the complement of $${angle}°$?`,
+            question: `What is the complement of ${angle}°?`,
             correctAnswer: `${comp}°`,
             choices: mc(`${comp}°`, [`${180-angle}°`, `${comp+10}°`, `${comp-10}°`]),
-            explanation: `Complementary angles sum to $90°$. $90 - ${angle} = ${comp}°$.`,
+            explanation: `Complementary angles sum to 90°. 90 - ${angle} = ${comp}°.`,
             hints: ["Complementary angles add up to 90°."],
         };
     },
@@ -357,10 +357,10 @@ const Trigonometry_Hard = [
         const d = randChoice(angData);
         return {
             subtopic: "Simple Applications",
-            question: `Law of Cosines: $a = ${a}$, $b = ${b}$, $C = ${d.C}°$. Find side $c$.`,
+            question: `Law of Cosines: a = ${a}, b = ${b}, C = ${d.C}°. Find side c.`,
             correctAnswer: `${d.c} cm`,
             choices: mc(`${d.c} cm`, [`${d.c+2} cm`, `${d.c-2} cm`, `${a+b} cm`]),
-            explanation: `$c^2 = ${a}^2 + ${b}^2 - 2(${a})(${b})\\cos(${d.C}°) \\Rightarrow c \\approx ${d.c}$ cm.`,
+            explanation: `c^2 = ${a}^2 + ${b}^2 - 2(${a})(${b})\\cos(${d.C}°) \\Rightarrow c \\approx ${d.c} cm.`,
             hints: ["Law of Cosines: c² = a² + b² − 2ab·cos(C)."],
         };
     },
@@ -373,10 +373,10 @@ const Trigonometry_Hard = [
         const d = randChoice(knownData);
         return {
             subtopic: "Basic Trig Ratios",
-            question: `What is the exact value of $\\cos(${d.angle}°)$?`,
+            question: `What is the exact value of \\cos(${d.angle}°)?`,
             correctAnswer: d.cos,
             choices: mc(d.cos, d.wrongs),
-            explanation: `$\\cos(${d.angle}°) = ${d.cos}$. Standard unit circle exact value.`,
+            explanation: `\\cos(${d.angle}°) = ${d.cos}. Standard unit circle exact value.`,
             hints: ["Exact values: cos(30°)=√3/2, cos(45°)=√2/2, cos(60°)=1/2."],
         };
     },
@@ -385,10 +385,10 @@ const Trigonometry_Hard = [
         const suppAngle = 180 - angle;
         return {
             subtopic: "Simple Applications",
-            question: `An angle in standard position is $${suppAngle}°$. What is its reference angle?`,
+            question: `An angle in standard position is ${suppAngle}°. What is its reference angle?`,
             correctAnswer: `${angle}°`,
             choices: mc(`${angle}°`, [`${suppAngle}°`, `${90-angle}°`, `${angle+10}°`]),
-            explanation: `$${suppAngle}°$ is in Q2. Reference angle $= 180° - ${suppAngle}° = ${angle}°$.`,
+            explanation: `${suppAngle}° is in Q2. Reference angle = 180° - ${suppAngle}° = ${angle}°.`,
             hints: ["In quadrant 2, reference angle = 180° − angle."],
         };
     },

@@ -134,6 +134,16 @@ export default function RetakeDiagnosticScreen() {
     footerBg: darkMode ? '#0a0a0a' : '#fff',
     infoCard: darkMode ? '#1a1a1a' : '#fff',
     expectIcon: darkMode ? '#242424' : undefined,
+    // Correct / incorrect feedback — mirrors problems.tsx exactly
+    correctBg:       darkMode ? '#052e16' : '#d1fae5',
+    correctText:     darkMode ? '#4ade80' : '#00a472',
+    correctBorder:   darkMode ? '#166534' : '#00a472',
+    incorrectBg:     darkMode ? '#2d0a0a' : '#fee2e2',
+    incorrectText:   darkMode ? '#f87171' : '#ef4444',
+    incorrectBorder: darkMode ? '#7f1d1d' : '#ef4444',
+    selectedBg:      darkMode ? '#1e1b4b' : '#f5f4ff',
+    selectedBorder:  '#4b41e1',
+    selectedText:    darkMode ? '#a5b4fc' : '#4b41e1',
   };
 
   const [screen, setScreen] = useState<Screen>('intro');
@@ -304,11 +314,29 @@ export default function RetakeDiagnosticScreen() {
                 let bubbleTextColor = RK.textLight;
                 let cardTextColor = RK.choiceText;
                 if (showExplanation) {
-                  if (isSelected && isCorrect)    { cardBg = '#f0fdf4'; cardBorder = '#00a472'; bubbleBg = '#00a472'; bubbleTextColor = '#fff'; }
-                  else if (isSelected && !isCorrect) { cardBg = '#fef2f2'; cardBorder = '#ef4444'; bubbleBg = '#ef4444'; bubbleTextColor = '#fff'; }
-                  else if (!isSelected && isCorrectChoice) { cardBg = '#f0fdf4'; cardBorder = '#00a472'; }
+                  if (isSelected && isCorrect) {
+                    cardBg = RK.correctBg;
+                    cardBorder = RK.correctBorder;
+                    bubbleBg = '#00a472';
+                    bubbleTextColor = '#fff';
+                    cardTextColor = RK.correctText;
+                  } else if (isSelected && !isCorrect) {
+                    cardBg = RK.incorrectBg;
+                    cardBorder = RK.incorrectBorder;
+                    bubbleBg = '#ef4444';
+                    bubbleTextColor = '#fff';
+                    cardTextColor = RK.incorrectText;
+                  } else if (!isSelected && isCorrectChoice) {
+                    cardBg = RK.correctBg;
+                    cardBorder = RK.correctBorder;
+                    cardTextColor = RK.correctText;
+                  }
                 } else if (isSelected) {
-                  cardBg = '#f5f4ff'; cardBorder = '#4b41e1'; bubbleBg = '#4b41e1'; bubbleTextColor = '#fff';
+                  cardBg = RK.selectedBg;
+                  cardBorder = RK.selectedBorder;
+                  bubbleBg = '#4b41e1';
+                  bubbleTextColor = '#fff';
+                  cardTextColor = RK.selectedText;
                 }
                 return (
                   <TouchableOpacity key={idx}
@@ -320,9 +348,9 @@ export default function RetakeDiagnosticScreen() {
                     <View style={{ flex: 1 }}>
                       <MessageRenderer content={choice} textColor={cardTextColor} fontSize={15} />
                     </View>
-                    {showExplanation && isSelected && isCorrect && <Ionicons name="checkmark-circle" size={22} color="#00a472" />}
-                    {showExplanation && isSelected && !isCorrect && <Ionicons name="close-circle" size={22} color="#ef4444" />}
-                    {showExplanation && !isSelected && isCorrectChoice && <Ionicons name="checkmark-circle" size={22} color="#00a472" />}
+                    {showExplanation && isSelected && isCorrect && <Ionicons name="checkmark-circle" size={22} color={RK.correctText} />}
+                    {showExplanation && isSelected && !isCorrect && <Ionicons name="close-circle" size={22} color={RK.incorrectText} />}
+                    {showExplanation && !isSelected && isCorrectChoice && <Ionicons name="checkmark-circle" size={22} color={RK.correctText} />}
                   </TouchableOpacity>
                 );
               })}
@@ -348,13 +376,13 @@ export default function RetakeDiagnosticScreen() {
 
           {/* Explanation */}
           {showExplanation && (
-            <View style={[styles.explanationCard, { backgroundColor: RK.explBg, borderLeftColor: isCorrect ? '#00a472' : '#ef4444' }]}>
-              <Text style={[styles.explanationResult, { color: isCorrect ? '#00a472' : '#ef4444' }]}>
+            <View style={[styles.explanationCard, { backgroundColor: RK.explBg, borderLeftColor: isCorrect ? RK.correctBorder : RK.incorrectBorder }]}>
+              <Text style={[styles.explanationResult, { color: isCorrect ? RK.correctText : RK.incorrectText }]}>
                 {isCorrect ? '✓ Correct!' : '✗ Incorrect'}
               </Text>
               <MessageRenderer content={currentQuestion.explanation} textColor={RK.explText} fontSize={14} />
               {!isCorrect && (
-                <Text style={styles.correctAnswerText}>Correct answer: {currentQuestion.correctAnswer}</Text>
+                <Text style={[styles.correctAnswerText, { color: RK.correctText }]}>Correct answer: {currentQuestion.correctAnswer}</Text>
               )}
             </View>
           )}
