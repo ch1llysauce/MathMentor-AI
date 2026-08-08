@@ -13,7 +13,9 @@ import {
     completeLesson,
     markLessonIncomplete,
     getPracticeProblems,
-    submitPracticeAnswer
+    submitPracticeAnswer,
+    getLessonConversation,
+    saveLessonConversationMessage
 } from "../controllers/learningController.js";
 import {
     authenticate,
@@ -42,6 +44,8 @@ router.get("/lessons", getLessons);
 router.get("/lessons/:lessonId", validateMongoId("lessonId"), getLesson);
 router.put("/lessons/:lessonId/complete", validateMongoId("lessonId"), completeLesson);
 router.put("/lessons/:lessonId/incomplete", validateMongoId("lessonId"), markLessonIncomplete);
+router.get("/lessons/:lessonId/conversation", validateMongoId("lessonId"), getLessonConversation);
+router.post("/lessons/:lessonId/conversation", validateMongoId("lessonId"), saveLessonConversationMessage);
 
 // Practice problems
 router.get("/practice", getPracticeProblems);

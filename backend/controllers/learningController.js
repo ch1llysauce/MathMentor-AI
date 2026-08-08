@@ -1,4 +1,4 @@
-import { Session, DiagnosticResult, User, Progress, Lesson, PracticeProblem, UserLessonProgress, UserProblemAttempt } from "../models/index.js";
+import { Session, DiagnosticResult, User, Progress, Lesson, PracticeProblem, UserLessonProgress, UserProblemAttempt, LessonConversation } from "../models/index.js";
 import { analyzeDiagnosticResults, generateLearningPath } from "../services/learningPath.js";
 import { AppError, asyncHandler } from "../middleware/index.js";
 
@@ -666,4 +666,84 @@ export const submitPracticeAnswer = asyncHandler(async (req, res) => {
             solution: isCorrect ? null : problem.solution // Only show solution if incorrect
         }
     });
+});
+
+/**
+ * @desc    Get or create lesson conversation (returns history + conversationId)
+ * @route   GET /api/learning/lessons/:lessonId/conversation
+ * @access  Private
+ */
+export const getLessonConversation = asyncHandler(async (req, res) => {
+    const { lessonId } = req.params;
+    const userId = req.user._id;
+
+    // Find existing progress record to get the stored conversationId
+    const progress = await UserLessonProgress.findOne({ user: userId, lesson: lessonId });
+    const conversationId = progress?.tutorConversationId || null;
+
+    if (!conversationId) {
+        // No prior conversation — client will start fresh
+        return res.status(200).json({
+            success: true,
+            data: { conversationId: null, messages: [] }
+        });
+    }
+
+    // Load persisted messages
+    const conversation = await LessonConversation.findOne({ conversationId });
+
+    res.status(200).json({
+        success: true,
+        data: {
+            conversationId,
+            messages: conversation ? conversation.messages : []
+        }
+    });
+});
+
+/**
+ * @desc    Append a message pair to the lesson conversation and save conversationId
+ * @route   POST /api/learning/lessons/:lessonId/conversation
+ * @access  Private
+ */
+export const saveLessonConversationMessage = asyncHandler(async (req, res) => {
+    const { lessonId } = req.params;
+    const { conversationId, userMessage, assistantMessage } = req.body;
+    const userId = req.user._id;
+
+    if (!conversationId || !userMessage || !assistantMessage) {
+        throw new AppError('conversationId, userMessage, and assistantMessage are required', 400);
+    }
+
+    // Upsert the conversation document
+    await LessonConversation.findOneAndUpdate(
+        { conversationId },
+        {
+            $setOnInsert: { user: userId, lesson: lessonId },
+            $push: {
+                messages: {
+                    $each: [
+                        { role: 'user', content: userMessage, timestamp: new Date() },
+                        { role: 'assistant', content: assistantMessage, timestamp: new Date() }
+                    ]
+                }
+            },
+            $set: { lastMessageAt: new Date() }
+        },
+        { upsert: true, new: true }
+    );
+
+    // Link conversationId to the UserLessonProgress record (create if missing)
+    await UserLessonProgress.findOneAndUpdate(
+        { user: userId, lesson: lessonId },
+        {
+            $set: {
+                tutorConversationId: conversationId,
+                lastAccessedAt: new Date()
+            }
+        },
+        { upsert: true, new: true }
+    );
+
+    res.status(200).json({ success: true });
 });

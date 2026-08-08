@@ -176,6 +176,22 @@ export default function LessonScreen() {
           <Text style={[styles.headerSubtitle, { color: L.textLight }]}>{lesson.topic} • {lesson.subtopic}</Text>
           <Text style={[styles.headerTitle, { color: L.text }]}>{lesson.title}</Text>
         </View>
+        <TouchableOpacity
+          style={[styles.chatIcon, { backgroundColor: L.badgeBg }]}
+          onPress={() =>
+            router.push({
+              pathname: '/practice/lesson-chat',
+              params: {
+                lessonId: lesson._id,
+                lessonTitle: lesson.title,
+                topic: lesson.topic,
+                subtopic: lesson.subtopic,
+              },
+            })
+          }
+        >
+          <Ionicons name="chatbubble-ellipses-outline" size={22} color={L.primary} />
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
@@ -336,6 +352,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+  },
+  chatIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
   },
   headerContent: {
     flex: 1,

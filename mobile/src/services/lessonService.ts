@@ -30,6 +30,21 @@ export const lessonService = {
     return response.data.data;
   },
 
+  // Get persisted lesson conversation (history + conversationId)
+  async getLessonConversation(lessonId: string): Promise<{ conversationId: string | null; messages: Array<{ role: 'user' | 'assistant'; content: string; timestamp: string }> }> {
+    const response = await api.get(`/learning/lessons/${lessonId}/conversation`);
+    return response.data.data;
+  },
+
+  // Save a message pair to the lesson conversation
+  async saveLessonConversationMessage(lessonId: string, conversationId: string, userMessage: string, assistantMessage: string): Promise<void> {
+    await api.post(`/learning/lessons/${lessonId}/conversation`, {
+      conversationId,
+      userMessage,
+      assistantMessage,
+    });
+  },
+
   /**
    * Get practice problems.
    *

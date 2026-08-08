@@ -30,6 +30,10 @@ const userLessonProgressSchema = new mongoose.Schema({
   lastAccessedAt: {
     type: Date,
     default: Date.now
+  },
+  tutorConversationId: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true

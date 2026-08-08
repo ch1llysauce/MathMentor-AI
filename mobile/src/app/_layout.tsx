@@ -29,6 +29,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="profile/faq" />
           <Stack.Screen name="profile/about" />
+          <Stack.Screen name="practice/lesson-chat" />
         </Stack>
         <StatusBar style="auto" />
       </AuthProvider>
