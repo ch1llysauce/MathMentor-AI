@@ -203,6 +203,39 @@ export const getNextTopic = asyncHandler(async (req, res) => {
 
     const recommendation = getNextRecommendation(progress, diagnosticResult);
 
+    // Replace nextStep.currentScore with real lesson-completion-based progress
+    // so the dashboard card shows actual progress instead of the frozen diagnostic score
+    if (recommendation.nextStep) {
+        const { topic, subtopic } = recommendation.nextStep;
+
+        // Count lessons in this subtopic
+        const subtopicLessons = await Lesson.find({ topic, subtopic }).select('_id');
+        const subtopicLessonIds = subtopicLessons.map(l => l._id);
+
+        const subtopicCompletedCount = subtopicLessonIds.length > 0
+            ? await UserLessonProgress.countDocuments({
+                user: req.user._id,
+                lesson: { $in: subtopicLessonIds },
+                status: 'completed'
+            })
+            : 0;
+
+        const lessonBasedScore = subtopicLessonIds.length > 0
+            ? Math.round((subtopicCompletedCount / subtopicLessonIds.length) * 100)
+            : 0;
+
+        // Use lesson-based score; fall back to diagnostic score only if no lessons exist
+        recommendation.nextStep = {
+            ...recommendation.nextStep,
+            currentScore: lessonBasedScore,
+            completedLessons: subtopicCompletedCount,
+            totalLessonsInSubtopic: subtopicLessonIds.length,
+            reason: subtopicCompletedCount > 0
+                ? `${subtopicCompletedCount} of ${subtopicLessonIds.length} lessons completed`
+                : recommendation.nextStep.reason
+        };
+    }
+
     res.status(200).json({
         success: true,
         data: {

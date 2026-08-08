@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tutorService } from '@/services/tutorService';
 import { lessonService } from '@/services/lessonService';
 import { Message } from '@/types/tutor';
@@ -28,6 +29,7 @@ export default function LessonChatScreen() {
   const router = useRouter();
   const { darkMode } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
 
   const C = {
     bg: darkMode ? '#0a0a0a' : '#f7f9fb',
@@ -292,7 +294,7 @@ export default function LessonChatScreen() {
       <KeyboardAvoidingView
         style={styles.contentArea}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
+        keyboardVerticalOffset={70}
       >
         {isLoadingHistory ? (
           <View style={styles.historyLoadingContainer}>
@@ -351,38 +353,45 @@ export default function LessonChatScreen() {
             <View style={{ height: 20 }} />
           </ScrollView>
         )}
-
-        {/* Input */}
-        <View
-          style={[styles.inputContainer, { backgroundColor: C.inputBg, borderTopColor: C.border }]}
-        >
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={[styles.input, { backgroundColor: C.inputFieldBg, color: C.inputText }]}
-              placeholder={`Ask about ${lessonTitle}...`}
-              placeholderTextColor={C.placeholder}
-              value={inputText}
-              onChangeText={setInputText}
-              multiline
-              maxLength={500}
-              editable={!isLoading && !isLoadingHistory}
-              onFocus={() => {
-                setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 300);
-              }}
-            />
-            <TouchableOpacity
-              style={[
-                styles.sendButton,
-                (!inputText.trim() || isLoading || isLoadingHistory) && styles.sendButtonDisabled,
-              ]}
-              onPress={() => handleSendMessage()}
-              disabled={!inputText.trim() || isLoading || isLoadingHistory}
-            >
-              <Ionicons name="send" size={20} color="#ffffff" />
-            </TouchableOpacity>
-          </View>
-        </View>
       </KeyboardAvoidingView>
+
+      {/* Input — anchored outside KAV so it stays pinned to the bottom on Android */}
+      <View
+        style={[
+          styles.inputContainer,
+          {
+            backgroundColor: C.inputBg,
+            borderTopColor: C.border,
+            paddingBottom: Math.max(insets.bottom, 12),
+          },
+        ]}
+      >
+        <View style={styles.inputWrapper}>
+          <TextInput
+            style={[styles.input, { backgroundColor: C.inputFieldBg, color: C.inputText }]}
+            placeholder={`Ask about ${lessonTitle}...`}
+            placeholderTextColor={C.placeholder}
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+            maxLength={500}
+            editable={!isLoading && !isLoadingHistory}
+            onFocus={() => {
+              setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 300);
+            }}
+          />
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (!inputText.trim() || isLoading || isLoadingHistory) && styles.sendButtonDisabled,
+            ]}
+            onPress={() => handleSendMessage()}
+            disabled={!inputText.trim() || isLoading || isLoadingHistory}
+          >
+            <Ionicons name="send" size={20} color="#ffffff" />
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 }
@@ -565,14 +574,20 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   inputContainer: {
-    padding: 16,
-    paddingBottom: 32,
+    paddingHorizontal: 16,
+    paddingTop: 12,
     borderTopWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 8,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 12,
+    paddingBottom: 12
   },
   input: {
     flex: 1,

@@ -21,6 +21,8 @@ interface NextStep {
   currentScore: number;
   reason: string;
   difficulty: string;
+  completedLessons?: number;
+  totalLessonsInSubtopic?: number;
 }
 
 // Per-topic icon and description fallbacks
@@ -182,6 +184,8 @@ export default function DashboardScreen() {
           currentScore: rec.nextStep.currentScore ?? 0,
           reason: rec.nextStep.reason ?? '',
           difficulty: rec.nextStep.difficulty ?? 'Easy',
+          completedLessons: rec.nextStep.completedLessons ?? 0,
+          totalLessonsInSubtopic: rec.nextStep.totalLessonsInSubtopic ?? 0,
         });
       }
       setRecommendationProgress({
@@ -328,7 +332,9 @@ export default function DashboardScreen() {
                 <View style={styles.progressSection}>
                   <View style={styles.progressHeader}>
                     <Text style={styles.progressLabel}>
-                      {nextStep.topic} Progress
+                      {nextStep.totalLessonsInSubtopic
+                        ? `${nextStep.completedLessons ?? 0}/${nextStep.totalLessonsInSubtopic} lessons`
+                        : `${nextStep.subtopic} Progress`}
                     </Text>
                     <Text style={styles.progressPercent}>{nextStep.currentScore}%</Text>
                   </View>
