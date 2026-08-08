@@ -12,6 +12,7 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { lessonService } from '@/services/lessonService';
+import { dashboardService } from '@/services/dashboardService';
 import { useTheme } from '@/context/ThemeContext';
 
 type TabType = 'lessons' | 'practice';
@@ -208,13 +209,6 @@ export default function TopicScreen() {
         <View style={styles.statItem}>
           <Text style={[styles.statValue, { color: T.primary }]}>{lessons.filter(l => l.completed).length}/{lessons.length}</Text>
           <Text style={[styles.statLabel, { color: T.textLight }]}>Lessons</Text>
-        </View>
-        <View style={[styles.statDivider, { backgroundColor: T.surface }]} />
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: T.primary }]}>
-            {practiceSets.reduce((acc, p) => acc + p.completed, 0)}
-          </Text>
-          <Text style={[styles.statLabel, { color: T.textLight }]}>Problems Solved</Text>
         </View>
       </View>
 

@@ -11,6 +11,10 @@ import { AppError, asyncHandler } from "../middleware/index.js";
 const getResend = () => new Resend(process.env.RESEND_API_KEY);
 const googleClient = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
 
+// OTP configuration (in seconds) — single source of truth shared with clients
+const OTP_EXPIRY_SECONDS = 10 * 60; // 10 minutes
+const OTP_RESEND_COOLDOWN_SECONDS = 60; // min 60s between OTP emails
+
 /**
  * Generate JWT Token with unique jti
  */
@@ -631,16 +635,20 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     if (!user) {
         return res.status(200).json({
             success: true,
-            message: "If an account exists with that email, a reset code has been sent."
+            message: "If an account exists with that email, a reset code has been sent.",
+            data: {
+                expiresIn: OTP_EXPIRY_SECONDS,
+                resendCooldown: OTP_RESEND_COOLDOWN_SECONDS
+            }
         });
     }
 
-    // Per-email rate limit: max 1 email per 60 seconds, max 5 per hour
+    // Per-email rate limit: max 1 email per minute, max 5 per hour
     const now = new Date();
     if (user.passwordResetLastSent) {
         const secondsSinceLast = (now - new Date(user.passwordResetLastSent)) / 1000;
-        if (secondsSinceLast < 60) {
-            const waitSeconds = Math.ceil(60 - secondsSinceLast);
+        if (secondsSinceLast < OTP_RESEND_COOLDOWN_SECONDS) {
+            const waitSeconds = Math.ceil(OTP_RESEND_COOLDOWN_SECONDS - secondsSinceLast);
             throw new AppError(
                 `Please wait ${waitSeconds} second${waitSeconds !== 1 ? 's' : ''} before requesting another code.`,
                 429
@@ -650,7 +658,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 
     // Generate a 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expiry = new Date(Date.now() + OTP_EXPIRY_SECONDS * 1000);
 
     // Hash OTP before storing
     const salt = await bcrypt.genSalt(10);
@@ -670,7 +678,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
                 <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
                     <h2 style="color: #4b41e1;">Reset your password</h2>
                     <p>Hi ${user.displayName},</p>
-                    <p>Use the code below to reset your MathMentor AI password. It expires in <strong>10 minutes</strong>.</p>
+                    <p>Use the code below to reset your MathMentor AI password. It expires in <strong>${OTP_EXPIRY_SECONDS / 60} minutes</strong>.</p>
                     <div style="background: #f0eeff; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
                         <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #4b41e1;">${otp}</span>
                     </div>
@@ -696,7 +704,11 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 
     res.status(200).json({
         success: true,
-        message: "If an account exists with that email, a reset code has been sent."
+        message: "If an account exists with that email, a reset code has been sent.",
+        data: {
+            expiresIn: OTP_EXPIRY_SECONDS,
+            resendCooldown: OTP_RESEND_COOLDOWN_SECONDS
+        }
     });
 });
 

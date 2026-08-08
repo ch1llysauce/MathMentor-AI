@@ -1,10 +1,10 @@
 import api from './api';
-import { PROGRESS_ENDPOINTS } from '../constants/api';
+import { PROGRESS_ENDPOINTS, LEARNING_ENDPOINTS } from '../constants/api';
 
 export interface DashboardStats {
   currentStreak: number;
   xpEarned: number;
-  accuracy: number;
+  accuracy: number;       // from latest diagnostic: correctAnswers / totalQuestions
   avgSpeed: number;
 }
 
@@ -33,6 +33,7 @@ export interface DashboardData {
     totalSubtopics: number;
     totalQuestions: number;
     totalCorrect: number;
+    averageResponseTime: number;
   };
 }
 
@@ -59,7 +60,6 @@ export const dashboardService = {
       });
     });
 
-    // Convert to array format
     return Array.from(topicMap.entries()).map(([topic, stats]) => ({
       topic,
       progress: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
@@ -67,16 +67,34 @@ export const dashboardService = {
     }));
   },
 
-  // Calculate dashboard stats
-  calculateStats(data: DashboardData): DashboardStats {
-    const totalQuestions = data.overallProgress.totalQuestions;
+  // Fetch accuracy and avg speed from the latest diagnostic result
+  async getDiagnosticStats(): Promise<{ accuracy: number; avgSpeed: number }> {
+    try {
+      const response = await api.get(LEARNING_ENDPOINTS.GET_DIAGNOSTIC);
+      // Response shape: { data: { diagnostic, analysis } }
+      const result = response.data?.data?.diagnostic;
+      const correct: number = result?.correctAnswers ?? 0;
+      const total: number = result?.totalQuestions ?? 0;
+      const timeSpent: number = result?.timeSpent ?? 0;
+
+      const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+      const avgSpeed = total > 0 ? Math.round(timeSpent / total) : 0;
+
+      return { accuracy, avgSpeed };
+    } catch {
+      return { accuracy: 0, avgSpeed: 0 };
+    }
+  },
+
+  // Calculate dashboard stats — accuracy & avgSpeed come from the diagnostic
+  calculateStats(data: DashboardData, diagnosticAccuracy = 0, diagnosticAvgSpeed = 0): DashboardStats {
     const totalCorrect = data.overallProgress.totalCorrect;
-    
+
     return {
       currentStreak: data.user.currentStreak,
-      xpEarned: totalCorrect * 10, // 10 XP per correct answer
-      accuracy: totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0,
-      avgSpeed: 42, // TODO: Calculate from actual response times
+      xpEarned: totalCorrect * 10,
+      accuracy: diagnosticAccuracy,
+      avgSpeed: diagnosticAvgSpeed,
     };
   },
 

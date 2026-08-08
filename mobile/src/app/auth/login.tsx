@@ -7,27 +7,67 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   StatusBar,
   Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/context/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
+
+const GoogleLogo = ({ size = 20 }: { size?: number }) => (
+  <Svg width={size} height={size} viewBox="0 0 48 48">
+    <Path
+      fill="#EA4335"
+      d="M24 9.5c3.54 0 6.72 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.61 0 6.51 5.38 2.56 13.22l7.98 6.2C12.45 13.16 17.7 9.5 24 9.5Z"
+    />
+
+    <Path
+      fill="#4285F4"
+      d="M46.98 24.55c0-1.64-.15-3.22-.43-4.75H24v9h12.94c-.56 3-2.24 5.54-4.77 7.25l7.73 6c4.51-4.16 7.08-10.28 7.08-17.5Z"
+    />
+
+    <Path
+      fill="#34A853"
+      d="M24 48c6.48 0 11.91-2.15 15.9-5.95l-7.73-6c-2.15 1.44-4.89 2.3-8.17 2.3-6.28 0-11.61-4.24-13.52-9.94l-8.04 6.19C6.48 42.52 14.55 48 24 48Z"
+    />
+
+    <Path
+      fill="#FBBC05"
+      d="M10.48 28.41A14.4 14.4 0 0 1 9.5 24c0-1.53.35-3.01.98-4.41v-6.37H2.56A23.96 23.96 0 0 0 0 24c0 3.87.92 7.54 2.56 10.78l7.92-6.37Z"
+    />
+  </Svg>
+);
 
 export default function LoginScreen() {
   const router = useRouter();
   const { login, validate2FA, loginWithGoogle } = useAuth();
+  const { darkMode } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  const D = {
+    bg: darkMode ? '#0a0a0a' : '#f7f9fb',
+    card: darkMode ? '#1a1a1a' : '#ffffff',
+    border: darkMode ? '#2e2e2e' : '#e0e3e5',
+    text: darkMode ? '#f0f0f0' : '#091426',
+    textLight: darkMode ? '#a0a0a0' : '#45474c',
+    placeholder: darkMode ? '#6b7280' : '#75777d',
+    inputBg: darkMode ? '#242424' : '#f2f4f6',
+    inputBorder: darkMode ? '#2e2e2e' : '#c5c6cd',
+    divider: darkMode ? '#2e2e2e' : '#e0e3e5',
+    btnSecondary: darkMode ? '#312e81' : '#e2dfff',
+    btnSecondaryText: darkMode ? '#a5b4fc' : '#3323cc',
+    glow: darkMode ? 'rgba(75, 65, 225, 0.15)' : 'rgba(75, 65, 225, 0.08)',
+    modalBg: darkMode ? '#1a1a1a' : '#ffffff',
+  };
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
 
-  // 2FA modal state
   const [twoFAModalVisible, setTwoFAModalVisible] = useState(false);
   const [twoFAUserId, setTwoFAUserId] = useState('');
   const [twoFACode, setTwoFACode] = useState('');
@@ -41,7 +81,6 @@ export default function LoginScreen() {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedEmail)) {
       Alert.alert('Error', 'Please enter a valid email address');
@@ -51,24 +90,19 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const response = await login(trimmedEmail, trimmedPassword);
-
       if (response.requiresTwoFactor) {
-        // Server needs 2FA verification before issuing token
         setTwoFAUserId(response.data?.userId || '');
         setTwoFAModalVisible(true);
         setLoading(false);
         return;
       }
-
       if (response.success) {
-        setTimeout(() => {
-          router.replace('/(tabs)/dashboard');
-        }, 200);
+        setTimeout(() => router.replace('/(tabs)/dashboard'), 200);
       } else {
         Alert.alert('Login Failed', response.message || 'Invalid credentials');
         setLoading(false);
       }
-    } catch (error: any) {
+    } catch {
       Alert.alert('Login Failed', 'Incorrect email or password.');
       setLoading(false);
     }
@@ -79,7 +113,6 @@ export default function LoginScreen() {
     try {
       const response = await loginWithGoogle();
       if (response.requiresRegistration) {
-        // No account found — send to registration with Google data pre-filled
         const profile = (response.data as any)?.googleProfile;
         router.push({
           pathname: '/auth/register',
@@ -97,26 +130,20 @@ export default function LoginScreen() {
         setTimeout(() => router.replace('/(tabs)/dashboard'), 200);
       }
     } catch (error: any) {
-      // Handle native module not available (Expo Go / non-native build)
       if (
         error.message?.includes('TurboModuleRegistry') ||
         error.message?.includes('RNGoogleSignin') ||
         error.message?.includes('not a native build') ||
         error.message?.includes('native binary')
       ) {
-        Alert.alert(
-          'Native Build Required',
-          'Google Sign-In requires a native build. Please run "npx expo run:android" to enable this feature.'
-        );
+        Alert.alert('Native Build Required', 'Google Sign-In requires a native build. Please run "npx expo run:android".');
         setLoading(false);
         return;
       }
-      // Silently ignore cancellation
       if (error.code === 'SIGN_IN_CANCELLED' || error.code === 'SIGN_IN_REQUIRED') {
         setLoading(false);
         return;
       }
-      // Alert.alert('Google Sign-In Failed', 'Kindly choose an account');
     } finally {
       setLoading(false);
     }
@@ -127,11 +154,9 @@ export default function LoginScreen() {
       Alert.alert('Error', 'Please enter a 6-digit verification code');
       return;
     }
-
     setTwoFALoading(true);
     try {
       const response = await validate2FA(twoFAUserId, twoFACode.trim());
-
       if (response.success) {
         setTwoFAModalVisible(false);
         setTwoFACode('');
@@ -147,220 +172,167 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f7f9fb" />
-      <View style={[styles.ambientGlow, styles.glowTopLeft]} />
-      <View style={[styles.ambientGlow, styles.glowBottomRight]} />
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: D.bg }]}>
+      <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={D.bg} />
+      <View style={[styles.ambientGlow, styles.glowTopLeft, { backgroundColor: D.glow }]} />
+      <View style={[styles.ambientGlow, styles.glowBottomRight, { backgroundColor: D.glow }]} />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <View style={styles.logoBox}>
-                <Ionicons name="calculator" size={24} color="#ffffff" />
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.logoContainer}>
+          <View style={styles.logoBox}>
+            <Ionicons name="calculator" size={24} color="#ffffff" />
+          </View>
+          <Text style={[styles.logoText, { color: D.text }]}>MathMentor AI</Text>
+        </View>
+      </View>
+
+      {/* Form Card — fills remaining space, centered vertically */}
+      <View style={styles.body}>
+        <View style={[styles.formCard, { backgroundColor: D.card, borderColor: D.border, shadowColor: darkMode ? '#000' : '#4b41e1' }]}>
+          <View style={styles.formHeader}>
+            <Text style={[styles.welcomeTitle, { color: D.text }]}>Welcome back</Text>
+            <Text style={[styles.welcomeSubtitle, { color: D.textLight }]}>Access your personalized tutor dashboard.</Text>
+          </View>
+
+          <View style={styles.form}>
+            {/* Email */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: D.textLight }]}>Email</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="mail-outline" size={20} color={D.placeholder} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { color: D.text, backgroundColor: D.inputBg, borderColor: D.inputBorder }]}
+                  placeholder="e.g. johndoe@gmail.com"
+                  placeholderTextColor={D.placeholder}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!loading}
+                />
               </View>
-              <Text style={styles.logoText}>MathMentor AI</Text>
+            </View>
+
+            {/* Password */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: D.textLight }]}>Password</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="lock-closed-outline" size={20} color={D.placeholder} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, styles.passwordInput, { color: D.text, backgroundColor: D.inputBg, borderColor: D.inputBorder }]}
+                  placeholder="••••••••"
+                  placeholderTextColor={D.placeholder}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  editable={!loading}
+                />
+                <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)} activeOpacity={0.7}>
+                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={D.placeholder} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Forgot Password */}
+            <View style={styles.optionsRow}>
+              <TouchableOpacity></TouchableOpacity>
+              <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/auth/forgot-password')}>
+                <Text style={[styles.forgotPassword, { color: darkMode ? '#a5b4fc' : '#4b41e1' }]}>Forgot Password?</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Buttons */}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[styles.signInButton, loading && styles.buttonDisabled]}
+                onPress={handleLogin}
+                disabled={loading}
+                activeOpacity={0.9}
+              >
+                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.signInButtonText}>Sign In</Text>}
+              </TouchableOpacity>
+
+              <View style={styles.divider}>
+                <View style={[styles.dividerLine, { backgroundColor: D.divider }]} />
+                <Text style={[styles.dividerText, { color: D.placeholder }]}>or</Text>
+                <View style={[styles.dividerLine, { backgroundColor: D.divider }]} />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.googleButton, loading && styles.buttonDisabled, { backgroundColor: D.card, borderColor: D.border }]}
+                onPress={handleGoogleSignIn}
+                disabled={loading}
+                activeOpacity={0.9}
+              >
+                <GoogleLogo size={20} />
+                <Text style={[styles.googleButtonText, { color: D.text }]}>Continue with Google</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.createAccountButton}
+                onPress={() => router.push('/auth/register')}
+                disabled={loading}
+                activeOpacity={0.9}
+              >
+                <Text style={[styles.createAccountButtonText, { color: darkMode ? '#a5b4fc' : '#3323cc' }]}>Create Account</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
-          {/* Main Content */}
-          <View style={styles.mainContent}>
-            <View style={styles.formCard}>
-              <View style={styles.formHeader}>
-                <Text style={styles.welcomeTitle}>Welcome back</Text>
-                <Text style={styles.welcomeSubtitle}>Access your personalized tutor dashboard.</Text>
-              </View>
-
-              <View style={styles.form}>
-                {/* Email Input */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Email</Text>
-                  <View style={styles.inputWrapper}>
-                    <Ionicons name="mail-outline" size={20} color="#75777d" style={styles.inputIcon} />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. johndoe@gmail.com"
-                      placeholderTextColor="#75777d"
-                      value={email}
-                      onChangeText={setEmail}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      editable={!loading}
-                    />
-                  </View>
-                </View>
-
-                {/* Password Input */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Password</Text>
-                  <View style={styles.inputWrapper}>
-                    <Ionicons name="lock-closed-outline" size={20} color="#75777d" style={styles.inputIcon} />
-                    <TextInput
-                      style={[styles.input, styles.passwordInput]}
-                      placeholder="••••••••"
-                      placeholderTextColor="#75777d"
-                      value={password}
-                      onChangeText={setPassword}
-                      secureTextEntry={!showPassword}
-                      autoCapitalize="none"
-                      editable={!loading}
-                    />
-                    <TouchableOpacity
-                      style={styles.eyeIcon}
-                      onPress={() => setShowPassword(!showPassword)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons
-                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                        size={20}
-                        color="#75777d"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* Remember Me & Forgot Password */}
-                <View style={styles.optionsRow}>
-                  <TouchableOpacity
-                    style={styles.checkboxContainer}
-                    onPress={() => setRememberMe(!rememberMe)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-                      {rememberMe && <Ionicons name="checkmark" size={16} color="#ffffff" />}
-                    </View>
-                    <Text style={styles.checkboxLabel}>Remember me</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/auth/forgot-password')}>
-                    <Text style={styles.forgotPassword}>Forgot Password?</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Buttons */}
-                <View style={styles.buttonContainer}>
-                  <TouchableOpacity
-                    style={[styles.signInButton, loading && styles.buttonDisabled]}
-                    onPress={handleLogin}
-                    disabled={loading}
-                    activeOpacity={0.9}
-                  >
-                    {loading ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : (
-                      <Text style={styles.signInButtonText}>Sign In</Text>
-                    )}
-                  </TouchableOpacity>
-
-                  {/* Divider */}
-                  <View style={styles.divider}>
-                    <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>or</Text>
-                    <View style={styles.dividerLine} />
-                  </View>
-
-                  {/* Google Sign-In */}
-                  <TouchableOpacity
-                    style={[styles.googleButton, loading && styles.buttonDisabled]}
-                    onPress={handleGoogleSignIn}
-                    disabled={loading}
-                    activeOpacity={0.9}
-                  >
-                    <Text style={styles.googleIcon}>G</Text>
-                    <Text style={styles.googleButtonText}>Continue with Google</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.createAccountButton}
-                    onPress={() => router.push('/auth/register')}
-                    disabled={loading}
-                    activeOpacity={0.9}
-                  >
-                    <Text style={styles.createAccountButtonText}>Create Account</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Footer */}
-              <View style={styles.footer}>
-                <Text style={styles.footerText}>By signing in, you agree to our</Text>
-                <View style={styles.footerLinks}>
-                  <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/legal/terms')}>
-                    <Text style={styles.footerLink}>Terms of Service</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.footerDivider}>|</Text>
-                  <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/legal/privacy-policy')}>
-                    <Text style={styles.footerLink}>Privacy Policy</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={[styles.footerText, { color: D.textLight }]}>By signing in, you agree to our</Text>
+            <View style={styles.footerLinks}>
+              <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/legal/terms')}>
+                <Text style={[styles.footerLink, { color: D.placeholder }]}>Terms of Service</Text>
+              </TouchableOpacity>
+              <Text style={[styles.footerDivider, { color: D.border }]}>|</Text>
+              <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/legal/privacy-policy')}>
+                <Text style={[styles.footerLink, { color: D.placeholder }]}>Privacy Policy</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+      </View>
 
-      {/* 2FA Verification Modal */}
+      {/* 2FA Modal */}
       <Modal
         visible={twoFAModalVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => {
-          setTwoFAModalVisible(false);
-          setTwoFACode('');
-          setLoading(false);
-        }}
+        onRequestClose={() => { setTwoFAModalVisible(false); setTwoFACode(''); setLoading(false); }}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalIconContainer}>
+          <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 24) + 24, backgroundColor: D.modalBg }]}>
+            <View style={[styles.modalIconContainer, { backgroundColor: darkMode ? 'rgba(75, 65, 225, 0.15)' : 'rgba(75, 65, 225, 0.1)' }]}>
               <Ionicons name="shield-checkmark" size={40} color="#4b41e1" />
             </View>
-            <Text style={styles.modalTitle}>Two-Factor Authentication</Text>
-            <Text style={styles.modalSubtitle}>
-              Enter the 6-digit code from your authenticator app
-            </Text>
-
+            <Text style={[styles.modalTitle, { color: D.text }]}>Two-Factor Authentication</Text>
+            <Text style={[styles.modalSubtitle, { color: D.textLight }]}>Enter the 6-digit code from your authenticator app</Text>
             <TextInput
-              style={styles.codeInput}
+              style={[styles.codeInput, { color: D.text, backgroundColor: D.inputBg, borderColor: D.inputBorder }]}
               value={twoFACode}
               onChangeText={setTwoFACode}
               keyboardType="number-pad"
               maxLength={6}
               placeholder="000000"
-              placeholderTextColor="#75777d"
+              placeholderTextColor={D.placeholder}
               textAlign="center"
               autoFocus
             />
-
             <TouchableOpacity
               style={[styles.verifyButton, twoFALoading && styles.buttonDisabled]}
               onPress={handle2FASubmit}
               disabled={twoFALoading}
               activeOpacity={0.9}
             >
-              {twoFALoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.verifyButtonText}>Verify</Text>
-              )}
+              {twoFALoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.verifyButtonText}>Verify</Text>}
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => {
-                setTwoFAModalVisible(false);
-                setTwoFACode('');
-                setLoading(false);
-              }}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+            <TouchableOpacity style={styles.cancelButton} onPress={() => { setTwoFAModalVisible(false); setTwoFACode(''); setLoading(false); }}>
+              <Text style={[styles.cancelButtonText, { color: D.placeholder }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -377,9 +349,7 @@ const styles = StyleSheet.create({
   },
   glowTopLeft: { top: -200, left: -200 },
   glowBottomRight: { bottom: -200, right: -200 },
-  keyboardView: { flex: 1 },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 16 },
-  header: { paddingTop: 100, paddingBottom: 24, alignItems: 'center' },
+  header: { paddingVertical: 20, alignItems: 'center', paddingTop: 60 },
   logoContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   logoBox: {
     width: 40, height: 40, backgroundColor: '#4b41e1', borderRadius: 8,
@@ -388,17 +358,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2, shadowRadius: 8, elevation: 4,
   },
   logoText: { fontSize: 28, fontWeight: '600', color: '#091426', letterSpacing: -0.5 },
-  mainContent: { flex: 1, justifyContent: 'center', paddingBottom: 40 },
+  body: { flex: 1, justifyContent: 'center', paddingHorizontal: 16, paddingBottom: 40 },
   formCard: {
-    backgroundColor: '#ffffff', borderRadius: 24, padding: 32,
+    backgroundColor: '#ffffff', borderRadius: 24, padding: 28,
     shadowColor: '#4b41e1', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06, shadowRadius: 24, elevation: 4,
     borderWidth: 1, borderColor: '#e2e8f0',
   },
-  formHeader: { marginBottom: 32 },
+  formHeader: { marginBottom: 24 },
   welcomeTitle: { fontSize: 20, fontWeight: '600', color: '#091426', marginBottom: 4, lineHeight: 28 },
   welcomeSubtitle: { fontSize: 14, color: '#45474c', lineHeight: 20 },
-  form: { gap: 20 },
+  form: { gap: 16 },
   inputGroup: { gap: 6 },
   label: { fontSize: 14, fontWeight: '500', color: '#45474c', letterSpacing: 0.3, marginLeft: 4, lineHeight: 20 },
   inputWrapper: { position: 'relative', flexDirection: 'row', alignItems: 'center' },
@@ -410,7 +380,7 @@ const styles = StyleSheet.create({
   },
   passwordInput: { paddingRight: 48 },
   eyeIcon: { position: 'absolute', right: 16, width: 40, height: 52, justifyContent: 'center', alignItems: 'center' },
-  optionsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
+  optionsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   checkboxContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   checkbox: {
     width: 20, height: 20, borderRadius: 4, borderWidth: 1.5,
@@ -419,9 +389,9 @@ const styles = StyleSheet.create({
   checkboxChecked: { backgroundColor: '#4b41e1', borderColor: '#4b41e1' },
   checkboxLabel: { fontSize: 14, color: '#45474c', lineHeight: 20 },
   forgotPassword: { fontSize: 14, color: '#4b41e1', lineHeight: 20 },
-  buttonContainer: { gap: 12, paddingTop: 16 },
+  buttonContainer: { gap: 10 },
   signInButton: {
-    height: 56, backgroundColor: '#4b41e1', borderRadius: 12,
+    height: 52, backgroundColor: '#4b41e1', borderRadius: 12,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: '#4b41e1', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2, shadowRadius: 8, elevation: 4,
@@ -431,43 +401,26 @@ const styles = StyleSheet.create({
   dividerLine: { flex: 1, height: 1, backgroundColor: '#e0e3e5' },
   dividerText: { fontSize: 13, color: '#75777d' },
   googleButton: {
-    height: 56,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    borderWidth: 1.5,
-    borderColor: '#e0e3e5',
-  },
-  googleIcon: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#4285F4',
-    lineHeight: 24,
+    height: 52, backgroundColor: '#ffffff', borderRadius: 12,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    borderWidth: 1.5, borderColor: '#e0e3e5',
   },
   googleButtonText: { fontSize: 16, fontWeight: '600', color: '#091426' },
-  signInButtonText: { fontSize: 20, fontWeight: '600', color: '#ffffff', lineHeight: 28 },
+  signInButtonText: { fontSize: 18, fontWeight: '600', color: '#ffffff', lineHeight: 28 },
   createAccountButton: {
-    height: 56, backgroundColor: '#e2dfff', borderRadius: 12,
+    height: 52, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center',
   },
-  createAccountButtonText: { fontSize: 20, fontWeight: '600', color: '#3323cc', lineHeight: 28 },
-  footer: { marginTop: 32, alignItems: 'center', gap: 8 },
-  footerText: { fontSize: 14, color: '#45474c', lineHeight: 20 },
+  createAccountButtonText: { fontSize: 18, fontWeight: '600', lineHeight: 28 },
+  footer: { marginTop: 24, alignItems: 'center', gap: 6 },
+  footerText: { fontSize: 13, color: '#45474c', lineHeight: 20 },
   footerLinks: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   footerLink: { fontSize: 12, color: '#75777d', letterSpacing: 0.3 },
   footerDivider: { fontSize: 12, color: '#c5c6cd' },
-
-  // 2FA Modal
-  modalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: {
     backgroundColor: '#ffffff', borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    padding: 32, alignItems: 'center', paddingBottom: 48,
+    padding: 32, alignItems: 'center',
   },
   modalIconContainer: {
     width: 72, height: 72, borderRadius: 36,

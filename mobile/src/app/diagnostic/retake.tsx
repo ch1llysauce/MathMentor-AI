@@ -34,6 +34,23 @@ interface DiagQuestion {
 type Screen = 'intro' | 'test' | 'submitting';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
+// Map subtopic display names → exact camelCase keys matching the DiagnosticResult schema
+const SUBTOPIC_DB_KEY: Record<string, string> = {
+  // Algebra
+  'linear equations': 'linearEquations',
+  'fractions':        'fractions',
+  'factoring':        'factoring',
+  // Geometry
+  'angles':           'angles',
+  'triangles':        'triangles',
+  'area':             'area',
+  'basic circles':    'basicCircles',
+  // Trigonometry
+  'soh-cah-toa':      'sohCahToa',
+  'basic trig ratios':'basicTrigRatios',
+  'simple applications':'simpleApplications',
+};
+
 function buildTopicScores(
   questions: DiagQuestion[],
   answers: Record<number, string>
@@ -44,7 +61,10 @@ function buildTopicScores(
     const topicKey = q.topic.toLowerCase();
     if (!buckets[topicKey]) buckets[topicKey] = { correct: 0, total: 0, subtopics: {} };
 
-    const stKey = q.subtopic.toLowerCase().replace(/\s+/g, '_');
+    // Use the explicit camelCase key; fall back to lowercased name if not found
+    const stKeyRaw = q.subtopic.toLowerCase();
+    const stKey = SUBTOPIC_DB_KEY[stKeyRaw] ?? stKeyRaw;
+
     if (!buckets[topicKey].subtopics[stKey])
       buckets[topicKey].subtopics[stKey] = { c: 0, t: 0 };
 

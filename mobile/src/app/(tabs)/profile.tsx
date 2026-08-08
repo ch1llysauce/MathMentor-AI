@@ -185,20 +185,12 @@ export default function ProfileScreen() {
     router.push('/profile/privacy');
   };
 
-  const handleHelpCenter = () => {
-    Alert.alert(
-      'Help Center',
-      'For help and support, please contact us at:\nsupport@mathmentor.ai\n\nWe typically respond within 24 hours.',
-      [{ text: 'OK' }]
-    );
+  const handleFaq = () => {
+    router.push('/profile/faq');
   };
 
   const handleAbout = () => {
-    Alert.alert(
-      'About MathMentor AI',
-      'Version 1.0.0\n\nMathMentor AI is your personalised mathematics learning companion. We use advanced AI to help you master mathematics at your own pace.\n\n\u00A9 2025 MathMentor AI. All rights reserved.',
-      [{ text: 'OK' }]
-    );
+    router.push('/profile/about');
   };
 
   const handleDarkModeToggle = () => {
@@ -344,12 +336,12 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: C.textDark }]}>Support</Text>
           <View style={[styles.menuList, { backgroundColor: C.card }]}>
-            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: darkMode ? 0 : 1, borderBottomColor: C.borderLight }]} onPress={handleHelpCenter}>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: darkMode ? 0 : 1, borderBottomColor: C.borderLight }]} onPress={handleFaq}>
               <View style={styles.menuItemLeft}>
                 <View style={[styles.menuIcon, { backgroundColor: C.primaryBg }]}>
                   <Ionicons name="help-circle-outline" size={20} color={C.primary} />
                 </View>
-                <Text style={[styles.menuItemText, { color: C.menuItemText }]}>Help Center</Text>
+                <Text style={[styles.menuItemText, { color: C.menuItemText }]}>FAQs</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={C.chevronColor} />
             </TouchableOpacity>

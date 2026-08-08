@@ -10,6 +10,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<AuthResponse>;
   loginWithGoogle: () => Promise<AuthResponse>;
+  loginWithToken: (token: string, user: User) => Promise<void>;
   register: (userData: RegisterData) => Promise<AuthResponse>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<AuthResponse>;
@@ -109,6 +110,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return data;
   };
 
+  const loginWithToken = async (token: string, user: User): Promise<void> => {
+    await storage.setItem('token', token);
+    await storage.setItem('user', JSON.stringify(user));
+    setUser(user);
+  };
+
   const validate2FA = async (userId: string, token: string): Promise<AuthResponse> => {
     const response = await authService.validate2FA(userId, token);
     if (response.success && response.data) {
@@ -139,7 +146,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, register, logout, updateUser, validate2FA }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, loginWithToken, register, logout, updateUser, validate2FA }}>
       {children}
     </AuthContext.Provider>
   );

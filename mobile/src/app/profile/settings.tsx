@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  
-  const [darkMode, setDarkMode] = useState(false);
+  const { darkMode, toggleDarkMode } = useTheme();
   const [soundEffects, setSoundEffects] = useState(true);
   const [hapticFeedback, setHapticFeedback] = useState(true);
   const [autoPlay, setAutoPlay] = useState(false);
@@ -104,7 +104,7 @@ export default function SettingsScreen() {
               title="Dark Mode"
               description="Use dark theme throughout the app"
               value={darkMode}
-              onValueChange={setDarkMode}
+              onValueChange={toggleDarkMode}
               iconBg="rgba(75, 65, 225, 0.1)"
               iconColor="#4b41e1"
             />

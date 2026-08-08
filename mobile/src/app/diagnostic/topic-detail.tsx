@@ -21,23 +21,34 @@ const TOPIC_SUBTOPICS: Record<string, string[]> = {
   Trigonometry: ['SOH-CAH-TOA', 'Basic Trig Ratios', 'Simple Applications'],
 };
 
+// Explicit mapping from display name → exact key in subtopicScores (as stored in DB)
+const SUBTOPIC_KEY_MAP: Record<string, string> = {
+  // Algebra
+  'Fractions':           'fractions',
+  'Linear Equations':    'linearEquations',
+  'Factoring':           'factoring',
+  // Geometry
+  'Angles':              'angles',
+  'Triangles':           'triangles',
+  'Area':                'area',
+  'Basic Circles':       'basicCircles',
+  // Trigonometry
+  'SOH-CAH-TOA':         'sohCahToa',
+  'Basic Trig Ratios':   'basicTrigRatios',
+  'Simple Applications': 'simpleApplications',
+};
+
 function getScoreColor(score: number) {
   if (score >= 80) return '#00a472';
   if (score >= 60) return '#f59e0b';
   return '#ef4444';
 }
 
-function getScoreLabel(score: number) {
+function getScoreLabel(score: number): string {
   if (score >= 80) return 'Expert';
   if (score >= 60) return 'Proficient';
   if (score >= 40) return 'Developing';
   return 'Needs Practice';
-}
-
-// Convert subtopic name → the key format used in subtopicScores
-// e.g. "Linear Equations" → "linear_equations"  |  "SOH-CAH-TOA" → "soh-cah-toa"
-function toSubtopicKey(name: string): string {
-  return name.toLowerCase().replace(/\s+/g, '_');
 }
 
 export default function TopicDetailScreen() {
@@ -74,10 +85,10 @@ export default function TopicDetailScreen() {
 
   const subtopicNames = TOPIC_SUBTOPICS[topic] ?? [];
 
-  // Build subtopic rows from real data when available, otherwise show score only
+  // Build subtopic rows using the explicit key map to match DB field names
   const subtopics = subtopicNames.map(name => {
-    const key = toSubtopicKey(name);
-    const stScore = topicScore?.subtopicScores?.[key] ?? null;
+    const key = SUBTOPIC_KEY_MAP[name];
+    const stScore = key != null ? (topicScore?.subtopicScores?.[key] ?? null) : null;
     return { name, score: stScore };
   });
 

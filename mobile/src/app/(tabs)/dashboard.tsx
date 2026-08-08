@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import Loading from '@/components/common/Loading';
-import { dashboardService, DashboardStats, TopicProgress as TopicProgressData } from '@/services/dashboardService';
+import { dashboardService, DashboardStats } from '@/services/dashboardService';
 import api from '@/services/api';
 import { PROGRESS_ENDPOINTS } from '@/constants/api';
 import { useTheme } from '@/context/ThemeContext';
@@ -40,7 +40,7 @@ const TOPIC_META: Record<string, { icon: string; description: string }> = {
 };
 
 export default function DashboardScreen() {
-  const { user, logout, loading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const { darkMode } = useTheme();
 
@@ -65,7 +65,12 @@ export default function DashboardScreen() {
     stats: DashboardStats;
     topics: TopicProgress[];
   } | null>(null);
-  const [nextStep, setNextStep] = useState<NextStep | null>(null);
+  const [topicMastery, setTopicMastery] = useState<{ topic: string; mastery: number }[]>([]);
+  const [nextStep, setNextStep] = useState<NextStep | null>(null);  const [recommendationProgress, setRecommendationProgress] = useState<{
+    progressPercentage: number;
+    completedSteps: number;
+    totalSteps: number;
+  }>({ progressPercentage: 0, completedSteps: 0, totalSteps: 0 });
   const [refreshing, setRefreshing] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [resumeLoading, setResumeLoading] = useState(false);
@@ -131,9 +136,12 @@ export default function DashboardScreen() {
   // Fetch dashboard data
   const fetchDashboardData = async () => {
     try {
-      const data = await dashboardService.getDashboardData();
-      const topicProgress = await dashboardService.getTopicProgress();
-      const stats = dashboardService.calculateStats(data);
+      const [data, topicProgress, diagnosticStats] = await Promise.all([
+        dashboardService.getDashboardData(),
+        dashboardService.getTopicProgress(),
+        dashboardService.getDiagnosticStats(),
+      ]);
+      const stats = dashboardService.calculateStats(data, diagnosticStats.accuracy, diagnosticStats.avgSpeed);
 
       // Merge with default topics to ensure all 3 topics are shown
       const mergedTopics = defaultTopics.map(defaultTopic => {
@@ -147,6 +155,13 @@ export default function DashboardScreen() {
         stats,
         topics: mergedTopics,
       });
+
+      // Extract per-topic mastery from the summary (averageMastery per topic)
+      const mastery = (['Algebra', 'Geometry', 'Trigonometry'] as const).map(t => {
+        const found = data.topicStats.find((s: any) => s.topic === t);
+        return { topic: t, mastery: found?.averageMastery ?? 0 };
+      });
+      setTopicMastery(mastery);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       // Use default data on error
@@ -169,9 +184,15 @@ export default function DashboardScreen() {
           difficulty: rec.nextStep.difficulty ?? 'Easy',
         });
       }
+      setRecommendationProgress({
+        progressPercentage: rec?.progressPercentage ?? 0,
+        completedSteps: rec?.completedSteps ?? 0,
+        totalSteps: rec?.totalSteps ?? 0,
+      });
     } catch {
       // No diagnostic yet or network issue — nextStep stays null
       setNextStep(null);
+      setRecommendationProgress({ progressPercentage: 0, completedSteps: 0, totalSteps: 0 });
     } finally {
       setLoadingData(false);
       setRefreshing(false);
@@ -280,7 +301,7 @@ export default function DashboardScreen() {
         {/* Main Content Grid */}
         <View style={styles.mainGrid}>
           {/* Featured Topic Card */}
-          {nextStep ? (
+           {nextStep ? (
             <TouchableOpacity
               style={styles.featuredCard}
               activeOpacity={0.92}
@@ -334,6 +355,53 @@ export default function DashboardScreen() {
                 />
               </View>
             </TouchableOpacity>
+          ) : user?.diagnosticCompleted ? (
+            /* Diagnostic done but no next step — check if user has any progress */
+            <TouchableOpacity
+              style={styles.featuredCard}
+              activeOpacity={0.92}
+              onPress={() => router.push('/(tabs)/practice')}
+            >
+              {(() => {
+                const hasProgress = topics.some(t => t.problemsSolved > 0);
+                const badge = hasProgress ? 'GREAT JOB' : 'READY TO START';
+                const title = hasProgress ? "You're crushing it!" : "Let's get to work!";
+                const desc = hasProgress
+                  ? (recommendationProgress.totalSteps > 0
+                      ? `You've completed ${recommendationProgress.completedSteps} of ${recommendationProgress.totalSteps} recommended steps. Keep exploring practice sets to sharpen your skills.`
+                      : 'All recommended topics are complete. Keep practicing to maintain your mastery across all subjects.')
+                  : 'Your diagnostic is done and your learning path is ready. Jump into practice to start building mastery.';
+                const icon = hasProgress ? 'flame' : 'rocket';
+                const btnLabel = hasProgress ? 'Browse Topics' : 'Start Practicing';
+                const pct = recommendationProgress.progressPercentage;
+                return (
+                  <>
+                    <View style={styles.featuredBadge}>
+                      <Text style={styles.featuredBadgeText}>{badge}</Text>
+                    </View>
+                    <Text style={styles.featuredTitle}>{title}</Text>
+                    <Text style={styles.featuredDescription}>{desc}</Text>
+                    <View style={styles.featuredFooter}>
+                      <View style={styles.progressSection}>
+                        <View style={styles.progressHeader}>
+                          <Text style={styles.progressLabel}>Overall Progress</Text>
+                          <Text style={styles.progressPercent}>{pct}%</Text>
+                        </View>
+                        <View style={styles.progressBar}>
+                          <View style={[styles.progressFill, { width: `${pct}%` }]} />
+                        </View>
+                      </View>
+                      <View style={styles.startButton}>
+                        <Text style={styles.startButtonText}>{btnLabel}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.featuredIcon}>
+                      <Ionicons name={icon as any} size={80} color="rgba(255,255,255,0.1)" />
+                    </View>
+                  </>
+                );
+              })()}
+            </TouchableOpacity>
           ) : (
             /* No diagnostic yet — prompt the user */
             <TouchableOpacity
@@ -370,51 +438,16 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           )}
 
-          {/* Learning Pulse Card */}
-          <View style={[styles.pulseCard, { backgroundColor: D.card }]}>
-            <Text style={[styles.pulseTitle, { color: D.text }]}>Learning Pulse</Text>
-            <View style={styles.pulseList}>
-              {topics.map((topic, index) => (
-                <TouchableOpacity key={index} style={[styles.pulseItem, { backgroundColor: D.itemBg, borderColor: D.itemBorder }]}>
-                  <View style={styles.pulseItemLeft}>
-                    <View style={[styles.radialProgress, { backgroundColor: D.radialBg }]}>
-                      <Text style={[styles.radialText, { color: D.text }]}>{topic.progress}%</Text>
-                    </View>
-                    <View>
-                      <Text style={[styles.pulseTopicName, { color: D.text }]}>{topic.name}</Text>
-                      <Text style={[styles.pulseTopicStats, { color: D.textLight }]}>{topic.problemsSolved} Problems Solved</Text>
-                    </View>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color={D.primary} />
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Stats Grid */}
-          <View style={styles.statsGrid}>
-            <View style={[styles.statCard, { backgroundColor: D.card }]}>
-              <View style={[styles.statIcon, { backgroundColor: darkMode ? 'rgba(165,180,252,0.15)' : 'rgba(75, 65, 225, 0.1)' }]}>
-                <Ionicons name="calendar" size={24} color={darkMode ? '#a5b4fc' : '#4b41e1'} />
-              </View>
-              <Text style={[styles.statLabel, { color: D.textLight }]}>Study Streak</Text>
-              <Text style={[styles.statValue, { color: D.text }]}>{stats.currentStreak} Days</Text>
-            </View>
-
-            <View style={[styles.statCard, { backgroundColor: D.card }]}>
-              <View style={[styles.statIcon, { backgroundColor: darkMode ? 'rgba(52,211,153,0.15)' : 'rgba(78, 222, 163, 0.2)' }]}>
-                <Ionicons name="star" size={24} color={darkMode ? '#34d399' : '#00a472'} />
-              </View>
-              <Text style={[styles.statLabel, { color: D.textLight }]}>XP Earned</Text>
-              <Text style={[styles.statValue, { color: D.text }]}>{stats.xpEarned.toLocaleString()}</Text>
-            </View>
-
+          {/* Stats Row */}
+          <View style={styles.statsRow}>
             <View style={[styles.statCard, { backgroundColor: D.card }]}>
               <View style={[styles.statIcon, { backgroundColor: darkMode ? 'rgba(165,180,252,0.2)' : 'rgba(216, 227, 251, 1)' }]}>
                 <Ionicons name="checkmark-done" size={24} color={darkMode ? '#a5b4fc' : '#091426'} />
               </View>
               <Text style={[styles.statLabel, { color: D.textLight }]}>Accuracy</Text>
-              <Text style={[styles.statValue, { color: D.text }]}>{stats.accuracy}%</Text>
+              <Text style={[styles.statValue, { color: D.text }]}>
+                {stats.accuracy > 0 ? `${stats.accuracy}%` : '—'}
+              </Text>
             </View>
 
             <View style={[styles.statCard, { backgroundColor: D.card }]}>
@@ -422,7 +455,7 @@ export default function DashboardScreen() {
                 <Ionicons name="timer" size={24} color={darkMode ? '#f87171' : '#ba1a1a'} />
               </View>
               <Text style={[styles.statLabel, { color: D.textLight }]}>Avg. Speed</Text>
-              <Text style={[styles.statValue, { color: D.text }]}>{stats.avgSpeed}s</Text>
+              <Text style={[styles.statValue, { color: D.text }]}>{stats.avgSpeed > 0 ? `${stats.avgSpeed}s` : '—'}</Text>
             </View>
           </View>
 
@@ -690,11 +723,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  radialText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#091426',
-  },
   pulseTopicName: {
     fontSize: 14,
     fontWeight: '600',
@@ -705,6 +733,30 @@ const styles = StyleSheet.create({
     color: '#45474c',
     marginTop: 2,
   },
+  masteryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  masteryPct: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  masteryBarBg: {
+    height: 6,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  masteryBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -712,7 +764,6 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    minWidth: '47%',
     backgroundColor: '#ffffff',
     borderRadius: 24,
     padding: 20,

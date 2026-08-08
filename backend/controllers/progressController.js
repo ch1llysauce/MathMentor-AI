@@ -1,4 +1,4 @@
-import { Progress, User, DiagnosticResult, Session } from "../models/index.js";
+import { Progress, User, DiagnosticResult, Session, UserProblemAttempt } from "../models/index.js";
 import { generateLearningPath, getNextRecommendation, suggestDifficultyAdjustment } from "../services/learningPath.js";
 import { AppError, asyncHandler } from "../middleware/index.js";
 
@@ -71,6 +71,22 @@ export const getProgressSummary = asyncHandler(async (req, res) => {
     const progress = await Progress.find({ user: req.user._id });
     const user = await User.findById(req.user._id);
 
+    // Aggregate average response time from user problem attempts
+    const attemptAgg = await UserProblemAttempt.aggregate([
+        { $match: { user: req.user._id } },
+        {
+            $group: {
+                _id: null,
+                avgResponseTime: { $avg: "$timeSpent" },
+                totalAttempts: { $sum: 1 }
+            }
+        }
+    ]);
+
+    const averageResponseTime = attemptAgg.length > 0 && attemptAgg[0].totalAttempts > 0
+        ? Math.round(attemptAgg[0].avgResponseTime)
+        : 0;
+
     // Group by topic
     const topicStats = {};
     progress.forEach(p => {
@@ -117,7 +133,8 @@ export const getProgressSummary = asyncHandler(async (req, res) => {
                 totalTopics: Object.keys(topicStats).length,
                 totalSubtopics: progress.length,
                 totalQuestions: progress.reduce((sum, p) => sum + p.questionsAnswered, 0),
-                totalCorrect: progress.reduce((sum, p) => sum + p.correctAnswers, 0)
+                totalCorrect: progress.reduce((sum, p) => sum + p.correctAnswers, 0),
+                averageResponseTime
             }
         }
     });

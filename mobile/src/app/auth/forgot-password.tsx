@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/context/ThemeContext';
 import api from '@/services/api';
 import { AUTH_ENDPOINTS } from '@/constants/api';
 
@@ -13,6 +14,21 @@ type Step = 'email' | 'otp' | 'password';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { darkMode } = useTheme();
+
+  const D = {
+    bg: darkMode ? '#0a0a0a' : '#f7f9fb',
+    card: darkMode ? '#1a1a1a' : '#ffffff',
+    border: darkMode ? '#2e2e2e' : '#e0e3e5',
+    text: darkMode ? '#f0f0f0' : '#091426',
+    textLight: darkMode ? '#a0a0a0' : '#45474c',
+    placeholder: darkMode ? '#6b7280' : '#75777d',
+    inputBg: darkMode ? '#242424' : '#f2f4f6',
+    inputBorder: darkMode ? '#2e2e2e' : '#c5c6cd',
+    glow: darkMode ? 'rgba(75, 65, 225, 0.15)' : 'rgba(75, 65, 225, 0.08)',
+    stepDot: darkMode ? '#2e2e2e' : '#e2e8f0',
+    stepLine: darkMode ? '#2e2e2e' : '#e2e8f0',
+  };
 
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
@@ -24,6 +40,12 @@ export default function ForgotPasswordScreen() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // OTP countdown — sourced from the backend response
+  const [otpExpirySeconds, setOtpExpirySeconds] = useState<number | null>(null);
+  const [resendCooldown, setResendCooldown] = useState<number>(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [timerKey, setTimerKey] = useState(0);
+
   // ── Step 1: Send OTP ─────────────────────────────────────────────────────
   const handleSendOtp = async () => {
     const trimmed = email.trim().toLowerCase();
@@ -33,8 +55,14 @@ export default function ForgotPasswordScreen() {
 
     setLoading(true);
     try {
-      await api.post(AUTH_ENDPOINTS.FORGOT_PASSWORD, { email: trimmed });
+      const response = await api.post(AUTH_ENDPOINTS.FORGOT_PASSWORD, { email: trimmed });
+      const expiresIn = response.data?.data?.expiresIn ?? 600;
+      const cooldown = response.data?.data?.resendCooldown ?? 60;
+      setOtpExpirySeconds(expiresIn);
+      setResendCooldown(cooldown);
+      setOtp('');
       setStep('otp');
+      setTimerKey((k) => k + 1);
     } catch (error: any) {
       const status = error.response?.status;
       const msg = error.response?.data?.message || error.message || 'Failed to send reset code. Please try again.';
@@ -83,6 +111,45 @@ export default function ForgotPasswordScreen() {
     }
   };
 
+  // ── Countdown timer (single interval for both OTP expiry + resend cooldown) ──
+  useEffect(() => {
+    if (step !== 'otp' || (otpExpirySeconds === null && resendCooldown === 0)) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
+    }
+
+    timerRef.current = setInterval(() => {
+      setOtpExpirySeconds((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : prev));
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [step, timerKey]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
+
+  const formatTime = (seconds: number): string => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   const stepConfig = {
     email: { number: 1, title: 'Forgot Password', subtitle: "Enter the email address associated with your account and we'll send you a reset code." },
     otp: { number: 2, title: 'Check Your Email', subtitle: `We sent a 6-digit code to ${email}. Enter it below.` },
@@ -92,18 +159,18 @@ export default function ForgotPasswordScreen() {
   const current = stepConfig[step];
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f7f9fb" />
-      <View style={[styles.ambientGlow, styles.glowTopLeft]} />
-      <View style={[styles.ambientGlow, styles.glowBottomRight]} />
+    <View style={[styles.container, { backgroundColor: D.bg }]}>
+      <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={D.bg} />
+      <View style={[styles.ambientGlow, styles.glowTopLeft, { backgroundColor: D.glow }]} />
+      <View style={[styles.ambientGlow, styles.glowBottomRight, { backgroundColor: D.glow }]} />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity style={styles.backBtn} onPress={() => step === 'email' ? router.back() : setStep(step === 'otp' ? 'email' : 'otp')}>
-              <Ionicons name="arrow-back" size={24} color="#091426" />
+            <TouchableOpacity style={[styles.backBtn, { backgroundColor: D.inputBg }]} onPress={() => step === 'email' ? router.back() : setStep(step === 'otp' ? 'email' : 'otp')}>
+              <Ionicons name="arrow-back" size={24} color={D.text} />
             </TouchableOpacity>
           </View>
 
@@ -111,39 +178,39 @@ export default function ForgotPasswordScreen() {
           <View style={styles.stepIndicator}>
             {(['email', 'otp', 'password'] as Step[]).map((s, i) => (
               <View key={s} style={styles.stepRow}>
-                <View style={[styles.stepDot, step === s && styles.stepDotActive, i < ['email', 'otp', 'password'].indexOf(step) && styles.stepDotDone]}>
+                <View style={[styles.stepDot, step === s && styles.stepDotActive, i < ['email', 'otp', 'password'].indexOf(step) && styles.stepDotDone, { backgroundColor: step === s ? '#4b41e1' : i < ['email', 'otp', 'password'].indexOf(step) ? '#00a472' : D.stepDot }]}>
                   {i < ['email', 'otp', 'password'].indexOf(step)
                     ? <Ionicons name="checkmark" size={12} color="#fff" />
-                    : <Text style={[styles.stepNum, step === s && styles.stepNumActive]}>{i + 1}</Text>}
+                    : <Text style={[styles.stepNum, step === s && styles.stepNumActive, { color: step === s ? '#fff' : D.textLight }]}>{i + 1}</Text>}
                 </View>
-                {i < 2 && <View style={[styles.stepLine, i < ['email', 'otp', 'password'].indexOf(step) && styles.stepLineDone]} />}
+                {i < 2 && <View style={[styles.stepLine, i < ['email', 'otp', 'password'].indexOf(step) && styles.stepLineDone, { backgroundColor: i < ['email', 'otp', 'password'].indexOf(step) ? '#00a472' : D.stepLine }]} />}
               </View>
             ))}
           </View>
 
           {/* Card */}
-          <View style={styles.card}>
-            <View style={styles.iconContainer}>
+          <View style={[styles.card, { backgroundColor: D.card, borderColor: D.border, shadowColor: darkMode ? '#000' : '#4b41e1' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: darkMode ? 'rgba(75,65,225,0.15)' : 'rgba(75,65,225,0.1)' }]}>
               <Ionicons
                 name={step === 'email' ? 'mail-outline' : step === 'otp' ? 'keypad-outline' : 'lock-closed-outline'}
                 size={28}
                 color="#4b41e1"
               />
             </View>
-            <Text style={styles.title}>{current.title}</Text>
-            <Text style={styles.subtitle}>{current.subtitle}</Text>
+            <Text style={[styles.title, { color: D.text }]}>{current.title}</Text>
+            <Text style={[styles.subtitle, { color: D.textLight }]}>{current.subtitle}</Text>
 
             {/* Step 1 — Email */}
             {step === 'email' && (
               <>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Email address</Text>
+                  <Text style={[styles.label, { color: D.textLight }]}>Email address</Text>
                   <View style={styles.inputWrapper}>
-                    <Ionicons name="mail-outline" size={20} color="#75777d" style={styles.inputIcon} />
+                    <Ionicons name="mail-outline" size={20} color={D.placeholder} style={styles.inputIcon} />
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, { color: D.text, backgroundColor: D.inputBg, borderColor: D.inputBorder }]}
                       placeholder="your@email.com"
-                      placeholderTextColor="#75777d"
+                      placeholderTextColor={D.placeholder}
                       value={email}
                       onChangeText={setEmail}
                       keyboardType="email-address"
@@ -163,22 +230,42 @@ export default function ForgotPasswordScreen() {
             {step === 'otp' && (
               <>
                 <TextInput
-                  style={styles.otpInput}
+                  style={[styles.otpInput, { color: D.text, backgroundColor: D.inputBg, borderColor: D.inputBorder }]}
                   value={otp}
                   onChangeText={setOtp}
                   keyboardType="number-pad"
                   maxLength={6}
                   placeholder="000000"
-                  placeholderTextColor="#75777d"
+                  placeholderTextColor={D.placeholder}
                   textAlign="center"
                   editable={!loading}
                 />
                 <TouchableOpacity style={[styles.btn, loading && styles.btnDisabled]} onPress={handleVerifyOtp} disabled={loading}>
                   {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Verify Code</Text>}
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.resendBtn} onPress={handleSendOtp} disabled={loading}>
-                  <Text style={styles.resendText}>Didn't receive it? Resend code</Text>
-                </TouchableOpacity>
+
+                {/* OTP expiry countdown + resend */}
+                <View style={styles.otpFooter}>
+                  {otpExpirySeconds !== null && otpExpirySeconds > 0 ? (
+                    <Text style={styles.countdownText}>
+                      Code expires in{' '}
+                      <Text style={styles.countdownValue}>{formatTime(otpExpirySeconds)}</Text>
+                    </Text>
+                  ) : (
+                    <Text style={styles.countdownTextExpired}>The code has expired. Request a new one below.</Text>
+                  )}
+                  <TouchableOpacity
+                    style={styles.resendBtn}
+                    onPress={handleSendOtp}
+                    disabled={loading || resendCooldown > 0}
+                  >
+                    <Text style={[styles.resendText, resendCooldown > 0 && styles.resendTextDisabled]}>
+                      {resendCooldown > 0
+                        ? `Resend code (${Math.floor(resendCooldown)}s)`
+                        : "Didn't receive it? Resend code"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </>
             )}
 
@@ -186,13 +273,13 @@ export default function ForgotPasswordScreen() {
             {step === 'password' && (
               <>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>New password</Text>
+                  <Text style={[styles.label, { color: D.textLight }]}>New password</Text>
                   <View style={styles.inputWrapper}>
-                    <Ionicons name="lock-closed-outline" size={20} color="#75777d" style={styles.inputIcon} />
+                    <Ionicons name="lock-closed-outline" size={20} color={D.placeholder} style={styles.inputIcon} />
                     <TextInput
-                      style={[styles.input, { paddingRight: 48 }]}
+                      style={[styles.input, { paddingRight: 48, color: D.text, backgroundColor: D.inputBg, borderColor: D.inputBorder }]}
                       placeholder="At least 6 characters"
-                      placeholderTextColor="#75777d"
+                      placeholderTextColor={D.placeholder}
                       value={newPassword}
                       onChangeText={setNewPassword}
                       secureTextEntry={!showPassword}
@@ -200,18 +287,18 @@ export default function ForgotPasswordScreen() {
                       editable={!loading}
                     />
                     <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)}>
-                      <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#75777d" />
+                      <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={D.placeholder} />
                     </TouchableOpacity>
                   </View>
                 </View>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Confirm new password</Text>
+                  <Text style={[styles.label, { color: D.textLight }]}>Confirm new password</Text>
                   <View style={styles.inputWrapper}>
-                    <Ionicons name="lock-closed-outline" size={20} color="#75777d" style={styles.inputIcon} />
+                    <Ionicons name="lock-closed-outline" size={20} color={D.placeholder} style={styles.inputIcon} />
                     <TextInput
-                      style={[styles.input, { paddingRight: 48 }]}
+                      style={[styles.input, { paddingRight: 48, color: D.text, backgroundColor: D.inputBg, borderColor: D.inputBorder }]}
                       placeholder="Repeat your password"
-                      placeholderTextColor="#75777d"
+                      placeholderTextColor={D.placeholder}
                       value={confirmPassword}
                       onChangeText={setConfirmPassword}
                       secureTextEntry={!showConfirm}
@@ -219,7 +306,7 @@ export default function ForgotPasswordScreen() {
                       editable={!loading}
                     />
                     <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowConfirm(!showConfirm)}>
-                      <Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={20} color="#75777d" />
+                      <Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={20} color={D.placeholder} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -231,7 +318,7 @@ export default function ForgotPasswordScreen() {
           </View>
 
           <TouchableOpacity onPress={() => router.replace('/auth/login')} style={styles.backToLogin}>
-            <Text style={styles.backToLoginText}>Back to Login</Text>
+            <Text style={[styles.backToLoginText, { color: D.placeholder }]}>Back to Login</Text>
           </TouchableOpacity>
 
         </ScrollView>
@@ -309,6 +396,12 @@ const styles = StyleSheet.create({
 
   resendBtn: { marginTop: 16, paddingVertical: 8 },
   resendText: { fontSize: 14, color: '#4b41e1', textAlign: 'center' },
+  resendTextDisabled: { color: '#94a3b8' },
+
+  otpFooter: { alignItems: 'center', marginTop: 16, gap: 12 },
+  countdownText: { fontSize: 13, color: '#45474c' },
+  countdownValue: { color: '#091426', fontWeight: '700' },
+  countdownTextExpired: { fontSize: 13, color: '#ef4444', textAlign: 'center' },
 
   backToLogin: { marginTop: 24, alignItems: 'center' },
   backToLoginText: { fontSize: 14, color: '#75777d' },

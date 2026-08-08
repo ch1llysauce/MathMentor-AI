@@ -7,24 +7,36 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   StatusBar,
+  ScrollView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/context/ThemeContext';
 import api from '@/services/api';
 import { AUTH_ENDPOINTS } from '@/constants/api';
-import { storage } from '@/utils/storage';
 import AvatarPicker from '@/components/AvatarPicker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const { register } = useAuth();
+  const { register, loginWithToken } = useAuth();
+  const { darkMode } = useTheme();
+  const insets = useSafeAreaInsets();
 
-  // Google pre-fill params
+  const D = {
+    bg: darkMode ? '#0a0a0a' : '#f7f9fb',
+    card: darkMode ? '#1a1a1a' : '#ffffff',
+    border: darkMode ? '#2e2e2e' : '#e0e3e5',
+    text: darkMode ? '#f0f0f0' : '#091426',
+    textLight: darkMode ? '#a0a0a0' : '#45474c',
+    placeholder: darkMode ? '#6b7280' : '#75777d',
+    inputBg: darkMode ? '#242424' : '#f2f4f6',
+    inputBorder: darkMode ? '#2e2e2e' : '#c5c6cd',
+    glow: darkMode ? 'rgba(75, 65, 225, 0.15)' : 'rgba(75, 65, 225, 0.08)',
+  };
+
   const params = useLocalSearchParams<{
     fromGoogle?: string;
     googleIdToken?: string;
@@ -44,31 +56,28 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    if (!displayName || (!isGoogleFlow && (!email || !password || !confirmPassword))) {
-      Alert.alert('Error', 'Please fill in all required fields');
+    if (!displayName.trim()) {
+      Alert.alert('Error', 'Please enter a display name');
       return;
     }
 
     if (!isGoogleFlow) {
+      if (!email || !password || !confirmPassword) {
+        Alert.alert('Error', 'Please fill in all fields');
+        return;
+      }
       if (password !== confirmPassword) {
         Alert.alert('Error', 'Passwords do not match');
         return;
       }
-
       if (password.length < 8) {
-        Alert.alert('Error', 'Password must be at least 8 characters long');
+        Alert.alert('Error', 'Password must be at least 8 characters');
         return;
       }
-
       if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-        Alert.alert('Error', 'Password must contain at least one uppercase letter, one lowercase letter, and one number');
+        Alert.alert('Error', 'Password needs at least one uppercase, one lowercase, and one number');
         return;
       }
-    }
-
-    if (!displayName.trim()) {
-      Alert.alert('Error', 'Please enter a display name');
-      return;
     }
 
     setLoading(true);
@@ -81,8 +90,7 @@ export default function RegisterScreen() {
         });
         const data = res.data;
         if (data.success && data.data) {
-          await storage.setItem('token', data.data.token);
-          await storage.setItem('user', JSON.stringify(data.data.user));
+          await loginWithToken(data.data.token, data.data.user);
           setLoading(false);
           router.replace('/(tabs)/dashboard');
         } else {
@@ -93,7 +101,6 @@ export default function RegisterScreen() {
       }
 
       const response = await register({ displayName, email, password, profileImage: profileImage || undefined });
-
       if (response.success) {
         setLoading(false);
         router.replace('/(tabs)/dashboard');
@@ -108,173 +115,146 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f7f9fb" />
-      <View style={[styles.ambientGlow, styles.glowTopLeft]} />
-      <View style={[styles.ambientGlow, styles.glowBottomRight]} />
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: D.bg }]}>
+      <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={D.bg} />
+      <View style={[styles.ambientGlow, styles.glowTopLeft, { backgroundColor: D.glow }]} />
+      <View style={[styles.ambientGlow, styles.glowBottomRight, { backgroundColor: D.glow }]} />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <View style={styles.logoBox}>
-                <Ionicons name="calculator" size={24} color="#ffffff" />
-              </View>
-              <Text style={styles.logoText}>MathMentor AI</Text>
-            </View>
+      {/* Slim top bar */}
+      <View style={styles.topBar}>
+        <View style={styles.logoContainer}>
+          <View style={styles.logoBox}>
+            <Ionicons name="calculator" size={18} color="#ffffff" />
           </View>
+          <Text style={[styles.logoText, { color: D.text }]}>MathMentor AI</Text>
+        </View>
+      </View>
 
-          {/* Hero */}
-          <View style={styles.heroSection}>
-            <Text style={styles.heroTitle}>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={[styles.formCard, { backgroundColor: D.card, borderColor: D.border, shadowColor: darkMode ? '#000' : '#4b41e1' }]}>
+          {/* Title */}
+          <View style={styles.cardHeader}>
+            <Text style={[styles.cardTitle, { color: D.text }]}>
               {isGoogleFlow ? 'Almost there!' : 'Create your account'}
             </Text>
-            <Text style={styles.heroSubtitle}>
-              {isGoogleFlow
-                ? `Signing up as ${params.googleEmail}. Tap Get Started to finish.`
-                : 'Your personalized math tutor is ready when you are.'}
-            </Text>
+            {isGoogleFlow && (
+              <Text style={[styles.cardSubtitle, { color: D.textLight }]}>Signing up as {params.googleEmail}</Text>
+            )}
           </View>
 
-          {/* Form */}
-          <View style={styles.formCard}>
-            {/* Avatar */}
-            <View style={styles.avatarRow}>
-              <AvatarPicker
-                imageUri={profileImage}
-                initials={displayName || '?'}
-                onChange={setProfileImage}
-                disabled={loading}
-              />
-            </View>
+          {/* Avatar */}
+          <View style={styles.avatarRow}>
+            <AvatarPicker
+              imageUri={profileImage}
+              initials={displayName || '?'}
+              onChange={setProfileImage}
+              size={80}
+              disabled={loading}
+            />
+          </View>
 
-            {/* Display name — shown for both flows; pre-filled from Google but editable */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>DISPLAY NAME</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Alex Rivera"
-                placeholderTextColor="#75777d"
-                value={displayName}
-                onChangeText={setDisplayName}
-                autoCapitalize="words"
-                editable={!loading}
-              />
-            </View>
+          {/* Display Name */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: D.textLight }]}>DISPLAY NAME</Text>
+            <TextInput
+              style={[styles.input, { color: D.text, backgroundColor: D.inputBg, borderColor: D.inputBorder }]}
+              placeholder="Alex Rivera"
+              placeholderTextColor={D.placeholder}
+              value={displayName}
+              onChangeText={setDisplayName}
+              autoCapitalize="words"
+              editable={!loading}
+            />
+          </View>
 
-            {/* Email + password only for non-Google flow */}
-            {!isGoogleFlow && (
-              <>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>EMAIL</Text>
+          {/* Email + password — normal flow only */}
+          {!isGoogleFlow && (
+            <>
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: D.textLight }]}>EMAIL</Text>
+                <TextInput
+                  style={[styles.input, { color: D.text, backgroundColor: D.inputBg, borderColor: D.inputBorder }]}
+                  placeholder="alex@example.com"
+                  placeholderTextColor={D.placeholder}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!loading}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: D.textLight }]}>PASSWORD</Text>
+                <View style={styles.passwordContainer}>
                   <TextInput
-                    style={styles.input}
-                    placeholder="alex@example.com"
-                    placeholderTextColor="#75777d"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
+                    style={[styles.input, { color: D.text, backgroundColor: D.inputBg, borderColor: D.inputBorder }]}
+                    placeholder="Min. 8 chars, 1 upper, 1 lower, 1 number"
+                    placeholderTextColor={D.placeholder}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
                     autoCapitalize="none"
-                    autoCorrect={false}
                     editable={!loading}
                   />
+                  <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)} activeOpacity={0.7}>
+                    <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={D.placeholder} />
+                  </TouchableOpacity>
                 </View>
+              </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>PASSWORD</Text>
-                  <View style={styles.passwordContainer}>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Min. 8 chars, 1 upper, 1 lower, 1 number"
-                      placeholderTextColor="#75777d"
-                      value={password}
-                      onChangeText={setPassword}
-                      secureTextEntry={!showPassword}
-                      autoCapitalize="none"
-                      editable={!loading}
-                    />
-                    <TouchableOpacity
-                      style={styles.eyeIcon}
-                      onPress={() => setShowPassword(!showPassword)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons
-                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                        size={20}
-                        color="#75777d"
-                      />
-                    </TouchableOpacity>
-                  </View>
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: D.textLight }]}>CONFIRM PASSWORD</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={[styles.input, { color: D.text, backgroundColor: D.inputBg, borderColor: D.inputBorder }]}
+                    placeholder="Re-enter your password"
+                    placeholderTextColor={D.placeholder}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                    editable={!loading}
+                  />
+                  <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowConfirmPassword(!showConfirmPassword)} activeOpacity={0.7}>
+                    <Ionicons name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={D.placeholder} />
+                  </TouchableOpacity>
                 </View>
+              </View>
+            </>
+          )}
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>CONFIRM PASSWORD</Text>
-                  <View style={styles.passwordContainer}>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Re-enter your password"
-                      placeholderTextColor="#75777d"
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                      secureTextEntry={!showConfirmPassword}
-                      autoCapitalize="none"
-                      editable={!loading}
-                    />
-                    <TouchableOpacity
-                      style={styles.eyeIcon}
-                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons
-                        name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
-                        size={20}
-                        color="#75777d"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
+          {/* Submit */}
+          <TouchableOpacity
+            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+            onPress={handleRegister}
+            disabled={loading}
+            activeOpacity={0.9}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Text style={styles.submitButtonText}>Get Started</Text>
+                <Ionicons name="arrow-forward" size={18} color="#ffffff" />
               </>
             )}
+          </TouchableOpacity>
 
-            {/* Submit */}
-            <TouchableOpacity
-              style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-              onPress={handleRegister}
-              disabled={loading}
-              activeOpacity={0.9}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Text style={styles.submitButtonText}>Get Started</Text>
-                  <Ionicons name="arrow-forward" size={20} color="#ffffff" />
-                </>
-              )}
-            </TouchableOpacity>
-
-            {/* Back to Login */}
-            <TouchableOpacity
-              style={styles.backToLogin}
-              onPress={() => router.back()}
-              disabled={loading}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.backToLoginText}>
-                Already have an account?{' '}
-                <Text style={styles.backToLoginBold}>Sign In</Text>
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          {/* Back to Login */}
+          <TouchableOpacity style={styles.backToLogin} onPress={() => router.back()} disabled={loading} activeOpacity={0.7}>
+            <Text style={[styles.backToLoginText, { color: D.textLight }]}>
+              Already have an account?{' '}
+              <Text style={[styles.backToLoginBold, { color: darkMode ? '#a5b4fc' : '#4b41e1' }]}>Sign In</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -287,55 +267,47 @@ const styles = StyleSheet.create({
   },
   glowTopLeft: { top: -200, left: -200 },
   glowBottomRight: { bottom: -200, right: -200 },
-  keyboardView: { flex: 1 },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 16, paddingBottom: 80 },
-  header: { paddingTop: 75, paddingBottom: 16, alignItems: 'center' },
-  logoContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  topBar: { paddingVertical: 50, alignItems: 'center', paddingBottom: 20 },
+  logoContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   logoBox: {
-    width: 40, height: 40, backgroundColor: '#091426', borderRadius: 12,
+    width: 32, height: 32, backgroundColor: '#091426', borderRadius: 8,
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#091426', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
   },
-  logoText: { fontSize: 20, fontWeight: '600', color: '#091426', letterSpacing: -0.3, lineHeight: 28 },
-  heroSection: { alignItems: 'center', marginBottom: 24, paddingHorizontal: 8 },
-  heroTitle: {
-    fontSize: 28, fontWeight: '700', color: '#091426',
-    textAlign: 'center', marginBottom: 12, letterSpacing: -0.6, lineHeight: 34,
-  },
-  heroSubtitle: { fontSize: 16, color: '#45474c', textAlign: 'center', lineHeight: 24 },
+  logoText: { fontSize: 17, fontWeight: '600', color: '#091426', letterSpacing: -0.3 },
+  scrollContent: { paddingHorizontal: 16 },
   formCard: {
-    backgroundColor: '#ffffff', borderRadius: 24, padding: 24,
+    backgroundColor: '#ffffff', borderRadius: 24, padding: 20,
     shadowColor: '#4b41e1', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06, shadowRadius: 24, elevation: 4,
-    borderWidth: 1, borderColor: '#e2e8f0', gap: 16,
+    borderWidth: 1, borderColor: '#e2e8f0', gap: 12, paddingBottom: 30, paddingTop: 30
   },
-  section: { gap: 0 },
-  avatarRow: { alignItems: 'center', paddingVertical: 8 },
-  inputGroup: { marginBottom: 12 },
+  cardHeader: { gap: 2 },
+  cardTitle: { fontSize: 22, fontWeight: '700', color: '#091426', letterSpacing: -0.4 },
+  cardSubtitle: { fontSize: 13, color: '#45474c' },
+  avatarRow: { alignItems: 'center', paddingVertical: 4 },
+  inputGroup: { gap: 4 },
   label: {
-    fontSize: 14, fontWeight: '500', color: '#45474c',
-    letterSpacing: 0.3, marginBottom: 8, marginLeft: 4, lineHeight: 20,
+    fontSize: 12, fontWeight: '600', color: '#45474c',
+    letterSpacing: 0.5, marginLeft: 4,
   },
   input: {
-    height: 48, paddingHorizontal: 16, fontSize: 16, color: '#191c1e',
-    backgroundColor: '#f2f4f6', borderWidth: 1, borderColor: '#c5c6cd',
-    borderRadius: 12, lineHeight: 24,
+    height: 46, paddingHorizontal: 14, fontSize: 15, color: '#191c1e',
+    backgroundColor: '#f2f4f6', borderWidth: 1, borderColor: '#c5c6cd', borderRadius: 12,
   },
   passwordContainer: { position: 'relative' },
   eyeIcon: {
     position: 'absolute', right: 12, top: 0, bottom: 0,
-    justifyContent: 'center', alignItems: 'center', width: 40, height: 48,
+    justifyContent: 'center', alignItems: 'center', width: 40, height: 46,
   },
   submitButton: {
-    flexDirection: 'row', height: 52, backgroundColor: '#4b41e1',
-    borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 12,
+    flexDirection: 'row', height: 50, backgroundColor: '#4b41e1',
+    borderRadius: 14, alignItems: 'center', justifyContent: 'center', gap: 10,
     shadowColor: '#4b41e1', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
+    shadowOpacity: 0.3, shadowRadius: 8, elevation: 4, marginTop: 4,
   },
   submitButtonDisabled: { opacity: 0.6 },
-  submitButtonText: { fontSize: 20, fontWeight: '600', color: '#ffffff', lineHeight: 28 },
-  backToLogin: { alignItems: 'center', paddingVertical: 8 },
-  backToLoginText: { fontSize: 15, color: '#45474c' },
+  submitButtonText: { fontSize: 17, fontWeight: '600', color: '#ffffff' },
+  backToLogin: { alignItems: 'center', paddingVertical: 4 },
+  backToLoginText: { fontSize: 14, color: '#45474c' },
   backToLoginBold: { color: '#4b41e1', fontWeight: '600' },
 });
