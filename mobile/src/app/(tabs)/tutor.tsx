@@ -6,6 +6,7 @@ import { tutorService } from '@/services/tutorService';
 import { Message, QuickAction } from '@/types/tutor';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/context/ThemeContext';
+import MessageRenderer from '@/components/MessageRenderer';
 
 export default function TutorScreen() {
   const { user } = useAuth();
@@ -186,9 +187,12 @@ export default function TutorScreen() {
           styles.messageContent,
           isUser ? styles.userContent : [styles.aiContent, { backgroundColor: T.aiBubbleBg }]
         ]}>
-          <Text style={[styles.messageText, isUser ? styles.userText : [styles.aiText, { color: T.text }]]}>
-            {message.content}
-          </Text>
+          <MessageRenderer
+            content={message.content}
+            isUser={isUser}
+            textColor={T.text}
+            fontSize={15}
+          />
         </View>
       </View>
     );

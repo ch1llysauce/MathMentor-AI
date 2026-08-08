@@ -28,6 +28,19 @@ import {
     validateLogin
 } from "../middleware/index.js";
 
+// Rate limiter: max 5 login attempts per IP per 15 minutes
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: {
+        success: false,
+        message: "Too many login attempts. Please try again in 15 minutes."
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: false,
+});
+
 // Rate limiter: max 5 forgot-password requests per IP per 15 minutes
 const forgotPasswordLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -45,7 +58,7 @@ const router = express.Router();
 
 // Public routes
 router.post("/register", validateRegister, register);
-router.post("/login", validateLogin, login);
+router.post("/login", loginLimiter, validateLogin, login);
 router.post("/google", googleAuth);
 router.post("/google/register", googleRegister);
 router.post("/2fa/validate", validate2FA);
@@ -53,7 +66,7 @@ router.post("/2fa/validate", validate2FA);
 // Password reset (public — no auth needed, rate limited)
 router.post("/forgot-password", forgotPasswordLimiter, forgotPassword);
 router.post("/verify-reset-otp", forgotPasswordLimiter, verifyResetOtp);
-router.post("/reset-password", resetPassword);
+router.post("/reset-password", forgotPasswordLimiter, resetPassword);
 
 // Protected routes
 router.get("/profile", authenticate, getProfile);

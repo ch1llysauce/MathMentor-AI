@@ -6,6 +6,7 @@ import { Colors } from '@/constants/colors';
 import { lessonService } from '@/services/lessonService';
 import { Lesson } from '@/types/lesson';
 import { useTheme } from '@/context/ThemeContext';
+import MessageRenderer from '@/components/MessageRenderer';
 
 export default function LessonScreen() {
   const { lessonId, topicName, mastery } = useLocalSearchParams<{
@@ -214,20 +215,20 @@ export default function LessonScreen() {
               </View>
             )}
           </View>
-          <Text style={[styles.description, { color: L.textLight }]}>{lesson.description}</Text>
+          <MessageRenderer content={lesson.description} textColor={L.textLight} fontSize={14} />
         </View>
 
         {/* Introduction */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: L.text }]}>Introduction</Text>
-          <Text style={[styles.sectionContent, { color: L.text }]}>{lesson.content.introduction}</Text>
+          <MessageRenderer content={lesson.content.introduction} textColor={L.text} fontSize={15} />
         </View>
 
         {/* Sections */}
         {lesson.content.sections.map((section, index) => (
           <View key={index} style={styles.section}>
             <Text style={[styles.sectionTitle, { color: L.text }]}>{section.title}</Text>
-            <Text style={[styles.sectionContent, { color: L.text }]}>{section.content}</Text>
+            <MessageRenderer content={section.content} textColor={L.text} fontSize={15} />
 
             {section.examples && section.examples.length > 0 && (
               <View style={styles.examplesContainer}>
@@ -238,7 +239,7 @@ export default function LessonScreen() {
                       <Ionicons name="bulb-outline" size={20} color="#f59e0b" />
                       <Text style={[styles.exampleLabel, { color: L.exampleText }]}>Example {exIndex + 1}</Text>
                     </View>
-                    <Text style={[styles.exampleProblem, { color: L.exampleBody }]}>{example.problem}</Text>
+                    <MessageRenderer content={example.problem} textColor={L.exampleBody} fontSize={15} />
                     {example.steps && example.steps.length > 0 && (
                       <View style={styles.stepsContainer}>
                         <Text style={[styles.stepsTitle, { color: L.exampleText }]}>Solution Steps:</Text>
@@ -247,14 +248,16 @@ export default function LessonScreen() {
                             <View style={styles.stepNumber}>
                               <Text style={styles.stepNumberText}>{stepIndex + 1}</Text>
                             </View>
-                            <Text style={[styles.stepText, { color: L.exampleBody }]}>{step}</Text>
+                            <View style={{ flex: 1 }}>
+                              <MessageRenderer content={step} textColor={L.exampleBody} fontSize={14} />
+                            </View>
                           </View>
                         ))}
                       </View>
                     )}
                     <View style={[styles.solutionRow, { borderTopColor: darkMode ? '#854d0e' : '#fcd34d' }]}>
                       <Text style={[styles.solutionLabel, { color: L.exampleText }]}>Answer:</Text>
-                      <Text style={[styles.solutionText, { color: L.exampleBody }]}>{example.solution}</Text>
+                      <MessageRenderer content={example.solution} textColor={L.exampleBody} fontSize={15} />
                     </View>
                   </View>
                 ))}
@@ -266,7 +269,7 @@ export default function LessonScreen() {
         {/* Summary */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: L.text }]}>Summary</Text>
-          <Text style={[styles.sectionContent, { color: L.text }]}>{lesson.content.summary}</Text>
+          <MessageRenderer content={lesson.content.summary} textColor={L.text} fontSize={15} />
         </View>
 
         {/* Key Takeaways */}
@@ -275,7 +278,9 @@ export default function LessonScreen() {
           {lesson.content.keyTakeaways.map((takeaway, index) => (
             <View key={index} style={styles.takeawayRow}>
               <Ionicons name="checkmark-circle" size={20} color="#10b981" />
-              <Text style={[styles.takeawayText, { color: L.text }]}>{takeaway}</Text>
+              <View style={{ flex: 1 }}>
+                <MessageRenderer content={takeaway} textColor={L.text} fontSize={15} />
+              </View>
             </View>
           ))}
         </View>

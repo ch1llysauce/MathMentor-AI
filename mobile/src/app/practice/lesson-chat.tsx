@@ -18,6 +18,7 @@ import { tutorService } from '@/services/tutorService';
 import { lessonService } from '@/services/lessonService';
 import { Message } from '@/types/tutor';
 import { useTheme } from '@/context/ThemeContext';
+import MessageRenderer from '@/components/MessageRenderer';
 
 export default function LessonChatScreen() {
   const { lessonId, lessonTitle, topic, subtopic } = useLocalSearchParams<{
@@ -224,14 +225,12 @@ export default function LessonChatScreen() {
               : [styles.aiContent, { backgroundColor: C.aiBubbleBg }],
           ]}
         >
-          <Text
-            style={[
-              styles.messageText,
-              isUser ? styles.userText : [styles.aiText, { color: C.text }],
-            ]}
-          >
-            {message.content}
-          </Text>
+          <MessageRenderer
+            content={message.content}
+            isUser={isUser}
+            textColor={C.text}
+            fontSize={15}
+          />
         </View>
       </View>
     );

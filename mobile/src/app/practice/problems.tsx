@@ -17,6 +17,7 @@ import { lessonService } from '@/services/lessonService';
 import { generateProblems } from '@/services/clientProblemGenerator';
 import { PracticeProblem } from '@/types/lesson';
 import { useTheme } from '@/context/ThemeContext';
+import MessageRenderer from '@/components/MessageRenderer';
 
 export default function ProblemsScreen() {
 const { lessonId, difficulty, category, count, title, topic, isDaily } = useLocalSearchParams<{
@@ -254,7 +255,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
             <Ionicons name="help-circle" size={24} color="#4b41e1" />
             <Text style={[styles.problemLabel, { color: PR.text }]}>Question</Text>
           </View>
-          <Text style={[styles.problemText, { color: PR.text }]}>{currentProblem.problem.text}</Text>
+          <MessageRenderer content={currentProblem.problem.text} textColor={PR.text} fontSize={18} />
         </View>
 
         {/* Multiple Choice Options */}
@@ -293,7 +294,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
                       {optionLabel}
                     </Text>
                   </View>
-                  <Text style={[styles.optionText, { color: PR.optionText }]}>{option.text}</Text>
+                  <MessageRenderer content={option.text} textColor={PR.optionText} fontSize={16} />
                   {showExplanation && isSelected && isCorrect && <Ionicons name="checkmark-circle" size={24} color="#00a472" />}
                   {showExplanation && isSelected && !isCorrect && <Ionicons name="close-circle" size={24} color="#ef4444" />}
                   {showExplanation && !isSelected && option.isCorrect && <Ionicons name="checkmark-circle" size={24} color="#00a472" />}
@@ -378,9 +379,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
                   <Ionicons name="bulb" size={20} color="#f59e0b" />
                   <Text style={[styles.hintLabel, { color: PR.hintText }]}>Hint</Text>
                 </View>
-                <Text style={[styles.hintText, { color: PR.hintBody }]}>
-                  {currentProblem.hints[hintsUsed - 1] || currentProblem.hints[0]}
-                </Text>
+                <MessageRenderer content={currentProblem.hints[hintsUsed - 1] || currentProblem.hints[0]} textColor={PR.hintBody} fontSize={14} />
               </View>
             )}
           </View>
@@ -397,7 +396,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
             </View>
             <View style={styles.explanationContent}>
               <Text style={[styles.explanationLabel, { color: PR.text }]}>Explanation:</Text>
-              <Text style={[styles.explanationText, { color: PR.text }]}>{currentProblem.explanation}</Text>
+              <MessageRenderer content={currentProblem.explanation} textColor={PR.text} fontSize={15} />
               {currentProblem.solution && (
                 <View style={[styles.solutionSection, { borderTopColor: PR.surface }]}>
                   <Text style={[styles.solutionLabel, { color: PR.text }]}>Solution Steps:</Text>
@@ -406,12 +405,14 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
                       <View style={styles.stepNumber}>
                         <Text style={styles.stepNumberText}>{index + 1}</Text>
                       </View>
-                      <Text style={[styles.stepText, { color: PR.text }]}>{step}</Text>
+                      <View style={{ flex: 1 }}>
+                        <MessageRenderer content={step} textColor={PR.text} fontSize={14} />
+                      </View>
                     </View>
                   ))}
                   <View style={[styles.finalAnswer, { borderTopColor: PR.surface }]}>
                     <Text style={[styles.finalAnswerLabel, { color: PR.text }]}>Final Answer:</Text>
-                    <Text style={styles.finalAnswerText}>{currentProblem.solution.finalAnswer}</Text>
+                    <MessageRenderer content={currentProblem.solution.finalAnswer} textColor="#4b41e1" fontSize={16} />
                   </View>
                 </View>
               )}

@@ -97,6 +97,7 @@ export const login = asyncHandler(async (req, res) => {
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
+        console.error("AUTH FAILURE | Login attempt with non-existent email:", email, "| IP:", req.ip || req.connection?.remoteAddress);
         throw new AppError("Invalid credentials", 401);
     }
 
@@ -108,6 +109,7 @@ export const login = asyncHandler(async (req, res) => {
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+        console.error("AUTH FAILURE | Invalid password for email:", email, "| IP:", req.ip || req.connection?.remoteAddress);
         throw new AppError("Invalid credentials", 401);
     }
 
@@ -226,6 +228,7 @@ export const changePassword = asyncHandler(async (req, res) => {
     // Verify current password
     const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
     if (!isPasswordValid) {
+        console.error("AUTH FAILURE | Incorrect current password for userId:", req.user._id, "| IP:", req.ip || req.connection?.remoteAddress);
         throw new AppError("Current password is incorrect", 401);
     }
 
@@ -320,6 +323,7 @@ export const verify2FA = asyncHandler(async (req, res) => {
     });
 
     if (!isValid) {
+        console.error("AUTH FAILURE | Invalid 2FA setup code for userId:", req.user._id, "| IP:", req.ip || req.connection?.remoteAddress);
         throw new AppError("Invalid verification code. Please try again.", 400);
     }
 
@@ -364,6 +368,7 @@ export const validate2FA = asyncHandler(async (req, res) => {
     });
 
     if (!isValid) {
+        console.error("AUTH FAILURE | Invalid 2FA code for userId:", userId, "| IP:", req.ip || req.connection?.remoteAddress);
         throw new AppError("Invalid verification code. Please try again.", 400);
     }
 
@@ -431,6 +436,7 @@ export const disable2FA = asyncHandler(async (req, res) => {
     });
 
     if (!isValid) {
+        console.error("AUTH FAILURE | Invalid 2FA disable code for userId:", req.user._id, "| IP:", req.ip || req.connection?.remoteAddress);
         throw new AppError("Invalid verification code", 400);
     }
 
@@ -725,15 +731,18 @@ export const verifyResetOtp = asyncHandler(async (req, res) => {
     const user = await User.findOne({ email: email.toLowerCase().trim() });
 
     if (!user || !user.passwordResetOtp || !user.passwordResetExpiry) {
+        console.error("AUTH FAILURE | Invalid/expired reset code attempt for email:", email, "| IP:", req.ip || req.connection?.remoteAddress);
         throw new AppError("Invalid or expired reset code", 400);
     }
 
     if (new Date() > user.passwordResetExpiry) {
+        console.error("AUTH FAILURE | Expired reset code attempt for email:", email, "| IP:", req.ip || req.connection?.remoteAddress);
         throw new AppError("Reset code has expired. Please request a new one.", 400);
     }
 
     const isValid = await bcrypt.compare(otp.toString(), user.passwordResetOtp);
     if (!isValid) {
+        console.error("AUTH FAILURE | Invalid OTP attempt for email:", email, "| IP:", req.ip || req.connection?.remoteAddress);
         throw new AppError("Invalid reset code", 400);
     }
 
@@ -771,10 +780,12 @@ export const resetPassword = asyncHandler(async (req, res) => {
     try {
         decoded = jwt.verify(resetToken, process.env.JWT_SECRET);
     } catch (err) {
+        console.error("AUTH FAILURE | Invalid/expired reset token | IP:", req.ip || req.connection?.remoteAddress);
         throw new AppError("Invalid or expired reset token", 400);
     }
 
     if (decoded.purpose !== "password-reset") {
+        console.error("AUTH FAILURE | Invalid reset token purpose | IP:", req.ip || req.connection?.remoteAddress);
         throw new AppError("Invalid reset token", 400);
     }
 
