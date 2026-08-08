@@ -16,6 +16,7 @@ import api from '@/services/api';
 import diagnosticService from '@/services/diagnosticService';
 import { TopicScores } from '@/types/diagnostic';
 import { useTheme } from '@/context/ThemeContext';
+import MessageRenderer from '@/components/MessageRenderer';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface DiagQuestion {
@@ -283,11 +284,15 @@ export default function RetakeDiagnosticScreen() {
 
           {/* Question */}
           <View style={[styles.questionCard, { backgroundColor: RK.card }]}>
-            <Text style={[styles.questionText, { color: RK.text }]}>{currentQuestion.question}</Text>
+            <MessageRenderer
+              content={currentQuestion.question}
+              textColor={RK.text}
+              fontSize={17}
+            />
           </View>
 
           {/* Multiple choice */}
-          {currentQuestion.questionType === 'Multiple Choice' && currentQuestion.choices.length > 0 && (
+          {(currentQuestion.questionType === 'Multiple Choice' || currentQuestion.questionType === 'multiple-choice') && Array.isArray(currentQuestion.choices) && currentQuestion.choices.length > 0 && (
             <View style={styles.choicesContainer}>
               {currentQuestion.choices.map((choice, idx) => {
                 const letter = String.fromCharCode(65 + idx);
@@ -312,7 +317,9 @@ export default function RetakeDiagnosticScreen() {
                     <View style={[styles.choiceBubble, { backgroundColor: bubbleBg }]}>
                       <Text style={[styles.choiceBubbleText, { color: bubbleTextColor }]}>{letter}</Text>
                     </View>
-                    <Text style={[styles.choiceText, { color: cardTextColor }]}>{choice}</Text>
+                    <View style={{ flex: 1 }}>
+                      <MessageRenderer content={choice} textColor={cardTextColor} fontSize={15} />
+                    </View>
                     {showExplanation && isSelected && isCorrect && <Ionicons name="checkmark-circle" size={22} color="#00a472" />}
                     {showExplanation && isSelected && !isCorrect && <Ionicons name="close-circle" size={22} color="#ef4444" />}
                     {showExplanation && !isSelected && isCorrectChoice && <Ionicons name="checkmark-circle" size={22} color="#00a472" />}
@@ -345,7 +352,7 @@ export default function RetakeDiagnosticScreen() {
               <Text style={[styles.explanationResult, { color: isCorrect ? '#00a472' : '#ef4444' }]}>
                 {isCorrect ? '✓ Correct!' : '✗ Incorrect'}
               </Text>
-              <Text style={[styles.explanationText, { color: RK.explText }]}>{currentQuestion.explanation}</Text>
+              <MessageRenderer content={currentQuestion.explanation} textColor={RK.explText} fontSize={14} />
               {!isCorrect && (
                 <Text style={styles.correctAnswerText}>Correct answer: {currentQuestion.correctAnswer}</Text>
               )}
