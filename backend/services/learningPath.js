@@ -30,19 +30,19 @@ const TOPICS_CONFIG = {
  * the "Module N: Name" format stored in the Lesson collection.
  */
 const DIAGNOSTIC_SUBTOPIC_TO_MODULE = {
-    // Algebra
-    'Linear Equations': 'Module 3: Linear Equations',
-    'Fractions':        'Module 1: Foundations',
-    'Factoring':        'Module 7: Polynomials',
-    // Geometry
-    'Angles':           'Module 1: Basics',
-    'Triangles':        'Module 2: Triangles',
-    'Area':             'Module 5: Perimeter & Area',
-    'Basic Circles':    'Module 4: Circles',
-    // Trigonometry
-    'SOH-CAH-TOA':         'Module 2: Right Triangle Trigonometry',
-    'Basic Trig Ratios':   'Module 4: Unit Circle',
-    'Simple Applications': 'Module 3: Applications',
+    // Algebra (camelCase DB keys)
+    'linearEquations': 'Module 3: Linear Equations',
+    'fractions':       'Module 1: Foundations',
+    'factoring':       'Module 7: Polynomials',
+    // Geometry (camelCase DB keys)
+    'angles':          'Module 1: Basics',
+    'triangles':       'Module 2: Triangles',
+    'area':            'Module 5: Perimeter & Area',
+    'basicCircles':    'Module 4: Circles',
+    // Trigonometry (camelCase DB keys)
+    'sohCahToa':           'Module 2: Right Triangle Trigonometry',
+    'basicTrigRatios':     'Module 4: Unit Circle',
+    'simpleApplications':  'Module 3: Applications',
 };
 
 /**

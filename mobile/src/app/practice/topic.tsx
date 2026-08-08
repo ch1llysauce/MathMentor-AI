@@ -59,19 +59,24 @@ export default function TopicScreen() {
   const [practiceSets, setPracticeSets] = useState<PracticeSet[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
-  
+  const didApplyFilter = useRef(false);
+
   const topicName = params.topicName as string;
   const mastery = parseInt(params.mastery as string) || 0;
   const subtopicFilterParam = (params.subtopicFilter as string) || '';
 
+  // On mount: load data and apply the subtopic filter once
   useEffect(() => {
+    didApplyFilter.current = false;
     loadTopicData();
   }, [topicName]);
 
-  // Reload data when screen comes back into focus (e.g., after completing practice)
+  // On re-focus (e.g. returning from a lesson): reload data but don't re-apply the filter
   useFocusEffect(
     useCallback(() => {
-      loadTopicData();
+      if (didApplyFilter.current) {
+        loadTopicData();
+      }
     }, [topicName])
   );
 
@@ -95,10 +100,8 @@ export default function TopicScreen() {
       
       setLessons(transformedLessons);
 
-      // If a subtopic filter was passed in (e.g. from the dashboard card),
-      // find the matching module. subtopicFilter is now a "Module N: Name" string
-      // that matches the DB lesson subtopic field directly.
-      if (subtopicFilterParam) {
+      // Apply subtopic filter only on the first load (from dashboard navigation)
+      if (!didApplyFilter.current && subtopicFilterParam) {
         const allModules = Array.from(new Set(transformedLessons.map(l => l.subtopic)));
         const matchingModule = allModules.find(mod =>
           mod === subtopicFilterParam ||
@@ -108,10 +111,10 @@ export default function TopicScreen() {
         if (matchingModule) {
           setSelectedModule(matchingModule);
         } else {
-          // No module matched — go to Practice tab as fallback
           setSelectedTab('practice');
         }
       }
+      didApplyFilter.current = true;
 
       // Build static practice sets for the topic — problems are generated on-demand
       // when the user taps a set (via the generator endpoint)
