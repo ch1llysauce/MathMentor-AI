@@ -260,10 +260,10 @@ const Trigonometry_Easy = [
         const p = randChoice(pairs);
         return {
             subtopic: "Basic Trig Ratios",
-            question: `What is \\${p.ratio}(${p.angle}°)?`,
+            question: `What is $\\${p.ratio}(${p.angle}^\\circ)$?`,
             correctAnswer: p.answer,
             choices: mc(p.answer, p.wrongs),
-            explanation: `\\${p.ratio}(${p.angle}°) = ${p.answer}. Standard unit circle value.`,
+            explanation: `$\\${p.ratio}(${p.angle}^\\circ) = ${p.answer}$. Standard unit circle value.`,
             hints: ["Memorise: sin(0°)=0, sin(30°)=1/2, sin(45°)=√2/2, sin(60°)=√3/2, sin(90°)=1."],
         };
     },
@@ -276,10 +276,10 @@ const Trigonometry_Easy = [
         const d = randChoice(defs);
         return {
             subtopic: "SOH-CAH-TOA",
-            question: `In a right triangle, ${d.ratio} is defined as:`,
+            question: `In a right triangle, $\\${d.ratio.replace('(θ)', '(\\theta)')}$ is defined as:`,
             correctAnswer: d.answer,
             choices: mc(d.answer, d.wrongs),
-            explanation: `${d.ratio} = ${d.answer}. Remember SOH-CAH-TOA.`,
+            explanation: `$\\${d.ratio.replace('(θ)', '(\\theta)')} = \\frac{\\text{${d.answer.split(' / ')[0]}}}{\\text{${d.answer.split(' / ')[1]}}}$. Remember SOH-CAH-TOA.`,
             hints: ["SOH = Sin/Opp/Hyp, CAH = Cos/Adj/Hyp, TOA = Tan/Opp/Adj."],
         };
     },
@@ -293,10 +293,10 @@ const Trigonometry_Easy = [
         const d = randChoice(angData);
         return {
             subtopic: "SOH-CAH-TOA",
-            question: `Right triangle: hypotenuse = ${hyp} cm, angle = ${d.angle}°. Find the opposite side. (\\sin ${d.angle}° \\approx ${d.sin})`,
+            question: `Right triangle: hypotenuse $= ${hyp}$ cm, angle $= ${d.angle}^\\circ$. Find the opposite side. $(\\sin ${d.angle}^\\circ \\approx ${d.sin})$`,
             correctAnswer: `${d.opp} cm`,
             choices: mc(`${d.opp} cm`, [`${d.opp+2} cm`, `${d.opp-2} cm`, `${parseFloat((hyp-d.opp).toFixed(1))} cm`]),
-            explanation: `\\text{opp} = ${hyp} \\times \\sin(${d.angle}°) \\approx ${d.opp} cm.`,
+            explanation: `$\\text{opp} = ${hyp} \\times \\sin(${d.angle}^\\circ) \\approx ${d.opp}$ cm.`,
             hints: ["SOH: sin = opp / hyp, so opp = hyp × sin(angle)."],
         };
     },
@@ -308,10 +308,10 @@ const Trigonometry_Medium = [
         const [o, a, h] = randChoice(triples);
         return {
             subtopic: "Basic Trig Ratios",
-            question: `Right triangle: opposite = ${o}, adjacent = ${a}, hypotenuse = ${h}. What is \\sin(\\theta)?`,
+            question: `Right triangle: opposite $= ${o}$, adjacent $= ${a}$, hypotenuse $= ${h}$. What is $\\sin(\\theta)$?`,
             correctAnswer: `${o}/${h}`,
             choices: mc(`${o}/${h}`, [`${a}/${h}`, `${o}/${a}`, `${h}/${o}`]),
-            explanation: `\\sin(\\theta) = \\frac{\\text{opp}}{\\text{hyp}} = \\frac{${o}}{${h}}.`,
+            explanation: `$\\sin(\\theta) = \\frac{\\text{opp}}{\\text{hyp}} = \\frac{${o}}{${h}}$.`,
             hints: ["SOH: sin = Opposite / Hypotenuse."],
         };
     },
@@ -325,10 +325,10 @@ const Trigonometry_Medium = [
         const d = randChoice(angData);
         return {
             subtopic: "SOH-CAH-TOA",
-            question: `From the top of a ${cliff} m cliff, the angle of depression to a boat is ${d.angle}°. How far is the boat from the base? (\\tan ${d.angle}° \\approx ${d.tan})`,
+            question: `From the top of a ${cliff} m cliff, the angle of depression to a boat is $${d.angle}^\\circ$. How far is the boat from the base? $(\\tan ${d.angle}^\\circ \\approx ${d.tan})$`,
             correctAnswer: `${d.dist} m`,
             choices: mc(`${d.dist} m`, [`${d.dist+10} m`, `${parseFloat((d.dist/2).toFixed(1))} m`, `${cliff} m`]),
-            explanation: `\\tan(${d.angle}°) = \\frac{${cliff}}{d} \\Rightarrow d = \\frac{${cliff}}{${d.tan}} \\approx ${d.dist} m.`,
+            explanation: `$\\tan(${d.angle}^\\circ) = \\frac{${cliff}}{d} \\Rightarrow d = \\frac{${cliff}}{${d.tan}} \\approx ${d.dist}$ m.`,
             hints: ["The cliff height is the opposite side; the horizontal distance is adjacent."],
         };
     },
@@ -337,10 +337,10 @@ const Trigonometry_Medium = [
         const comp = 90 - angle;
         return {
             subtopic: "Basic Trig Ratios",
-            question: `What is the complement of ${angle}°?`,
-            correctAnswer: `${comp}°`,
-            choices: mc(`${comp}°`, [`${180-angle}°`, `${comp+10}°`, `${comp-10}°`]),
-            explanation: `Complementary angles sum to 90°. 90 - ${angle} = ${comp}°.`,
+            question: `What is the complement of $${angle}^\\circ$?`,
+            correctAnswer: `$${comp}^\\circ$`,
+            choices: mc(`$${comp}^\\circ$`, [`$${180-angle}^\\circ$`, `$${comp+10}^\\circ$`, `$${comp-10}^\\circ$`]),
+            explanation: `Complementary angles sum to $90^\\circ$. $90 - ${angle} = ${comp}^\\circ$.`,
             hints: ["Complementary angles add up to 90°."],
         };
     },
@@ -355,28 +355,30 @@ const Trigonometry_Hard = [
             { C: 120, c: parseFloat(Math.sqrt(a*a + b*b + a*b).toFixed(1)) },
         ];
         const d = randChoice(angData);
+        const w1 = parseFloat((d.c + 2).toFixed(1));
+        const w2 = parseFloat((d.c - 2).toFixed(1));
         return {
             subtopic: "Simple Applications",
-            question: `Law of Cosines: a = ${a}, b = ${b}, C = ${d.C}°. Find side c.`,
+            question: `Law of Cosines: $a = ${a}$, $b = ${b}$, $C = ${d.C}^\\circ$. Find side $c$.`,
             correctAnswer: `${d.c} cm`,
-            choices: mc(`${d.c} cm`, [`${d.c+2} cm`, `${d.c-2} cm`, `${a+b} cm`]),
-            explanation: `c^2 = ${a}^2 + ${b}^2 - 2(${a})(${b})\\cos(${d.C}°) \\Rightarrow c \\approx ${d.c} cm.`,
+            choices: mc(`${d.c} cm`, [`${w1} cm`, `${w2} cm`, `${a+b} cm`]),
+            explanation: `$c^2 = ${a}^2 + ${b}^2 - 2(${a})(${b})\\cos(${d.C}^\\circ) \\Rightarrow c \\approx ${d.c}$ cm.`,
             hints: ["Law of Cosines: c² = a² + b² − 2ab·cos(C)."],
         };
     },
     () => {
         const knownData = [
-            { angle: 30, cos: "√3/2", wrongs: ["1/2", "√2/2", "1"] },
-            { angle: 45, cos: "√2/2", wrongs: ["1/2", "√3/2", "0"] },
-            { angle: 60, cos: "1/2",  wrongs: ["√3/2", "√2/2", "0"] },
+            { angle: 30, cos: "\\frac{\\sqrt{3}}{2}", display: "√3/2", wrongs: ["\\frac{1}{2}", "\\frac{\\sqrt{2}}{2}", "1"] },
+            { angle: 45, cos: "\\frac{\\sqrt{2}}{2}", display: "√2/2", wrongs: ["\\frac{1}{2}", "\\frac{\\sqrt{3}}{2}", "0"] },
+            { angle: 60, cos: "\\frac{1}{2}",         display: "1/2",  wrongs: ["\\frac{\\sqrt{3}}{2}", "\\frac{\\sqrt{2}}{2}", "0"] },
         ];
         const d = randChoice(knownData);
         return {
             subtopic: "Basic Trig Ratios",
-            question: `What is the exact value of \\cos(${d.angle}°)?`,
-            correctAnswer: d.cos,
-            choices: mc(d.cos, d.wrongs),
-            explanation: `\\cos(${d.angle}°) = ${d.cos}. Standard unit circle exact value.`,
+            question: `What is the exact value of $\\cos(${d.angle}^\\circ)$?`,
+            correctAnswer: d.display,
+            choices: mc(d.display, d.wrongs.map(w => w === '1' || w === '0' ? w : w.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1/$2').replace(/\\/g,''))),
+            explanation: `$\\cos(${d.angle}^\\circ) = ${d.cos}$. Standard unit circle exact value.`,
             hints: ["Exact values: cos(30°)=√3/2, cos(45°)=√2/2, cos(60°)=1/2."],
         };
     },
@@ -385,10 +387,10 @@ const Trigonometry_Hard = [
         const suppAngle = 180 - angle;
         return {
             subtopic: "Simple Applications",
-            question: `An angle in standard position is ${suppAngle}°. What is its reference angle?`,
-            correctAnswer: `${angle}°`,
-            choices: mc(`${angle}°`, [`${suppAngle}°`, `${90-angle}°`, `${angle+10}°`]),
-            explanation: `${suppAngle}° is in Q2. Reference angle = 180° - ${suppAngle}° = ${angle}°.`,
+            question: `An angle in standard position is $${suppAngle}^\\circ$. What is its reference angle?`,
+            correctAnswer: `$${angle}^\\circ$`,
+            choices: mc(`$${angle}^\\circ$`, [`$${suppAngle}^\\circ$`, `$${90-angle}^\\circ$`, `$${angle+10}^\\circ$`]),
+            explanation: `$${suppAngle}^\\circ$ is in Q2. Reference angle $= 180^\\circ - ${suppAngle}^\\circ = ${angle}^\\circ$.`,
             hints: ["In quadrant 2, reference angle = 180° − angle."],
         };
     },
