@@ -2600,90 +2600,25 @@ Geometry_Medium_Expanded: [
         };
     },
 ],
-
-
-Geometry_Hard_Expanded: [
-
-    () => {
-        const a = randInt(3, 8);
-        const b = randInt(4, 10);
-        const c = Math.sqrt(a * a + b * b).toFixed(2);
-
-        return {
-            subtopic: "Pythagorean Applications",
-            question:
-                `A right triangle has legs ${a} and ${b}. ` +
-                `Approximately what is its hypotenuse?`,
-            correctAnswer: `${c}`,
-            choices: mc(
-                `${c}`,
-                [
-                    `${a + b}`,
-                    `${Math.abs(a - b)}`,
-                    `${(a * b).toFixed(2)}`
-                ]
-            ),
-            explanation:
-                `c = √(${a}² + ${b}²) ≈ ${c}.`,
-            hints: [
-                "Square both legs, add them, then take the square root."
-            ],
-        };
-    },
-
-    () => {
-        const r = randInt(3, 8);
-        const h = randInt(5, 12);
-        const volume = parseFloat((3.14 * r * r * h).toFixed(1));
-
-        return {
-            subtopic: "Cylinder Volume",
-            question:
-                `Find the volume of a cylinder with radius ${r} cm ` +
-                `and height ${h} cm. (π ≈ 3.14)`,
-            correctAnswer: `${volume} cm³`,
-            choices: mc(
-                `${volume} cm³`,
-                [
-                    `${parseFloat((3.14 * r * r).toFixed(1))} cm³`,
-                    `${parseFloat((2 * 3.14 * r * h).toFixed(1))} cm³`,
-                    `${volume + 10} cm³`
-                ]
-            ),
-            explanation:
-                `V = πr²h = 3.14(${r})²(${h}) = ${volume} cm³.`,
-            hints: [
-                "Cylinder volume is πr²h."
-            ],
-        };
-    },
-
-    () => {
-        const scale = randChoice([2, 3, 4]);
-        const area = randInt(10, 30);
-        const newArea = area * scale * scale;
-
-        return {
-            subtopic: "Scale Factor and Area",
-            question:
-                `A figure is enlarged by a scale factor of ${scale}. ` +
-                `If its original area is ${area}, what is the new area?`,
-            correctAnswer: `${newArea}`,
-            choices: mc(
-                `${newArea}`,
-                [
-                    `${area * scale}`,
-                    `${area + scale}`,
-                    `${area * scale + area}`
-                ]
-            ),
-            explanation:
-                `Area changes by the square of the scale factor: ` +
-                `${area} × ${scale}² = ${newArea}.`,
-            hints: [
-                "Area scales by k², not just k."
-            ],
-        };
-    },
-], 
 };
+
+
+
+// ─── Public API ───────────────────────────────────────────────────────────────
+const generateDiagnosticQuestions = () => {
+    const buckets = [
+        ...Algebra_Easy,
+        ...Algebra_Medium,
+        ...Algebra_Hard,
+        ...Geometry_Easy,
+        ...Geometry_Medium,
+        ...Geometry_Hard,
+        ...Trigonometry_Easy,
+        ...Trigonometry_Medium,
+        ...Trigonometry_Hard
+    ];
+
+    return buckets.map(template => template());
+};
+
+export { generateDiagnosticQuestions };
