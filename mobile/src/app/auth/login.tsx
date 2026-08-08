@@ -78,18 +78,45 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const response = await loginWithGoogle();
+      if (response.requiresRegistration) {
+        // No account found — send to registration with Google data pre-filled
+        const profile = (response.data as any)?.googleProfile;
+        router.push({
+          pathname: '/auth/register',
+          params: {
+            fromGoogle: 'true',
+            googleIdToken: profile?.idToken ?? '',
+            googleEmail: profile?.email ?? '',
+            googleName: profile?.displayName ?? '',
+            googlePhoto: profile?.profileImage ?? '',
+          },
+        });
+        return;
+      }
       if (response.success) {
         setTimeout(() => router.replace('/(tabs)/dashboard'), 200);
       }
     } catch (error: any) {
-      const { statusCodes } = await import('@react-native-google-signin/google-signin');
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        // user cancelled — silent
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        // already in progress — silent
-      } else {
-        Alert.alert('Google Sign-In Failed', error.message || 'Something went wrong');
+      // Handle native module not available (Expo Go / non-native build)
+      if (
+        error.message?.includes('TurboModuleRegistry') ||
+        error.message?.includes('RNGoogleSignin') ||
+        error.message?.includes('not a native build') ||
+        error.message?.includes('native binary')
+      ) {
+        Alert.alert(
+          'Native Build Required',
+          'Google Sign-In requires a native build. Please run "npx expo run:android" to enable this feature.'
+        );
+        setLoading(false);
+        return;
       }
+      // Silently ignore cancellation
+      if (error.code === 'SIGN_IN_CANCELLED' || error.code === 'SIGN_IN_REQUIRED') {
+        setLoading(false);
+        return;
+      }
+      Alert.alert('Google Sign-In Failed', error.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }

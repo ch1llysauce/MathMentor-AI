@@ -784,6 +784,87 @@ export const resetPassword = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Complete registration for a new Google user
+ * @route   POST /api/auth/google/register
+ * @access  Public
+ */
+export const googleRegister = asyncHandler(async (req, res) => {
+    const { idToken, gradeLevel, focusAreas } = req.body;
+
+    if (!idToken) {
+        throw new AppError("Google ID token is required", 400);
+    }
+
+    // Re-verify the token so we don't trust client-supplied profile data
+    let payload;
+    try {
+        const ticket = await googleClient.verifyIdToken({
+            idToken,
+            audience: process.env.GOOGLE_WEB_CLIENT_ID,
+        });
+        payload = ticket.getPayload();
+    } catch (err) {
+        throw new AppError("Invalid Google token", 401);
+    }
+
+    const { sub: googleId, email, name, picture } = payload;
+
+    if (!email) {
+        throw new AppError("Google account has no email address", 400);
+    }
+
+    // Guard against double-registration
+    const existingUser = await User.findOne({ $or: [{ googleId }, { email }] });
+    if (existingUser) {
+        throw new AppError("An account with this Google account already exists. Please sign in.", 400);
+    }
+
+    const user = await User.create({
+        displayName: name || email.split("@")[0],
+        email,
+        googleId,
+        profileImage: picture || "",
+        isVerified: true,
+        gradeLevel: gradeLevel || undefined,
+        focusAreas: focusAreas || [],
+    });
+
+    user.lastActiveDate = new Date();
+    await user.save();
+
+    const tokenId = uuidv4();
+    const token = generateToken(user._id, tokenId);
+
+    await LoginSession.create({
+        user: user._id,
+        tokenId,
+        deviceInfo: parseDeviceInfo(req.headers["user-agent"]),
+        ipAddress: req.ip || req.connection?.remoteAddress || "",
+        lastActiveAt: new Date(),
+    });
+
+    res.status(201).json({
+        success: true,
+        message: "Account created successfully",
+        data: {
+            user: {
+                id: user._id,
+                displayName: user.displayName,
+                email: user.email,
+                gradeLevel: user.gradeLevel,
+                focusAreas: user.focusAreas,
+                diagnosticCompleted: user.diagnosticCompleted,
+                currentStreak: user.currentStreak,
+                totalStudyTime: user.totalStudyTime,
+                twoFactorEnabled: user.twoFactorEnabled,
+                profileImage: user.profileImage,
+            },
+            token,
+        },
+    });
+});
+
+/**
  * @desc    Sign in / register with Google
  * @route   POST /api/auth/google
  * @access  Public
@@ -816,21 +897,27 @@ export const googleAuth = asyncHandler(async (req, res) => {
     // Find existing user by Google ID or email
     let user = await User.findOne({ $or: [{ googleId }, { email }] });
 
-    if (user) {
-        // Link Google ID if they previously signed up with email
-        if (!user.googleId) {
-            user.googleId = googleId;
-            await user.save();
-        }
-    } else {
-        // Create new account from Google profile
-        user = await User.create({
-            displayName: name || email.split("@")[0],
-            email,
-            googleId,
-            profileImage: picture || "",
-            isVerified: true, // Google accounts are pre-verified
+    if (!user) {
+        // No account found — tell the app to redirect to registration with pre-filled data
+        return res.status(200).json({
+            success: false,
+            requiresRegistration: true,
+            message: "No account found. Please complete registration.",
+            data: {
+                googleProfile: {
+                    googleId,
+                    email,
+                    displayName: name || email.split("@")[0],
+                    profileImage: picture || "",
+                },
+            },
         });
+    }
+
+    // Link Google ID if they previously signed up with email/password
+    if (!user.googleId) {
+        user.googleId = googleId;
+        await user.save();
     }
 
     if (!user.isActive) {
@@ -853,9 +940,6 @@ export const googleAuth = asyncHandler(async (req, res) => {
         lastActiveAt: new Date(),
     });
 
-    // If new user hasn't set grade/focus, flag it so the app can redirect to onboarding
-    const isNewUser = !user.gradeLevel;
-
     res.status(200).json({
         success: true,
         message: "Google sign-in successful",
@@ -871,7 +955,6 @@ export const googleAuth = asyncHandler(async (req, res) => {
                 totalStudyTime: user.totalStudyTime,
                 twoFactorEnabled: user.twoFactorEnabled,
                 profileImage: user.profileImage,
-                isNewUser,
             },
             token,
         },
@@ -897,5 +980,6 @@ export default {
     forgotPassword,
     verifyResetOtp,
     resetPassword,
-    googleAuth
+    googleAuth,
+    googleRegister
 };

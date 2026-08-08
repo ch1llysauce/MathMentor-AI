@@ -5,20 +5,6 @@ import { AUTH_ENDPOINTS } from '../constants/api';
 import { storage } from '../utils/storage';
 import { User, AuthResponse, RegisterData } from '../types/auth';
 
-// Lazy-load Google Sign-In — requires native build (expo run:android)
-const getGoogleSignin = () => {
-  try {
-    const mod = require('@react-native-google-signin/google-signin');
-    mod.GoogleSignin.configure({
-      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-      offlineAccess: false,
-    });
-    return mod;
-  } catch {
-    return null;
-  }
-};
-
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -67,11 +53,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const loginWithGoogle = async (): Promise<AuthResponse> => {
-    const mod = getGoogleSignin();
-    if (!mod) throw new Error('Google Sign-In is not available. Please use a native build.');
+    let GoogleSignin: any;
+    try {
+      const mod = require('@react-native-google-signin/google-signin');
+      GoogleSignin = mod.GoogleSignin;
+      // Use hardcoded web client ID — env vars aren't reliable in native builds
+      // without going through app.json extra + expo-constants
+      GoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        offlineAccess: false,
+      });
+    } catch {
+      throw new Error('Google Sign-In is not available in this build. Please use a native build.');
+    }
 
-    const { GoogleSignin } = mod;
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    // Always sign out of the Google session first so the account picker is shown,
+    // rather than silently reusing the last signed-in Google account.
+    try {
+      await GoogleSignin.signOut();
+    } catch {
+      // Ignore — the user may not have been signed in via Google yet
+    }
     const signInResult = await GoogleSignin.signIn();
 
     const idToken =
@@ -82,6 +85,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const response = await api.post(AUTH_ENDPOINTS.GOOGLE, { idToken });
     const data: AuthResponse = response.data;
+
+    if (data.requiresRegistration) {
+      // New Google user — bubble up the flag with the idToken so the
+      // register screen can complete sign-up without re-doing Google Sign-In
+      return {
+        ...data,
+        data: {
+          ...data.data,
+          googleProfile: {
+            ...(data.data?.googleProfile as any),
+            idToken, // pass idToken forward for the registration call
+          },
+        } as any,
+      };
+    }
 
     if (data.success && data.data) {
       await storage.setItem('token', data.data.token);

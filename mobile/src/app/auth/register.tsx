@@ -12,9 +12,12 @@ import {
   ScrollView,
   StatusBar,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
+import api from '@/services/api';
+import { AUTH_ENDPOINTS } from '@/constants/api';
+import { storage } from '@/utils/storage';
 
 const GRADE_LEVELS = [9, 10, 11, 12];
 const FOCUS_AREAS = [
@@ -26,8 +29,19 @@ const FOCUS_AREAS = [
 export default function RegisterScreen() {
   const router = useRouter();
   const { register } = useAuth();
-  const [displayName, setDisplayName] = useState('');
-  const [email, setEmail] = useState('');
+
+  // Google pre-fill params
+  const params = useLocalSearchParams<{
+    fromGoogle?: string;
+    googleIdToken?: string;
+    googleEmail?: string;
+    googleName?: string;
+    googlePhoto?: string;
+  }>();
+  const isGoogleFlow = params.fromGoogle === 'true';
+
+  const [displayName, setDisplayName] = useState(params.googleName ?? '');
+  const [email, setEmail] = useState(params.googleEmail ?? '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [gradeLevel, setGradeLevel] = useState(9);
@@ -48,25 +62,27 @@ export default function RegisterScreen() {
   };
 
   const handleRegister = async () => {
-    if (!displayName || !email || !password || !confirmPassword) {
+    if (!displayName || (!isGoogleFlow && (!email || !password || !confirmPassword))) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
+    if (!isGoogleFlow) {
+      if (password !== confirmPassword) {
+        Alert.alert('Error', 'Passwords do not match');
+        return;
+      }
 
-    if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters long');
-      return;
-    }
+      if (password.length < 8) {
+        Alert.alert('Error', 'Password must be at least 8 characters long');
+        return;
+      }
 
-    // Check password complexity
-    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-      Alert.alert('Error', 'Password must contain at least one uppercase letter, one lowercase letter, and one number');
-      return;
+      // Check password complexity
+      if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+        Alert.alert('Error', 'Password must contain at least one uppercase letter, one lowercase letter, and one number');
+        return;
+      }
     }
 
     if (focusAreas.length < 2) {
@@ -74,16 +90,38 @@ export default function RegisterScreen() {
       return;
     }
 
+    const mappedFocusAreas = focusAreas.map(id =>
+      FOCUS_AREAS.find(area => area.id === id)?.label || id
+    );
+
     setLoading(true);
     try {
+      if (isGoogleFlow) {
+        // Complete Google registration via dedicated endpoint
+        const res = await api.post(AUTH_ENDPOINTS.GOOGLE_REGISTER, {
+          idToken: params.googleIdToken,
+          gradeLevel,
+          focusAreas: mappedFocusAreas,
+        });
+        const data = res.data;
+        if (data.success && data.data) {
+          await storage.setItem('token', data.data.token);
+          await storage.setItem('user', JSON.stringify(data.data.user));
+          setLoading(false);
+          router.replace('/(tabs)/dashboard');
+        } else {
+          Alert.alert('Registration Failed', data.message || 'Registration failed');
+          setLoading(false);
+        }
+        return;
+      }
+
       const response = await register({
         displayName,
         email,
         password,
         gradeLevel,
-        focusAreas: focusAreas.map(id => 
-          FOCUS_AREAS.find(area => area.id === id)?.label || id
-        ),
+        focusAreas: mappedFocusAreas,
       });
       
       if (response.success) {
@@ -144,15 +182,20 @@ export default function RegisterScreen() {
 
           {/* Hero Section */}
           <View style={styles.heroSection}>
-            <Text style={styles.heroTitle}>Complete your student profile</Text>
+            <Text style={styles.heroTitle}>
+              {isGoogleFlow ? 'Almost there!' : 'Complete your student profile'}
+            </Text>
             <Text style={styles.heroSubtitle}>
-              Tailor your learning journey by telling us about your current academic level and mathematical focus areas.
+              {isGoogleFlow
+                ? `Signed in as ${params.googleEmail}. Just set your grade level and focus areas to finish creating your account.`
+                : 'Tailor your learning journey by telling us about your current academic level and mathematical focus areas.'}
             </Text>
           </View>
 
           {/* Main Form */}
           <View style={styles.formCard}>
-            {/* Display Name */}
+            {/* Your Identity — hidden for Google flow (name/email come from Google) */}
+            {!isGoogleFlow && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Your Identity</Text>
               <Text style={styles.sectionSubtitle}>Personalize how your mentor and peers see you.</Text>
@@ -239,6 +282,7 @@ export default function RegisterScreen() {
                 </View>
               </View>
             </View>
+            )}
 
             {/* Grade Level */}
             <View style={styles.section}>

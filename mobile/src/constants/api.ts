@@ -29,6 +29,7 @@ export const AUTH_ENDPOINTS = {
   LOGIN: '/auth/login',
   REGISTER: '/auth/register',
   GOOGLE: '/auth/google',
+  GOOGLE_REGISTER: '/auth/google/register',
   PROFILE: '/auth/profile',
   UPDATE_PROFILE: '/auth/profile',
   LOGOUT: '/auth/logout',

@@ -19,7 +19,8 @@ import {
     forgotPassword,
     verifyResetOtp,
     resetPassword,
-    googleAuth
+    googleAuth,
+    googleRegister
 } from "../controllers/authController.js";
 import {
     authenticate,
@@ -46,6 +47,7 @@ const router = express.Router();
 router.post("/register", validateRegister, register);
 router.post("/login", validateLogin, login);
 router.post("/google", googleAuth);
+router.post("/google/register", googleRegister);
 router.post("/2fa/validate", validate2FA);
 
 // Password reset (public — no auth needed, rate limited)

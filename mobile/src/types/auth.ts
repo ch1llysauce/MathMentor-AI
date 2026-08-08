@@ -19,10 +19,17 @@ export interface AuthResponse {
   success: boolean;
   message: string;
   requiresTwoFactor?: boolean;
+  requiresRegistration?: boolean;
   data?: {
     user: User;
     token: string;
     userId?: string; // present when requiresTwoFactor is true
+    googleProfile?: {
+      googleId: string;
+      email: string;
+      displayName: string;
+      profileImage: string;
+    };
   };
 }
 
