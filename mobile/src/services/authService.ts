@@ -8,8 +8,14 @@ export const authService = {
 
   async register(userData: RegisterData): Promise<AuthResponse> {
     const response = await api.post(AUTH_ENDPOINTS.REGISTER, userData);
-    console.log('✅ Registration successful, please login');
-    return response.data;
+    const data: AuthResponse = response.data;
+    // Auto-login: store token and user so the app considers them signed in immediately
+    if (data.success && data.data) {
+      await storage.setItem('token', data.data.token);
+      await storage.setItem('user', JSON.stringify(data.data.user));
+    }
+    console.log('✅ Registration successful');
+    return data;
   },
 
   async login(email: string, password: string): Promise<AuthResponse> {

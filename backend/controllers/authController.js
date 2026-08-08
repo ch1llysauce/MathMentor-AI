@@ -40,7 +40,7 @@ const parseDeviceInfo = (userAgent = "") => {
  * @access  Public
  */
 export const register = asyncHandler(async (req, res) => {
-    const { displayName, email, password, gradeLevel, focusAreas } = req.body;
+    const { displayName, email, password, gradeLevel, focusAreas, profileImage } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -58,7 +58,8 @@ export const register = asyncHandler(async (req, res) => {
         email,
         password: hashedPassword,
         gradeLevel,
-        focusAreas: focusAreas || []
+        focusAreas: focusAreas || [],
+        profileImage: profileImage || '',
     });
 
     // Generate token
@@ -789,7 +790,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
  * @access  Public
  */
 export const googleRegister = asyncHandler(async (req, res) => {
-    const { idToken, gradeLevel, focusAreas } = req.body;
+    const { idToken, gradeLevel, focusAreas, displayName: overrideName, profileImage: overrideImage } = req.body;
 
     if (!idToken) {
         throw new AppError("Google ID token is required", 400);
@@ -820,10 +821,11 @@ export const googleRegister = asyncHandler(async (req, res) => {
     }
 
     const user = await User.create({
-        displayName: name || email.split("@")[0],
+        displayName: (overrideName && overrideName.trim()) || name || email.split("@")[0],
         email,
         googleId,
-        profileImage: picture || "",
+        // User-uploaded image takes priority; fall back to Google profile picture
+        profileImage: (overrideImage && overrideImage.trim()) || picture || "",
         isVerified: true,
         gradeLevel: gradeLevel || undefined,
         focusAreas: focusAreas || [],

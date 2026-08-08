@@ -116,7 +116,7 @@ export default function LoginScreen() {
         setLoading(false);
         return;
       }
-      Alert.alert('Google Sign-In Failed', error.message || 'Something went wrong');
+      // Alert.alert('Google Sign-In Failed', 'Kindly choose an account');
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, RefreshControl, ActivityIndicator, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, RefreshControl, ActivityIndicator, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -215,7 +215,15 @@ export default function DashboardScreen() {
       <View style={[styles.header, { backgroundColor: D.headerBg, borderBottomColor: D.border }]}>
         <View style={styles.headerLeft}>
           <View style={[styles.avatar, { borderColor: darkMode ? '#312e81' : '#e2dfff' }]}>
-            <Ionicons name="person" size={20} color="#ffffff" />
+            {user.profileImage ? (
+              <Image
+                source={{ uri: user.profileImage }}
+                style={styles.avatarImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <Ionicons name="person" size={20} color="#ffffff" />
+            )}
           </View>
           <Text style={[styles.logoText, { color: D.text }]}>MathMentor AI</Text>
         </View>
@@ -460,6 +468,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: '#e2dfff',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   logoText: {
     fontSize: 18,

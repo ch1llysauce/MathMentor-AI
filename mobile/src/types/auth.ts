@@ -10,6 +10,7 @@ export interface User {
   totalStudyTime?: number;
   createdAt?: string;
   twoFactorEnabled?: boolean;
+  profileImage?: string;
   learningPreferences?: {
     difficulty?: string;
   };
@@ -37,6 +38,5 @@ export interface RegisterData {
   email: string;
   password: string;
   displayName: string;
-  gradeLevel?: number;
-  focusAreas?: string[];
+  profileImage?: string;
 }

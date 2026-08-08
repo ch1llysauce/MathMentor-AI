@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/services/api';
 import { useTheme } from '@/context/ThemeContext';
+import AvatarPicker from '@/components/AvatarPicker';
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -30,6 +31,7 @@ export default function EditProfileScreen() {
   };
   
   const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [profileImage, setProfileImage] = useState<string>(user?.profileImage || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -38,9 +40,10 @@ export default function EditProfileScreen() {
   // Detect unsaved changes
   const hasChanges = useMemo(() => {
     const nameChanged = displayName.trim() !== (user?.displayName || '');
+    const imageChanged = profileImage !== (user?.profileImage || '');
     const passwordStarted = currentPassword.length > 0 || newPassword.length > 0 || confirmPassword.length > 0;
-    return nameChanged || passwordStarted;
-  }, [displayName, currentPassword, newPassword, confirmPassword, user?.displayName]);
+    return nameChanged || imageChanged || passwordStarted;
+  }, [displayName, profileImage, currentPassword, newPassword, confirmPassword, user?.displayName, user?.profileImage]);
 
   // Intercept Android hardware back button
   useFocusEffect(
@@ -89,9 +92,14 @@ export default function EditProfileScreen() {
 
     setIsSaving(true);
     try {
-      // Update display name if changed
-      if (displayName.trim() !== user?.displayName) {
-        await updateUser({ displayName: displayName.trim() });
+      // Update display name and/or profile image if changed
+      const nameChanged = displayName.trim() !== user?.displayName;
+      const imageChanged = profileImage !== (user?.profileImage || '');
+      if (nameChanged || imageChanged) {
+        await updateUser({
+          displayName: displayName.trim(),
+          profileImage,
+        });
       }
 
       // Change password if requested
@@ -127,17 +135,13 @@ export default function EditProfileScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Avatar Section */}
         <View style={styles.avatarSection}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
-            </View>
-            <TouchableOpacity style={styles.editAvatarButton}>
-              <Ionicons name="camera" size={20} color="#ffffff" />
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity>
-            <Text style={styles.changePhotoText}>Change Photo</Text>
-          </TouchableOpacity>
+          <AvatarPicker
+            imageUri={profileImage}
+            initials={displayName || user?.displayName || '?'}
+            onChange={setProfileImage}
+            size={100}
+            disabled={isSaving}
+          />
         </View>
 
         {/* Personal Information */}
@@ -303,43 +307,6 @@ const styles = StyleSheet.create({
   avatarSection: {
     alignItems: 'center',
     marginBottom: 32,
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: 12,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#4b41e1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 4,
-    borderColor: '#e2dfff',
-  },
-  avatarText: {
-    fontSize: 40,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  editAvatarButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#4b41e1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#ffffff',
-  },
-  changePhotoText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4b41e1',
   },
   section: {
     marginBottom: 32,

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, Alert, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -231,9 +231,17 @@ export default function ProfileScreen() {
         <View style={[styles.profileCard, { backgroundColor: C.card }]}>
           <View style={styles.avatarContainer}>
             <View style={[styles.avatar, { backgroundColor: C.avatarBg, borderColor: C.avatarBorder }]}>
-              <Text style={styles.avatarText}>
-                {user.displayName.charAt(0).toUpperCase()}
-              </Text>
+              {user.profileImage ? (
+                <Image
+                  source={{ uri: user.profileImage }}
+                  style={styles.avatarImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={styles.avatarText}>
+                  {user.displayName.charAt(0).toUpperCase()}
+                </Text>
+              )}
             </View>
             <View style={[styles.avatarBadge, { backgroundColor: C.avatarBadge }]}>
               <Ionicons name="checkmark-circle" size={24} color={C.success} />
@@ -419,6 +427,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   avatarText: {
     fontSize: 32,
