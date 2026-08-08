@@ -49,6 +49,7 @@ export default function LessonChatScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [conversationId, setConversationId] = useState<string | undefined>();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const quickSuggestions = [
     `Can you give me a practice problem for ${lessonTitle}?`,
@@ -109,6 +110,40 @@ export default function LessonChatScreen() {
     } finally {
       setIsLoadingHistory(false);
     }
+  };
+
+  const handleDeleteConversation = () => {
+    if (!conversationId) return;
+    Alert.alert(
+      'Delete Conversation',
+      'This will permanently delete your chat history for this lesson. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              await lessonService.deleteLessonConversation(lessonId);
+              setConversationId(undefined);
+              setMessages([
+                {
+                  id: 'welcome',
+                  role: 'assistant',
+                  content: `Chat cleared! 🗑️ Starting fresh on **${lessonTitle}**.\n\nWhat would you like to explore?`,
+                  timestamp: new Date().toISOString(),
+                },
+              ]);
+            } catch {
+              Alert.alert('Error', 'Failed to delete conversation. Please try again.');
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleSendMessage = async (text?: string) => {
@@ -224,6 +259,20 @@ export default function LessonChatScreen() {
             </Text>
           </View>
         </View>
+
+        {conversationId && (
+          <TouchableOpacity
+            style={[styles.deleteButton, { backgroundColor: darkMode ? '#2a1a1a' : '#fff1f0' }]}
+            onPress={handleDeleteConversation}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <ActivityIndicator size="small" color="#ef4444" />
+            ) : (
+              <Ionicons name="trash-outline" size={20} color="#ef4444" />
+            )}
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Context pill */}
@@ -352,6 +401,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteButton: {
     width: 38,
     height: 38,
     borderRadius: 19,

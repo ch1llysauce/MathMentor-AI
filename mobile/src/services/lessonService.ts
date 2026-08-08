@@ -45,6 +45,11 @@ export const lessonService = {
     });
   },
 
+  // Delete the lesson conversation entirely
+  async deleteLessonConversation(lessonId: string): Promise<void> {
+    await api.delete(`/learning/lessons/${lessonId}/conversation`);
+  },
+
   /**
    * Get practice problems.
    *

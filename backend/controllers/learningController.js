@@ -747,3 +747,25 @@ export const saveLessonConversationMessage = asyncHandler(async (req, res) => {
 
     res.status(200).json({ success: true });
 });
+
+/**
+ * @desc    Delete lesson conversation and clear the reference on UserLessonProgress
+ * @route   DELETE /api/learning/lessons/:lessonId/conversation
+ * @access  Private
+ */
+export const deleteLessonConversation = asyncHandler(async (req, res) => {
+    const { lessonId } = req.params;
+    const userId = req.user._id;
+
+    const progress = await UserLessonProgress.findOne({ user: userId, lesson: lessonId });
+
+    if (progress?.tutorConversationId) {
+        // Delete the stored messages
+        await LessonConversation.deleteOne({ conversationId: progress.tutorConversationId });
+        // Clear the reference
+        progress.tutorConversationId = null;
+        await progress.save();
+    }
+
+    res.status(200).json({ success: true, message: 'Conversation deleted' });
+});
