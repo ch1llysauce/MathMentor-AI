@@ -208,8 +208,12 @@ export const getNextTopic = asyncHandler(async (req, res) => {
     if (recommendation.nextStep) {
         const { topic, subtopic } = recommendation.nextStep;
 
-        // Count lessons in this subtopic
-        const subtopicLessons = await Lesson.find({ topic, subtopic }).select('_id');
+        // Use a partial match because DB stores subtopic as "Module N: SubtopicName"
+        // while the learning path uses just "SubtopicName"
+        const subtopicLessons = await Lesson.find({
+            topic,
+            subtopic: { $regex: subtopic, $options: 'i' }
+        }).select('_id');
         const subtopicLessonIds = subtopicLessons.map(l => l._id);
 
         const subtopicCompletedCount = subtopicLessonIds.length > 0
