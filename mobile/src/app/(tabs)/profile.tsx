@@ -118,13 +118,6 @@ export default function ProfileScreen() {
   const C = darkMode ? darkColors : lightColors;
 
   const [isReady, setIsReady] = useState(false);
-  const [stats, setStats] = useState({
-    totalQuestions: 0,
-    totalCorrect: 0,
-    totalTopics: 0,
-    accuracy: 0,
-  });
-  const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
     if (!loading) {
@@ -133,27 +126,8 @@ export default function ProfileScreen() {
         return;
       }
       setIsReady(true);
-      fetchStats();
     }
   }, [user, loading, router]);
-
-  const fetchStats = async () => {
-    try {
-      const data = await dashboardService.getDashboardData();
-      setStats({
-        totalQuestions: data.overallProgress.totalQuestions,
-        totalCorrect: data.overallProgress.totalCorrect,
-        totalTopics: data.overallProgress.totalTopics,
-        accuracy: data.overallProgress.totalQuestions > 0
-          ? Math.round((data.overallProgress.totalCorrect / data.overallProgress.totalQuestions) * 100)
-          : 0,
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    } finally {
-      setLoadingStats(false);
-    }
-  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -171,10 +145,6 @@ export default function ProfileScreen() {
         },
       ]
     );
-  };
-
-  const handleSettings = () => {
-    // No settings screen — the header icon is removed below
   };
 
   const handleEditProfile = () => {
@@ -243,50 +213,6 @@ export default function ProfileScreen() {
           <Text style={[styles.displayName, { color: C.textDark }]}>{user.displayName}</Text>
           <Text style={[styles.email, { color: C.textLight }]}>{user.email}</Text>
         </View>
-
-        {/* Stats Grid */}
-        {loadingStats ? (
-          <View style={styles.loadingStatsContainer}>
-            <Loading />
-          </View>
-        ) : (
-          <View style={styles.statsSection}>
-            <Text style={[styles.sectionTitle, { color: C.textDark }]}>Your Statistics</Text>
-            <View style={styles.statsGrid}>
-              <View style={[styles.statBox, { backgroundColor: C.statBoxBg }]}>
-                <View style={[styles.statIconContainer, { backgroundColor: C.primaryBg }]}>
-                  <Ionicons name="help-circle-outline" size={24} color={C.statIconPurple} />
-                </View>
-                <Text style={[styles.statValue, { color: C.statValue }]}>{stats.totalQuestions}</Text>
-                <Text style={[styles.statLabel, { color: C.statLabel }]}>Questions</Text>
-              </View>
-
-              <View style={[styles.statBox, { backgroundColor: C.statBoxBg }]}>
-                <View style={[styles.statIconContainer, { backgroundColor: C.successBg }]}>
-                  <Ionicons name="pie-chart-outline" size={24} color={C.statIconGreen} />
-                </View>
-                <Text style={[styles.statValue, { color: C.statValue }]}>{stats.accuracy}%</Text>
-                <Text style={[styles.statLabel, { color: C.statLabel }]}>Accuracy</Text>
-              </View>
-
-              <View style={[styles.statBox, { backgroundColor: C.statBoxBg }]}>
-                <View style={[styles.statIconContainer, { backgroundColor: C.purpleBg }]}>
-                  <Ionicons name="book-outline" size={24} color={C.statIconDark} />
-                </View>
-                <Text style={[styles.statValue, { color: C.statValue }]}>{stats.totalTopics}</Text>
-                <Text style={[styles.statLabel, { color: C.statLabel }]}>Topics</Text>
-              </View>
-
-              <View style={[styles.statBox, { backgroundColor: C.statBoxBg }]}>
-                <View style={[styles.statIconContainer, { backgroundColor: C.greenBg }]}>
-                  <Ionicons name="checkmark-done" size={24} color={C.statIconGreen} />
-                </View>
-                <Text style={[styles.statValue, { color: C.statValue }]}>{stats.totalCorrect}</Text>
-                <Text style={[styles.statLabel, { color: C.statLabel }]}>Correct</Text>
-              </View>
-            </View>
-          </View>
-        )}
 
         {/* Account Section */}
         <View style={styles.section}>

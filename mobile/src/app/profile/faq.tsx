@@ -173,7 +173,7 @@ export default function FaqScreen() {
           </View>
         </View>
 
-        <View style={{ height: 32 }} />
+        <View style={{ height: 50 }} />
       </ScrollView>
     </View>
   );
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   contactCard: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 12,
     padding: 16, borderRadius: 16, borderWidth: 1, borderLeftWidth: 4,
-    marginTop: 4,
+    marginTop: 4
   },
   contactTitle: { fontSize: 14, fontWeight: '600', marginBottom: 4 },
   contactText: { fontSize: 13, lineHeight: 20 },

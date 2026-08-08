@@ -68,9 +68,9 @@ export default function DashboardScreen() {
   const [topicMastery, setTopicMastery] = useState<{ topic: string; mastery: number }[]>([]);
   const [nextStep, setNextStep] = useState<NextStep | null>(null);  const [recommendationProgress, setRecommendationProgress] = useState<{
     progressPercentage: number;
-    completedSteps: number;
-    totalSteps: number;
-  }>({ progressPercentage: 0, completedSteps: 0, totalSteps: 0 });
+    completedLessons: number;
+    totalLessons: number;
+  }>({ progressPercentage: 0, completedLessons: 0, totalLessons: 0 });
   const [refreshing, setRefreshing] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [resumeLoading, setResumeLoading] = useState(false);
@@ -186,13 +186,12 @@ export default function DashboardScreen() {
       }
       setRecommendationProgress({
         progressPercentage: rec?.progressPercentage ?? 0,
-        completedSteps: rec?.completedSteps ?? 0,
-        totalSteps: rec?.totalSteps ?? 0,
+        completedLessons: rec?.completedLessons ?? 0,
+        totalLessons: rec?.totalLessons ?? 0,
       });
     } catch {
-      // No diagnostic yet or network issue — nextStep stays null
       setNextStep(null);
-      setRecommendationProgress({ progressPercentage: 0, completedSteps: 0, totalSteps: 0 });
+      setRecommendationProgress({ progressPercentage: 0, completedLessons: 0, totalLessons: 0 });
     } finally {
       setLoadingData(false);
       setRefreshing(false);
@@ -367,8 +366,8 @@ export default function DashboardScreen() {
                 const badge = hasProgress ? 'GREAT JOB' : 'READY TO START';
                 const title = hasProgress ? "You're crushing it!" : "Let's get to work!";
                 const desc = hasProgress
-                  ? (recommendationProgress.totalSteps > 0
-                      ? `You've completed ${recommendationProgress.completedSteps} of ${recommendationProgress.totalSteps} recommended steps. Keep exploring practice sets to sharpen your skills.`
+                  ? (recommendationProgress.totalLessons > 0
+                      ? `You've completed ${recommendationProgress.completedLessons} of ${recommendationProgress.totalLessons} lessons. Keep exploring practice sets to sharpen your skills.`
                       : 'All recommended topics are complete. Keep practicing to maintain your mastery across all subjects.')
                   : 'Your diagnostic is done and your learning path is ready. Jump into practice to start building mastery.';
                 const icon = hasProgress ? 'flame' : 'rocket';
@@ -421,7 +420,6 @@ export default function DashboardScreen() {
                 <View style={styles.progressSection}>
                   <View style={styles.progressHeader}>
                     <Text style={styles.progressLabel}>Your Path</Text>
-                    <Text style={styles.progressPercent}>0%</Text>
                   </View>
                   <View style={styles.progressBar}>
                     <View style={[styles.progressFill, { width: '0%' }]} />

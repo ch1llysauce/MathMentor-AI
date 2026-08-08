@@ -1,4 +1,4 @@
-import { Progress, User, DiagnosticResult, Session, UserProblemAttempt } from "../models/index.js";
+import { Progress, User, DiagnosticResult, Session, UserProblemAttempt, Lesson, UserLessonProgress } from "../models/index.js";
 import { generateLearningPath, getNextRecommendation, suggestDifficultyAdjustment } from "../services/learningPath.js";
 import { AppError, asyncHandler } from "../middleware/index.js";
 
@@ -174,20 +174,43 @@ export const getLearningPath = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const getNextTopic = asyncHandler(async (req, res) => {
-    const progress = await Progress.find({ user: req.user._id });
-    
-    const diagnosticResult = await DiagnosticResult.findOne({ user: req.user._id })
-        .sort({ createdAt: -1 });
+    const [progress, diagnosticResult, totalLessons, completedLessons] = await Promise.all([
+        Progress.find({ user: req.user._id }),
+        DiagnosticResult.findOne({ user: req.user._id }).sort({ createdAt: -1 }),
+        Lesson.countDocuments(),
+        UserLessonProgress.countDocuments({
+            user: req.user._id,
+            status: 'completed'
+        })
+    ]);
 
+    const progressPercentage = totalLessons > 0
+        ? Math.round((completedLessons / totalLessons) * 100)
+        : 0;
+
+    // If no diagnostic yet, return lesson progress without a recommendation
     if (!diagnosticResult) {
-        throw new AppError("No diagnostic results found. Please complete the diagnostic test first.", 404);
+        return res.status(200).json({
+            success: true,
+            data: {
+                nextStep: null,
+                progressPercentage,
+                completedLessons,
+                totalLessons
+            }
+        });
     }
 
     const recommendation = getNextRecommendation(progress, diagnosticResult);
 
     res.status(200).json({
         success: true,
-        data: recommendation
+        data: {
+            ...recommendation,
+            progressPercentage,
+            completedLessons,
+            totalLessons
+        }
     });
 });
 

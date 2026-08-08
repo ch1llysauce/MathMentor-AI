@@ -103,7 +103,7 @@ export default function AboutScreen() {
           © {new Date().getFullYear()} MathMentor AI. All rights reserved.
         </Text>
 
-        <View style={{ height: 32 }} />
+        <View style={{ height: 50 }} />
       </ScrollView>
     </View>
   );

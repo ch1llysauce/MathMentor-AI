@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, BackHandler, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -35,6 +35,9 @@ export default function EditProfileScreen() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Detect unsaved changes
@@ -132,7 +135,12 @@ export default function EditProfileScreen() {
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        keyboardVerticalOffset={10}
+        style={{ flex: 1 }}
+      >
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Avatar Section */}
         <View style={styles.avatarSection}>
           <AvatarPicker
@@ -183,13 +191,16 @@ export default function EditProfileScreen() {
             <View style={[styles.inputContainer, { backgroundColor: EP.inputBg, borderColor: EP.inputBorder }]}>
               <Ionicons name="lock-closed-outline" size={20} color={EP.iconColor} style={styles.inputIcon} />
               <TextInput
-                style={[styles.input, { color: EP.inputText }]}
+                style={[styles.input, { color: EP.inputText, paddingRight: 48 }]}
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
                 placeholder="Enter current password"
                 placeholderTextColor={EP.disabledText}
-                secureTextEntry
+                secureTextEntry={!showCurrentPassword}
               />
+              <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowCurrentPassword(!showCurrentPassword)} activeOpacity={0.7}>
+                <Ionicons name={showCurrentPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={EP.iconColor} />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -198,13 +209,16 @@ export default function EditProfileScreen() {
             <View style={[styles.inputContainer, { backgroundColor: EP.inputBg, borderColor: EP.inputBorder }]}>
               <Ionicons name="lock-closed-outline" size={20} color={EP.iconColor} style={styles.inputIcon} />
               <TextInput
-                style={[styles.input, { color: EP.inputText }]}
+                style={[styles.input, { color: EP.inputText, paddingRight: 48 }]}
                 value={newPassword}
                 onChangeText={setNewPassword}
                 placeholder="Enter new password"
                 placeholderTextColor={EP.disabledText}
-                secureTextEntry
+                secureTextEntry={!showNewPassword}
               />
+              <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowNewPassword(!showNewPassword)} activeOpacity={0.7}>
+                <Ionicons name={showNewPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={EP.iconColor} />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -213,13 +227,16 @@ export default function EditProfileScreen() {
             <View style={[styles.inputContainer, { backgroundColor: EP.inputBg, borderColor: EP.inputBorder }]}>
               <Ionicons name="lock-closed-outline" size={20} color={EP.iconColor} style={styles.inputIcon} />
               <TextInput
-                style={[styles.input, { color: EP.inputText }]}
+                style={[styles.input, { color: EP.inputText, paddingRight: 48 }]}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 placeholder="Re-enter new password"
                 placeholderTextColor={EP.disabledText}
-                secureTextEntry
+                secureTextEntry={!showConfirmPassword}
               />
+              <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowConfirmPassword(!showConfirmPassword)} activeOpacity={0.7}>
+                <Ionicons name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={EP.iconColor} />
+              </TouchableOpacity>
             </View>
             <Text style={[styles.helperText, { color: EP.helperText }]}>Leave blank to keep current password</Text>
           </View>
@@ -261,6 +278,7 @@ export default function EditProfileScreen() {
 
         <View style={{ height: 20 }} />
       </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -334,6 +352,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e3e5',
     paddingHorizontal: 16,
+    position: 'relative',
   },
   inputIcon: {
     marginRight: 12,
@@ -343,6 +362,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#091426',
     paddingVertical: 14,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 16,
+    width: 40,
+    height: 52,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   helperText: {
     fontSize: 12,

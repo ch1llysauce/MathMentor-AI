@@ -23,12 +23,14 @@ router.use(authenticate);
 router.get("/", validateProgressQuery, getAllProgress);
 router.get("/stats/summary", getProgressSummary);
 router.get("/weak-areas", getWeakAreas);
-router.get("/:topic", getTopicProgress);
 
-// Learning recommendations
+// Learning recommendations (must be before /:topic to avoid being swallowed by the wildcard)
 router.get("/learning-path", getLearningPath);
 router.get("/next-recommendation", getNextTopic);
 router.get("/difficulty-suggestion/:topic", getDifficultySuggestion);
+
+// Topic-level progress (wildcard — keep last)
+router.get("/:topic", getTopicProgress);
 
 // Streak management
 router.post("/update-streak", updateStreak);
