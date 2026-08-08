@@ -96,15 +96,20 @@ export default function TopicScreen() {
       setLessons(transformedLessons);
 
       // If a subtopic filter was passed in (e.g. from the dashboard card),
-      // find the matching module and pre-select it
+      // find the matching module. subtopicFilter is now a "Module N: Name" string
+      // that matches the DB lesson subtopic field directly.
       if (subtopicFilterParam) {
-        const matchingModule = Array.from(
-          new Set(transformedLessons.map(l => l.subtopic))
-        ).find(mod =>
-          mod.toLowerCase().includes(subtopicFilterParam.toLowerCase())
+        const allModules = Array.from(new Set(transformedLessons.map(l => l.subtopic)));
+        const matchingModule = allModules.find(mod =>
+          mod === subtopicFilterParam ||
+          mod.toLowerCase().includes(subtopicFilterParam.toLowerCase()) ||
+          subtopicFilterParam.toLowerCase().includes(mod.toLowerCase())
         );
         if (matchingModule) {
           setSelectedModule(matchingModule);
+        } else {
+          // No module matched — go to Practice tab as fallback
+          setSelectedTab('practice');
         }
       }
 

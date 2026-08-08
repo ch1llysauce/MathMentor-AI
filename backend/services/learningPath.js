@@ -6,20 +6,43 @@
 
 /**
  * Topic and Subtopic Configuration
+ * Subtopic names MUST match the DB lesson subtopic field ("Module N: ModuleName")
+ * so the $regex lookup in progressController works correctly.
  */
 const TOPICS_CONFIG = {
     Algebra: {
-        subtopics: ["Fractions", "Linear Equations", "Factoring"],
+        subtopics: ["Module 3: Linear Equations", "Module 1: Foundations", "Module 7: Polynomials"],
         prerequisites: []
     },
     Geometry: {
-        subtopics: ["Angles", "Triangles", "Area", "Basic Circles"],
+        subtopics: ["Module 1: Basics", "Module 2: Triangles", "Module 5: Perimeter & Area", "Module 4: Circles"],
         prerequisites: ["Algebra"]
     },
     Trigonometry: {
-        subtopics: ["SOH-CAH-TOA", "Basic Trig Ratios", "Simple Applications"],
+        subtopics: ["Module 2: Right Triangle Trigonometry", "Module 4: Unit Circle", "Module 3: Applications"],
         prerequisites: ["Algebra", "Geometry"]
     }
+};
+
+/**
+ * Maps diagnostic subtopic names (from diagnosticGenerator.js) to DB module names.
+ * Used to translate DiagnosticResult.topicScores.subtopicScores keys into
+ * the "Module N: Name" format stored in the Lesson collection.
+ */
+const DIAGNOSTIC_SUBTOPIC_TO_MODULE = {
+    // Algebra
+    'Linear Equations': 'Module 3: Linear Equations',
+    'Fractions':        'Module 1: Foundations',
+    'Factoring':        'Module 7: Polynomials',
+    // Geometry
+    'Angles':           'Module 1: Basics',
+    'Triangles':        'Module 2: Triangles',
+    'Area':             'Module 5: Perimeter & Area',
+    'Basic Circles':    'Module 4: Circles',
+    // Trigonometry
+    'SOH-CAH-TOA':         'Module 2: Right Triangle Trigonometry',
+    'Basic Trig Ratios':   'Module 4: Unit Circle',
+    'Simple Applications': 'Module 3: Applications',
 };
 
 /**
@@ -261,14 +284,20 @@ const calculateProgressPercentage = (progressRecords, learningPath) => {
 };
 
 /**
- * Format subtopic name from camelCase to readable format
+ * Format subtopic name from camelCase/diagnostic key to DB module name.
+ * Falls back to title-casing if no mapping exists.
  */
 const formatSubtopicName = (subtopicKey) => {
-    // Convert camelCase to Title Case
-    return subtopicKey
+    // First check direct mapping from diagnostic subtopic → DB module name
+    if (DIAGNOSTIC_SUBTOPIC_TO_MODULE[subtopicKey]) {
+        return DIAGNOSTIC_SUBTOPIC_TO_MODULE[subtopicKey];
+    }
+    // Convert camelCase to Title Case as fallback
+    const titleCase = subtopicKey
         .replace(/([A-Z])/g, " $1")
         .replace(/^./, str => str.toUpperCase())
         .trim();
+    return DIAGNOSTIC_SUBTOPIC_TO_MODULE[titleCase] || titleCase;
 };
 
 /**
