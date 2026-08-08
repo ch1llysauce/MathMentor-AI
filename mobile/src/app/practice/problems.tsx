@@ -54,6 +54,20 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
     hintBorder: '#fcd34d',
     hintText: darkMode ? '#fcd34d' : '#92400e',
     hintBody: darkMode ? '#fbbf24' : '#78350f',
+    // Correct / incorrect feedback
+    correctBg: darkMode ? '#052e16' : '#d1fae5',
+    correctText: darkMode ? '#4ade80' : '#00a472',
+    correctBorder: darkMode ? '#166534' : '#00a472',
+    incorrectBg: darkMode ? '#2d0a0a' : '#fee2e2',
+    incorrectText: darkMode ? '#f87171' : '#ef4444',
+    incorrectBorder: darkMode ? '#7f1d1d' : '#ef4444',
+    correctAnswerHintBg: darkMode ? '#052e16' : '#f0fdf4',
+    correctAnswerHintText: darkMode ? '#4ade80' : '#00a472',
+    // Free-response input states
+    inputCorrectBg: darkMode ? '#052e16' : '#f0fdf4',
+    inputCorrectBorder: darkMode ? '#166534' : '#00a472',
+    inputWrongBg: darkMode ? '#2d0a0a' : '#fef2f2',
+    inputWrongBorder: darkMode ? '#7f1d1d' : '#ef4444',
   };
 
   const [problems, setProblems] = useState<PracticeProblem[]>([]);
@@ -271,9 +285,10 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
                   style={[
                     styles.optionCard,
                     { backgroundColor: PR.optionCard, borderColor: PR.optionBorder },
-                    isSelected && !showExplanation && styles.optionCardSelected,
-                    showExplanation && isSelected && isCorrect && styles.optionCardCorrect,
-                    showExplanation && isSelected && !isCorrect && styles.optionCardWrong,
+                    isSelected && !showExplanation && { borderColor: '#4b41e1', backgroundColor: darkMode ? '#1e1b4b' : '#f5f4ff' },
+                    showExplanation && isSelected && isCorrect  && { borderColor: PR.correctBorder,   backgroundColor: PR.correctBg   },
+                    showExplanation && isSelected && !isCorrect && { borderColor: PR.incorrectBorder, backgroundColor: PR.incorrectBg },
+                    showExplanation && !isSelected && option.isCorrect && { borderColor: PR.correctBorder, backgroundColor: PR.correctBg },
                   ]}
                   onPress={() => !showExplanation && setSelectedAnswer(option.text)}
                   disabled={showExplanation}
@@ -295,9 +310,9 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
                     </Text>
                   </View>
                   <MessageRenderer content={option.text} textColor={PR.optionText} fontSize={16} />
-                  {showExplanation && isSelected && isCorrect && <Ionicons name="checkmark-circle" size={24} color="#00a472" />}
-                  {showExplanation && isSelected && !isCorrect && <Ionicons name="close-circle" size={24} color="#ef4444" />}
-                  {showExplanation && !isSelected && option.isCorrect && <Ionicons name="checkmark-circle" size={24} color="#00a472" />}
+                  {showExplanation && isSelected && isCorrect && <Ionicons name="checkmark-circle" size={24} color={PR.correctText} />}
+                  {showExplanation && isSelected && !isCorrect && <Ionicons name="close-circle" size={24} color={PR.incorrectText} />}
+                  {showExplanation && !isSelected && option.isCorrect && <Ionicons name="checkmark-circle" size={24} color={PR.correctText} />}
                 </TouchableOpacity>
               );
             })}
@@ -310,8 +325,8 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
             <Text style={[styles.freeResponseLabel, { color: PR.textLight }]}>Type your answer:</Text>
             <TextInput
               style={[styles.freeResponseInput, { backgroundColor: PR.inputBg, borderColor: PR.inputBorder, color: PR.text },
-                showExplanation && isCorrect && styles.freeResponseCorrect,
-                showExplanation && !isCorrect && styles.freeResponseWrong,
+                showExplanation && isCorrect  && { backgroundColor: PR.inputCorrectBg, borderColor: PR.inputCorrectBorder },
+                showExplanation && !isCorrect && { backgroundColor: PR.inputWrongBg,  borderColor: PR.inputWrongBorder  },
               ]}
               placeholder="e.g. 7  or  x = 7"
               placeholderTextColor={PR.textLight}
@@ -322,9 +337,9 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
               keyboardType="default"
             />
             {showExplanation && !isCorrect && (
-              <View style={styles.correctAnswerHint}>
-                <Ionicons name="checkmark-circle" size={16} color="#00a472" />
-                <Text style={styles.correctAnswerText}>Correct answer: {currentProblem.correctAnswer}</Text>
+              <View style={[styles.correctAnswerHint, { backgroundColor: PR.correctAnswerHintBg }]}>
+                <Ionicons name="checkmark-circle" size={16} color={PR.correctText} />
+                <Text style={[styles.correctAnswerText, { color: PR.correctAnswerHintText }]}>Correct answer: {currentProblem.correctAnswer}</Text>
               </View>
             )}
           </View>
@@ -340,11 +355,11 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
               let border = PR.surface;
               let textColor = PR.text;
               if (showExplanation) {
-                if (isSelected && isCorrect)    { bg = '#f0fdf4'; border = '#00a472'; textColor = '#00a472'; }
-                if (isSelected && !isCorrect)   { bg = '#fef2f2'; border = '#ef4444'; textColor = '#ef4444'; }
-                if (!isSelected && isCorrectOpt){ bg = '#f0fdf4'; border = '#00a472'; textColor = '#00a472'; }
+                if (isSelected && isCorrect)     { bg = PR.correctBg;   border = PR.correctBorder;   textColor = PR.correctText;   }
+                if (isSelected && !isCorrect)    { bg = PR.incorrectBg; border = PR.incorrectBorder; textColor = PR.incorrectText; }
+                if (!isSelected && isCorrectOpt) { bg = PR.correctBg;   border = PR.correctBorder;   textColor = PR.correctText;   }
               } else if (isSelected) {
-                bg = '#f5f4ff'; border = '#4b41e1'; textColor = '#4b41e1';
+                bg = darkMode ? '#1e1b4b' : '#f5f4ff'; border = '#4b41e1'; textColor = '#4b41e1';
               }
               return (
                 <TouchableOpacity
@@ -355,9 +370,9 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.tfButtonText, { color: textColor }]}>{opt}</Text>
-                  {showExplanation && isSelected && isCorrect  && <Ionicons name="checkmark-circle" size={22} color="#00a472" />}
-                  {showExplanation && isSelected && !isCorrect && <Ionicons name="close-circle" size={22} color="#ef4444" />}
-                  {showExplanation && !isSelected && isCorrectOpt && <Ionicons name="checkmark-circle" size={22} color="#00a472" />}
+                  {showExplanation && isSelected && isCorrect  && <Ionicons name="checkmark-circle" size={22} color={PR.correctText} />}
+                  {showExplanation && isSelected && !isCorrect && <Ionicons name="close-circle" size={22} color={PR.incorrectText} />}
+                  {showExplanation && !isSelected && isCorrectOpt && <Ionicons name="checkmark-circle" size={22} color={PR.correctText} />}
                 </TouchableOpacity>
               );
             })}
@@ -388,9 +403,9 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
         {/* Explanation */}
         {showExplanation && (
           <View style={[styles.explanationCard, { backgroundColor: PR.explanationBg }]}>
-            <View style={[styles.explanationHeader, { backgroundColor: isCorrect ? '#d1fae5' : '#fee2e2' }]}>
-              <Ionicons name={isCorrect ? 'checkmark-circle' : 'close-circle'} size={32} color={isCorrect ? '#00a472' : '#ef4444'} />
-              <Text style={[styles.explanationTitle, { color: isCorrect ? '#00a472' : '#ef4444' }]}>
+            <View style={[styles.explanationHeader, { backgroundColor: isCorrect ? PR.correctBg : PR.incorrectBg }]}>
+              <Ionicons name={isCorrect ? 'checkmark-circle' : 'close-circle'} size={32} color={isCorrect ? PR.correctText : PR.incorrectText} />
+              <Text style={[styles.explanationTitle, { color: isCorrect ? PR.correctText : PR.incorrectText }]}>
                 {isCorrect ? 'Correct!' : 'Incorrect'}
               </Text>
             </View>
@@ -563,15 +578,12 @@ const styles = StyleSheet.create({
   },
   optionCardSelected: {
     borderColor: '#4b41e1',
-    backgroundColor: '#f5f4ff',
   },
   optionCardCorrect: {
-    borderColor: '#00a472',
-    backgroundColor: '#f0fdf4',
+    borderWidth: 2,
   },
   optionCardWrong: {
-    borderColor: '#ef4444',
-    backgroundColor: '#fef2f2',
+    borderWidth: 2,
   },
   optionBubble: {
     width: 36,
@@ -643,12 +655,10 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   freeResponseCorrect: {
-    borderColor: '#00a472',
-    backgroundColor: '#f0fdf4',
+    borderWidth: 2,
   },
   freeResponseWrong: {
-    borderColor: '#ef4444',
-    backgroundColor: '#fef2f2',
+    borderWidth: 2,
   },
   correctAnswerHint: {
     flexDirection: 'row',
@@ -656,12 +666,10 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 8,
     padding: 10,
-    backgroundColor: '#f0fdf4',
     borderRadius: 8,
   },
   correctAnswerText: {
     fontSize: 14,
-    color: '#00a472',
     fontWeight: '600',
   },
   freeResponseNote: {
