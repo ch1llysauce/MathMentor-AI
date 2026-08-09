@@ -144,6 +144,7 @@ export default function LoginScreen() {
         setLoading(false);
         return;
       }
+      Alert.alert('Google Sign-In Failed', error.message || error.code || 'Unknown error');
     } finally {
       setLoading(false);
     }

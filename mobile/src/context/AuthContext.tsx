@@ -78,9 +78,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
     const signInResult = await GoogleSignin.signIn();
 
+    if ((signInResult as any).type === 'cancelled') {
+      return { success: false, message: 'Sign-in cancelled' } as any;
+    }
+
     const idToken =
-      (signInResult as any).idToken ??
-      (signInResult as any).data?.idToken;
+      (signInResult as any).data?.idToken ??
+      (signInResult as any).idToken;
 
     if (!idToken) throw new Error('No ID token returned from Google Sign-In');
 
