@@ -35,3 +35,10 @@ Thumbs.db
 CURRICULUM-QUICK-REFERENCE.md
 CURRICULUM-STRUCTURE.md
 backend/CURRICULUM-README.md
+
+# Build Files
+*.apk
+*.aab
+mobile/*.apk
+
+mobile/*.apk
