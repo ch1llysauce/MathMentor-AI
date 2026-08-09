@@ -8,13 +8,18 @@ import {
   TextInput,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/colors';
 import diagnosticService from '@/services/diagnosticService';
 import { lessonService } from '@/services/lessonService';
 import { useTheme } from '@/context/ThemeContext';
+
+// Module-level cache so tab re-focuses don't re-fetch from scratch
+let _cachedTopics: Topic[] | null = null;
+let _cachedMastery: any = null;
 
 type TopicFilter = 'all' | 'weak' | 'strong';
 
@@ -50,10 +55,9 @@ export default function PracticeScreen() {
   };
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<TopicFilter>('all');
-  const [loading, setLoading] = useState(true);
-  const [userMastery, setUserMastery] = useState<any>(null);
-  const [topics, setTopics] = useState<Topic[]>([]);
-  const [allLessons, setAllLessons] = useState<any[]>([]);
+  const [loading, setLoading] = useState(!_cachedTopics);
+  const [userMastery, setUserMastery] = useState<any>(_cachedMastery);
+  const [topics, setTopics] = useState<Topic[]>(_cachedTopics ?? []);
 
   // ── Daily Challenge ─────────────────────────────────────────────────────────
   // Uses today's date as a seed so the topic rotates daily and is the same for
@@ -86,12 +90,19 @@ export default function PracticeScreen() {
   };
 
   useEffect(() => {
-    loadData();
+    if (!_cachedTopics) loadData();
   }, []);
 
-  const loadData = async () => {
+  // Silently refresh when tab is re-focused (e.g. returning from topic screen)
+  useFocusEffect(
+    useCallback(() => {
+      if (_cachedTopics) loadData(true);
+    }, [])
+  );
+
+  const loadData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       
       // Load user diagnostic data for mastery scores
       let diagnosticData = null;
@@ -107,7 +118,6 @@ export default function PracticeScreen() {
       try {
         const lessonsResponse = await lessonService.getLessons();
         const lessons = lessonsResponse.lessons;
-        setAllLessons(lessons);
 
         // Group lessons by topic and build topic list
         const topicMap = new Map<string, any>();
@@ -169,6 +179,8 @@ export default function PracticeScreen() {
         });
 
         setTopics(topicsArray);
+        _cachedTopics = topicsArray;
+        _cachedMastery = diagnosticData;
       } catch (error) {
         console.error('Error loading lessons:', error);
         // Fallback to default topics
@@ -208,7 +220,7 @@ export default function PracticeScreen() {
     } catch (error) {
       console.error('Error loading practice data:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 

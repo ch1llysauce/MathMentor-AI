@@ -4,19 +4,17 @@
     "slug": "mathmentor-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/MathMentorAILogoIcon.png",
     "scheme": "mathmentor",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/MathMentorAILogoIcon.png",
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#2563eb",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/images/MathMentorAILogoIcon.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.mathmentor.mobile",
@@ -31,9 +29,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#2563eb",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#ffffff",
+          "image": "./assets/images/MathMentorAILogo.png",
+          "imageWidth": 200
         }
       ],
       "@react-native-google-signin/google-signin",
@@ -44,6 +42,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4911d4c5-8871-4d37-b1ae-cdbc98475789"
+      }
+    },
+    "owner": "ch1llysauce"
   }
 }

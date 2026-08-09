@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { MasteryRing } from '@/components/MasteryRing';
@@ -21,6 +21,13 @@ import { DiagnosticResult, WeakTopic } from '@/types/diagnostic';
 import { useTheme } from '@/context/ThemeContext';
 
 type TimelinePeriod = 'week' | 'month' | '6months';
+
+// Module-level cache so switching tabs doesn't re-show the loading screen
+const _diagCache: {
+  diagnostic: DiagnosticResult | null;
+  timelineData: any[];
+  loaded: boolean;
+} = { diagnostic: null, timelineData: [], loaded: false };
 
 export default function DiagnosticScreen() {
   const router = useRouter();
@@ -46,15 +53,22 @@ export default function DiagnosticScreen() {
     periodText: darkMode ? '#a0a0a0' : Colors.textLight,
     periodActiveText: darkMode ? '#f0f0f0' : Colors.primary,
   };
-  const [diagnostic, setDiagnostic] = useState<DiagnosticResult | null>(null);
-  const [timelineData, setTimelineData] = useState<any[]>([]);
+  const [diagnostic, setDiagnostic] = useState<DiagnosticResult | null>(_diagCache.diagnostic);
+  const [timelineData, setTimelineData] = useState<any[]>(_diagCache.timelineData);
   const [selectedPeriod, setSelectedPeriod] = useState<TimelinePeriod>('week');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!_diagCache.loaded);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    loadDiagnosticData();
+    if (!_diagCache.loaded) loadDiagnosticData();
   }, []);
+
+  // Silently refresh when tab is re-focused
+  useFocusEffect(
+    useCallback(() => {
+      if (_diagCache.loaded) loadDiagnosticData(true);
+    }, [])
+  );
 
   useEffect(() => {
     if (diagnostic) {
@@ -62,22 +76,26 @@ export default function DiagnosticScreen() {
     }
   }, [selectedPeriod]);
 
-  const loadDiagnosticData = async () => {
+  const loadDiagnosticData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const response = await diagnosticService.getLatestDiagnostic();
-      setDiagnostic(response.data.diagnostic);
-      await loadTimelineData(selectedPeriod);
+      const diag = response.data.diagnostic;
+      setDiagnostic(diag);
+      _diagCache.diagnostic = diag;
+      const timeline = await loadTimelineData(selectedPeriod);
+      _diagCache.loaded = true;
     } catch (error: any) {
       console.error('Error loading diagnostic:', error);
-      if (error.response?.status === 404) {
-        // No diagnostic completed yet
-        setDiagnostic(null);
-      } else {
-        Alert.alert('Error', 'Failed to load diagnostic data');
+      if (!silent) {
+        if (error.response?.status === 404) {
+          setDiagnostic(null);
+        } else {
+          Alert.alert('Error', 'Failed to load diagnostic data');
+        }
       }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -85,6 +103,7 @@ export default function DiagnosticScreen() {
     try {
       const timeline = await diagnosticService.getDiagnosticTimeline(period);
       setTimelineData(timeline);
+      _diagCache.timelineData = timeline;
     } catch (error) {
       console.error('Error loading timeline:', error);
     }
@@ -92,7 +111,7 @@ export default function DiagnosticScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadDiagnosticData();
+    await loadDiagnosticData(true);
     setRefreshing(false);
   };
 

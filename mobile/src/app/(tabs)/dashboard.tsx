@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, RefreshControl, ActivityIndicator, Image } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import Loading from '@/components/common/Loading';
@@ -41,6 +41,19 @@ const TOPIC_META: Record<string, { icon: string; description: string }> = {
   },
 };
 
+// Module-level cache so tab switches don't re-show the loading screen
+const _dashCache: {
+  data: { stats: DashboardStats; topics: TopicProgress[] } | null;
+  topicMastery: { topic: string; mastery: number }[];
+  nextStep: NextStep | null;
+  recommendationProgress: { progressPercentage: number; completedLessons: number; totalLessons: number };
+} = {
+  data: null,
+  topicMastery: [],
+  nextStep: null,
+  recommendationProgress: { progressPercentage: 0, completedLessons: 0, totalLessons: 0 },
+};
+
 export default function DashboardScreen() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -62,19 +75,20 @@ export default function DashboardScreen() {
     secondaryBtnText: darkMode ? '#a5b4fc' : '#3323cc',
     radialBg: darkMode ? '#2e2e2e' : '#e0e3e5',
   };
-  const [isReady, setIsReady] = useState(false);
+  const [isReady, setIsReady] = useState(!!_dashCache.data);
   const [dashboardData, setDashboardData] = useState<{
     stats: DashboardStats;
     topics: TopicProgress[];
-  } | null>(null);
-  const [topicMastery, setTopicMastery] = useState<{ topic: string; mastery: number }[]>([]);
-  const [nextStep, setNextStep] = useState<NextStep | null>(null);  const [recommendationProgress, setRecommendationProgress] = useState<{
+  } | null>(_dashCache.data);
+  const [topicMastery, setTopicMastery] = useState<{ topic: string; mastery: number }[]>(_dashCache.topicMastery);
+  const [nextStep, setNextStep] = useState<NextStep | null>(_dashCache.nextStep);
+  const [recommendationProgress, setRecommendationProgress] = useState<{
     progressPercentage: number;
     completedLessons: number;
     totalLessons: number;
-  }>({ progressPercentage: 0, completedLessons: 0, totalLessons: 0 });
+  }>(_dashCache.recommendationProgress);
   const [refreshing, setRefreshing] = useState(false);
-  const [loadingData, setLoadingData] = useState(true);
+  const [loadingData, setLoadingData] = useState(!_dashCache.data);
   const [resumeLoading, setResumeLoading] = useState(false);
 
   // Default fallback data
@@ -138,7 +152,8 @@ export default function DashboardScreen() {
   };
 
   // Fetch dashboard data
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (silent = false) => {
+    if (!silent) setLoadingData(true);
     try {
       const [data, topicProgress, diagnosticStats] = await Promise.all([
         dashboardService.getDashboardData(),
@@ -159,6 +174,7 @@ export default function DashboardScreen() {
         stats,
         topics: mergedTopics,
       });
+      _dashCache.data = { stats, topics: mergedTopics };
 
       // Extract per-topic mastery from the summary (averageMastery per topic)
       const mastery = (['Algebra', 'Geometry', 'Trigonometry'] as const).map(t => {
@@ -166,6 +182,7 @@ export default function DashboardScreen() {
         return { topic: t, mastery: found?.averageMastery ?? 0 };
       });
       setTopicMastery(mastery);
+      _dashCache.topicMastery = mastery;
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       // Use default data on error
@@ -180,7 +197,7 @@ export default function DashboardScreen() {
       const recResponse = await api.get(PROGRESS_ENDPOINTS.NEXT_RECOMMENDATION);
       const rec = recResponse.data.data;
       if (rec?.nextStep) {
-        setNextStep({
+        const ns = {
           topic: rec.nextStep.topic,
           subtopic: rec.nextStep.subtopic,
           currentScore: rec.nextStep.currentScore ?? 0,
@@ -188,18 +205,19 @@ export default function DashboardScreen() {
           difficulty: rec.nextStep.difficulty ?? 'Easy',
           completedLessons: rec.nextStep.completedLessons ?? 0,
           totalLessonsInSubtopic: rec.nextStep.totalLessonsInSubtopic ?? 0,
-        });
+        };
+        setNextStep(ns);
+        _dashCache.nextStep = ns;
       }
-      setRecommendationProgress({
+      const recProgress = {
         progressPercentage: rec?.progressPercentage ?? 0,
         completedLessons: rec?.completedLessons ?? 0,
         totalLessons: rec?.totalLessons ?? 0,
-      });
-    } catch {
-      setNextStep(null);
-      setRecommendationProgress({ progressPercentage: 0, completedLessons: 0, totalLessons: 0 });
+      };
+      setRecommendationProgress(recProgress);
+      _dashCache.recommendationProgress = recProgress;
     } finally {
-      setLoadingData(false);
+      if (!silent) setLoadingData(false);
       setRefreshing(false);
     }
   };
@@ -217,9 +235,16 @@ export default function DashboardScreen() {
         return;
       }
       setIsReady(true);
-      fetchDashboardData();
+      if (!_dashCache.data) fetchDashboardData();
     }
   }, [user, loading, router]);
+
+  // Silently refresh when tab is re-focused without showing the loading screen
+  useFocusEffect(
+    useCallback(() => {
+      if (isReady) fetchDashboardData(true);
+    }, [isReady])
+  );
 
   if (loading || !isReady || !user) {
     return (

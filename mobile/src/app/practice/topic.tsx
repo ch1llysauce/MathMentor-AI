@@ -23,7 +23,7 @@ interface Lesson {
   duration: string;
   completed: boolean;
   locked: boolean;
-  subtopic: string; // "Module N: Name" — used for grouping and filtering
+  subtopic: string;
 }
 
 interface PracticeSet {
@@ -33,6 +33,16 @@ interface PracticeSet {
   difficulty: 'Easy' | 'Medium' | 'Hard';
   completed: number;
 }
+
+// Per-topic cache keyed by topic name
+const _topicCache = new Map<string, Lesson[]>();
+
+const PRACTICE_SETS: PracticeSet[] = [
+  { id: 'basic',        title: 'Basic Equations Practice',  problems: 5,  difficulty: 'Easy',   completed: 0 },
+  { id: 'intermediate', title: 'Intermediate Problems',      problems: 5,  difficulty: 'Medium', completed: 0 },
+  { id: 'advanced',     title: 'Advanced Challenge Set',     problems: 5,  difficulty: 'Hard',   completed: 0 },
+  { id: 'mixed',        title: 'Mixed Review',               problems: 15, difficulty: 'Medium', completed: 0 },
+];
 
 export default function TopicScreen() {
   const router = useRouter();
@@ -53,43 +63,37 @@ export default function TopicScreen() {
     tabActive: darkMode ? '#1a1a1a' : Colors.white,
     backIcon: darkMode ? '#2a2a2a' : Colors.surface,
   };
-  const [selectedTab, setSelectedTab] = useState<TabType>('lessons');
-  const [loading, setLoading] = useState(true);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [practiceSets, setPracticeSets] = useState<PracticeSet[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedModule, setSelectedModule] = useState<string | null>(null);
-  const didApplyFilter = useRef(false);
-
   const topicName = params.topicName as string;
   const mastery = parseInt(params.mastery as string) || 0;
   const subtopicFilterParam = (params.subtopicFilter as string) || '';
 
-  // On mount: load data and apply the subtopic filter once
+  const [selectedTab, setSelectedTab] = useState<TabType>('lessons');
+  const [loading, setLoading] = useState(!_topicCache.has(topicName));
+  const [lessons, setLessons] = useState<Lesson[]>(_topicCache.get(topicName) ?? []);
+  const [practiceSets] = useState<PracticeSet[]>(PRACTICE_SETS);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedModule, setSelectedModule] = useState<string | null>(null);
+  const didApplyFilter = useRef(false);
+
+  // On mount: load data (skip blocking fetch if cache exists) and apply filter once
   useEffect(() => {
     didApplyFilter.current = false;
-    loadTopicData();
+    loadTopicData(!_topicCache.has(topicName) ? false : true);
   }, [topicName]);
 
-  // On re-focus (e.g. returning from a lesson): reload data but don't re-apply the filter
+  // On re-focus (e.g. returning from a lesson): silently refresh
   useFocusEffect(
     useCallback(() => {
-      if (didApplyFilter.current) {
-        loadTopicData();
-      }
+      if (didApplyFilter.current) loadTopicData(true);
     }, [topicName])
   );
 
-  const loadTopicData = async () => {
+  const loadTopicData = async (silent = false) => {
     try {
-      setLoading(true);
-      
-      // Load lessons for this topic
+      if (!silent) setLoading(true);
+
       const lessonsResponse = await lessonService.getLessons(topicName);
-      const apiLessons = lessonsResponse.lessons;
-      
-      // Transform API lessons to component format
-      const transformedLessons: Lesson[] = apiLessons.map((lesson: any) => ({
+      const transformedLessons: Lesson[] = lessonsResponse.lessons.map((lesson: any) => ({
         id: lesson._id,
         title: lesson.title,
         duration: `${lesson.estimatedTime} min`,
@@ -97,10 +101,10 @@ export default function TopicScreen() {
         locked: lesson.isLocked,
         subtopic: lesson.subtopic ?? '',
       }));
-      
-      setLessons(transformedLessons);
 
-      // Apply subtopic filter only on the first load (from dashboard navigation)
+      setLessons(transformedLessons);
+      _topicCache.set(topicName, transformedLessons);
+
       if (!didApplyFilter.current && subtopicFilterParam) {
         const allModules = Array.from(new Set(transformedLessons.map(l => l.subtopic)));
         const matchingModule = allModules.find(mod =>
@@ -108,53 +112,15 @@ export default function TopicScreen() {
           mod.toLowerCase().includes(subtopicFilterParam.toLowerCase()) ||
           subtopicFilterParam.toLowerCase().includes(mod.toLowerCase())
         );
-        if (matchingModule) {
-          setSelectedModule(matchingModule);
-        } else {
-          setSelectedTab('practice');
-        }
+        if (matchingModule) setSelectedModule(matchingModule);
+        else setSelectedTab('practice');
       }
       didApplyFilter.current = true;
-
-      // Build static practice sets for the topic — problems are generated on-demand
-      // when the user taps a set (via the generator endpoint)
-      setPracticeSets([
-        {
-          id: 'basic',
-          title: 'Basic Equations Practice',
-          problems: 5,
-          difficulty: 'Easy',
-          completed: 0,
-        },
-        {
-          id: 'intermediate',
-          title: 'Intermediate Problems',
-          problems: 5,
-          difficulty: 'Medium',
-          completed: 0,
-        },
-        {
-          id: 'advanced',
-          title: 'Advanced Challenge Set',
-          problems: 5,
-          difficulty: 'Hard',
-          completed: 0,
-        },
-        {
-          id: 'mixed',
-          title: 'Mixed Review',
-          problems: 15,
-          difficulty: 'Medium',
-          completed: 0,
-        },
-      ]);
     } catch (error) {
       console.error('Error loading topic data:', error);
-      // Fallback to empty arrays
-      setLessons([]);
-      setPracticeSets([]);
+      if (!silent) { setLessons([]); }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 

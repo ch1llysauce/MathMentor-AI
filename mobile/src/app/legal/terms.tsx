@@ -34,7 +34,7 @@ export default function TermsOfServiceScreen() {
           <Ionicons name="document-text" size={40} color="#4b41e1" />
         </View>
         <Text style={styles.pageTitle}>Terms of Service</Text>
-        <Text style={styles.effectiveDate}>Effective: January 2025 · MathMentor AI</Text>
+        <Text style={styles.effectiveDate}>Effective: August 2026 · MathMentor AI</Text>
 
         <Section title="1. Acceptance of Terms">
           {`By accessing or using MathMentor AI, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the application.\n\nThese terms apply to all users of the app, including students, educators, and any other individuals who access our services.`}
@@ -80,7 +80,7 @@ export default function TermsOfServiceScreen() {
           {`If you have any questions about these Terms of Service, please contact us at:\n\nsupport@mathmentor.ai\n\nWe aim to respond to all inquiries within 48 hours.`}
         </Section>
 
-        <Text style={styles.footer}>© 2025 MathMentor AI · All rights reserved</Text>
+        <Text style={styles.footer}>© 2026 MathMentor AI · All rights reserved</Text>
         <View style={{ height: 32 }} />
       </ScrollView>
     </View>

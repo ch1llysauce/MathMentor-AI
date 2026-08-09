@@ -34,7 +34,7 @@ export default function PrivacyPolicyScreen() {
           <Ionicons name="shield-checkmark" size={40} color="#4b41e1" />
         </View>
         <Text style={styles.pageTitle}>Privacy Policy</Text>
-        <Text style={styles.effectiveDate}>Effective: January 2025 · MathMentor AI</Text>
+        <Text style={styles.effectiveDate}>Effective: August 2026 · MathMentor AI</Text>
 
         <Section title="1. Introduction">
           {`MathMentor AI ("we", "us", or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and share information about you when you use our application.\n\nBy using MathMentor AI, you agree to the collection and use of information as described in this policy.`}
@@ -80,7 +80,7 @@ export default function PrivacyPolicyScreen() {
           {`If you have questions, concerns, or requests regarding this Privacy Policy or your personal data, please contact us:\n\nEmail: support@mathmentor.ai\n\nWe aim to respond to all privacy-related inquiries within 48 hours.`}
         </Section>
 
-        <Text style={styles.footer}>© 2025 MathMentor AI · All rights reserved</Text>
+        <Text style={styles.footer}>© 2026 MathMentor AI · All rights reserved</Text>
         <View style={{ height: 32 }} />
       </ScrollView>
     </View>
