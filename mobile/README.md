@@ -1,56 +1,135 @@
-# Welcome to your Expo app 👋
+# MathMentor AI — Mobile App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native (Expo) mobile app for adaptive mathematics learning, powered by an AI tutor.
 
-## Get started
+## Tech Stack
 
-1. Install dependencies
+- **Framework:** Expo SDK 57 / React Native 0.86
+- **Navigation:** Expo Router (file-based routing)
+- **Language:** TypeScript
+- **Auth:** JWT + Google Sign-In (`@react-native-google-signin/google-signin` v16)
+- **HTTP:** Axios
+- **Storage:** AsyncStorage
+- **Styling:** StyleSheet (dark/light theme support)
+- **Build:** EAS Build
 
-   ```bash
-   npm install
-   ```
+## Project Structure
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+mobile/
+├── src/
+│   ├── app/                  # File-based routes (Expo Router)
+│   │   ├── (tabs)/           # Bottom tab screens (dashboard, practice, tutor, diagnostic, profile)
+│   │   ├── auth/             # Login, register, forgot-password
+│   │   ├── practice/         # Lesson, lesson-chat, problems, topic
+│   │   ├── profile/          # Settings, edit-profile, about, faq, help, privacy
+│   │   ├── diagnostic/       # Retake, topic-detail
+│   │   ├── legal/            # Terms, privacy-policy
+│   │   └── _layout.tsx       # Root layout (AuthProvider + ThemeProvider)
+│   ├── components/           # Reusable UI components
+│   ├── constants/            # API endpoints, colors, theme, curriculum
+│   ├── context/              # AuthContext, ThemeContext
+│   ├── hooks/                # useAuth, useTheme, useColorScheme
+│   ├── services/             # API calls (auth, tutor, practice, lessons, etc.)
+│   ├── types/                # TypeScript types
+│   └── utils/                # Storage helpers
+├── android/                  # Native Android project
+├── assets/                   # Images and icons
+├── app.json                  # Expo config
+├── eas.json                  # EAS Build profiles
+└── google-services.json      # Firebase/Google config (gitignored)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Getting Started
 
-### Other setup steps
+### 1. Install dependencies
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+cd mobile
+npm install
+```
 
-## Learn more
+### 2. Configure environment variables
 
-To learn more about developing your project with Expo, look at the following resources:
+Create a `.env` file in the `mobile/` directory:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```env
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your_web_client_id
+```
 
-## Join the community
+> For EAS builds, set this in your [Expo project dashboard](https://expo.dev) under **Environment Variables** as a **Sensitive** variable for all environments (Development, Preview, Production).
 
-Join our community of developers creating universal apps.
+### 3. Run locally (Expo Go / dev build)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npx expo start
+```
+
+> Note: Google Sign-In requires a native build and will not work in Expo Go.
+
+### 4. Run native Android build locally
+
+```bash
+npx expo run:android
+```
+
+### 5. Build APK via EAS
+
+```bash
+# Preview (internal distribution APK)
+eas build --platform android --profile preview
+
+# Production
+eas build --platform android --profile production
+```
+
+## Features
+
+- Email/password authentication with JWT
+- Google Sign-In (OAuth 2.0)
+- Two-factor authentication (TOTP)
+- Forgot password with OTP via email
+- Adaptive diagnostic assessment
+- AI-powered math tutor (chat interface)
+- Practice problems by topic
+- Progress tracking and mastery rings
+- Dark / light theme
+- Session management (view and revoke active sessions)
+
+## Authentication Flow
+
+```
+Login Screen
+├── Email + Password → JWT token stored in AsyncStorage
+├── Google Sign-In → Google ID token → backend /api/auth/google → JWT
+│   └── New Google user → redirected to Register screen
+└── 2FA → TOTP code modal → /api/auth/2fa/validate → JWT
+```
+
+## API Configuration
+
+The app points to the production backend by default. To switch to a local backend, edit `src/constants/api.ts`:
+
+```ts
+const USE_LOCAL = true; // set to true for local development
+const LOCAL_URL = 'http://<your-local-ip>:5000/api';
+```
+
+## Google Sign-In Setup
+
+1. Create an Android OAuth 2.0 client in [Google Cloud Console](https://console.cloud.google.com)
+2. Register your app's SHA-1 certificate fingerprint
+3. Download `google-services.json` and place it in `mobile/`
+4. Set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in your `.env` and EAS dashboard
+
+## Build Profiles
+
+| Profile | Distribution | Use case |
+|---|---|---|
+| `development` | Internal | Dev client builds |
+| `preview` | Internal | APK for testing |
+| `production` | Store | Play Store release |
+
+## License
+
+MIT License — see LICENSE file for details.
