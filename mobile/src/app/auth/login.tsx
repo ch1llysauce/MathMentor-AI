@@ -9,6 +9,8 @@ import {
   Alert,
   StatusBar,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -91,7 +93,7 @@ export default function LoginScreen() {
     try {
       const response = await login(trimmedEmail, trimmedPassword);
       if (response.requiresTwoFactor) {
-        setTwoFAUserId(response.data?.userId || '');
+        setTwoFAUserId(response.data?.userId ?? '');
         setTwoFAModalVisible(true);
         setLoading(false);
         return;
@@ -102,8 +104,13 @@ export default function LoginScreen() {
         Alert.alert('Login Failed', response.message || 'Invalid credentials');
         setLoading(false);
       }
-    } catch {
-      Alert.alert('Login Failed', 'Incorrect email or password.');
+    } catch (error: any) {
+      const status = error.response?.status;
+      if (status === 429) {
+        Alert.alert('Too Many Attempts', error.message || 'Too many login attempts. Please try again in 15 minutes.');
+      } else {
+        Alert.alert('Login Failed', 'Incorrect email or password.');
+      }
       setLoading(false);
     }
   };
@@ -166,7 +173,12 @@ export default function LoginScreen() {
         Alert.alert('Invalid Code', response.message || 'Verification failed');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Invalid verification code');
+      const status = error.response?.status;
+      if (status === 429) {
+        Alert.alert('Too Many Attempts', error.message || 'Too many verification attempts. Please try again later.');
+      } else {
+        Alert.alert('Invalid Code', error.message || 'Invalid verification code');
+      }
     } finally {
       setTwoFALoading(false);
     }
@@ -304,10 +316,21 @@ export default function LoginScreen() {
         visible={twoFAModalVisible}
         transparent
         animationType="slide"
+        statusBarTranslucent
         onRequestClose={() => { setTwoFAModalVisible(false); setTwoFACode(''); setLoading(false); }}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 24) + 24, backgroundColor: D.modalBg }]}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}
+        >
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => { setTwoFAModalVisible(false); setTwoFACode(''); setLoading(false); }}
+          />
+          <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 24) + 8, backgroundColor: D.modalBg }]}>
+            <View style={[styles.modalHandle]} />
             <View style={[styles.modalIconContainer, { backgroundColor: darkMode ? 'rgba(75, 65, 225, 0.15)' : 'rgba(75, 65, 225, 0.1)' }]}>
               <Ionicons name="shield-checkmark" size={40} color="#4b41e1" />
             </View>
@@ -336,7 +359,7 @@ export default function LoginScreen() {
               <Text style={[styles.cancelButtonText, { color: D.placeholder }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -418,10 +441,14 @@ const styles = StyleSheet.create({
   footerLinks: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   footerLink: { fontSize: 12, color: '#75777d', letterSpacing: 0.3 },
   footerDivider: { fontSize: 12, color: '#c5c6cd' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
   modalContent: {
     backgroundColor: '#ffffff', borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    padding: 32, alignItems: 'center',
+    paddingHorizontal: 32, paddingTop: 12, alignItems: 'center',
+  },
+  modalHandle: {
+    width: 40, height: 4, borderRadius: 2,
+    backgroundColor: '#c5c6cd', marginBottom: 20,
   },
   modalIconContainer: {
     width: 72, height: 72, borderRadius: 36,

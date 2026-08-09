@@ -54,6 +54,19 @@ const forgotPasswordLimiter = rateLimit({
     skipSuccessfulRequests: false,
 });
 
+// Rate limiter: max 10 2FA attempts per IP per 15 minutes
+const twoFALimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: {
+        success: false,
+        message: "Too many verification attempts. Please try again in 15 minutes."
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: false,
+});
+
 const router = express.Router();
 
 // Public routes
@@ -61,7 +74,7 @@ router.post("/register", validateRegister, register);
 router.post("/login", loginLimiter, validateLogin, login);
 router.post("/google", googleAuth);
 router.post("/google/register", googleRegister);
-router.post("/2fa/validate", validate2FA);
+router.post("/2fa/validate", twoFALimiter, validate2FA);
 
 // Password reset (public — no auth needed, rate limited)
 router.post("/forgot-password", forgotPasswordLimiter, forgotPassword);

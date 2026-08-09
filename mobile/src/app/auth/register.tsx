@@ -109,7 +109,7 @@ export default function RegisterScreen() {
         setLoading(false);
       }
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Registration failed');
+      Alert.alert('Error', error.message || 'Registration failed');
       setLoading(false);
     }
   };

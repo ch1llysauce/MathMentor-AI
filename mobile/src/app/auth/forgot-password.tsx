@@ -85,7 +85,9 @@ export default function ForgotPasswordScreen() {
       setResetToken(response.data.data.resetToken);
       setStep('password');
     } catch (error: any) {
-      Alert.alert('Invalid Code', error.response?.data?.message || 'The code is incorrect or has expired.');
+      const status = error.response?.status;
+      const msg = error.message || 'The code is incorrect or has expired.';
+      Alert.alert(status === 429 ? 'Too Many Attempts' : 'Invalid Code', msg);
     } finally {
       setLoading(false);
     }
@@ -105,7 +107,9 @@ export default function ForgotPasswordScreen() {
         [{ text: 'Log In', onPress: () => router.replace('/auth/login') }]
       );
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to reset password. Please try again.');
+      const status = error.response?.status;
+      const msg = error.message || 'Failed to reset password. Please try again.';
+      Alert.alert(status === 429 ? 'Too Many Attempts' : 'Error', msg);
     } finally {
       setLoading(false);
     }

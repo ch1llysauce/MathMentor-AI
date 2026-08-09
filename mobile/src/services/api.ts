@@ -69,6 +69,12 @@ api.interceptors.response.use(
         console.warn('Error clearing storage:', storageError);
       }
     }
+
+    // Normalize the error message so callers can always read error.message
+    const serverMessage = error.response?.data?.message;
+    if (serverMessage) {
+      error.message = serverMessage;
+    }
     
     return Promise.reject(error);
   }
