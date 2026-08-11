@@ -276,7 +276,7 @@ export default function TutorScreen() {
         <View style={styles.inputWrapper}>
           <TextInput
             style={[styles.input, { backgroundColor: T.inputFieldBg, color: T.inputText }]}
-            placeholder="Ask me anything..."
+            placeholder='Ask me anything...'
             placeholderTextColor={T.placeholder}
             value={inputText}
             onChangeText={setInputText}
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 20,
     backgroundColor: Colors.white,
     borderTopWidth: 1,
     borderTopColor: Colors.borderLight,

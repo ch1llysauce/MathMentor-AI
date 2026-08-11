@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 12,
-    paddingBottom: 12
+    paddingBottom: 20
   },
   input: {
     flex: 1,
