@@ -4,7 +4,9 @@ import { PROGRESS_ENDPOINTS, LEARNING_ENDPOINTS } from '../constants/api';
 export interface DashboardStats {
   currentStreak: number;
   xpEarned: number;
-  accuracy: number;       // from latest diagnostic: correctAnswers / totalQuestions
+  accuracy: number;          // percentage (0-100)
+  accuracyCorrect: number;   // raw correct count from diagnostic
+  accuracyTotal: number;     // raw total count from diagnostic
   avgSpeed: number;
 }
 
@@ -68,7 +70,7 @@ export const dashboardService = {
   },
 
   // Fetch accuracy and avg speed from the latest diagnostic result
-  async getDiagnosticStats(): Promise<{ accuracy: number; avgSpeed: number }> {
+  async getDiagnosticStats(): Promise<{ accuracy: number; accuracyCorrect: number; accuracyTotal: number; avgSpeed: number }> {
     try {
       const response = await api.get(LEARNING_ENDPOINTS.GET_DIAGNOSTIC);
       // Response shape: { data: { diagnostic, analysis } }
@@ -80,20 +82,22 @@ export const dashboardService = {
       const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
       const avgSpeed = total > 0 ? Math.round(timeSpent / total) : 0;
 
-      return { accuracy, avgSpeed };
+      return { accuracy, accuracyCorrect: correct, accuracyTotal: total, avgSpeed };
     } catch {
-      return { accuracy: 0, avgSpeed: 0 };
+      return { accuracy: 0, accuracyCorrect: 0, accuracyTotal: 0, avgSpeed: 0 };
     }
   },
 
   // Calculate dashboard stats — accuracy & avgSpeed come from the diagnostic
-  calculateStats(data: DashboardData, diagnosticAccuracy = 0, diagnosticAvgSpeed = 0): DashboardStats {
+  calculateStats(data: DashboardData, diagnosticAccuracy = 0, diagnosticAvgSpeed = 0, accuracyCorrect = 0, accuracyTotal = 0): DashboardStats {
     const totalCorrect = data.overallProgress.totalCorrect;
 
     return {
       currentStreak: data.user.currentStreak,
       xpEarned: totalCorrect * 10,
       accuracy: diagnosticAccuracy,
+      accuracyCorrect,
+      accuracyTotal,
       avgSpeed: diagnosticAvgSpeed,
     };
   },

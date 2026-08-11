@@ -84,6 +84,9 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
   const [showExplanation, setShowExplanation] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showCalculator, setShowCalculator] = useState(false);
+  // Scoring
+  const [correctCount, setCorrectCount] = useState(0);
+  const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
     fetchProblems();
@@ -177,6 +180,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
           );
         }
 
+        if (correct) setCorrectCount(prev => prev + 1);
         setIsCorrect(correct);
         setShowExplanation(true);
         return;
@@ -190,6 +194,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
         timeSpent,
         hintsUsed
       );
+      if (response.isCorrect) setCorrectCount(prev => prev + 1);
       setIsCorrect(response.isCorrect);
       setShowExplanation(true);
     } catch (error: any) {
@@ -205,21 +210,22 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
       setCurrentIndex(currentIndex + 1);
       resetProblem();
     } else {
-      // Mark daily challenge done if applicable
+      // Last problem — calculate final score
+      const finalScore = correctCount + (isCorrect ? 1 : 0);
+      const finalTotal = problems.length;
+
       if (isDaily === 'true') {
         try {
-          await api.post(PRACTICE_ENDPOINTS.DAILY_COMPLETE, { topic: topic || 'unknown' });
+          await api.post(PRACTICE_ENDPOINTS.DAILY_COMPLETE, {
+            topic: topic || 'unknown',
+            score: finalScore,
+            total: finalTotal,
+          });
         } catch {
-          // Non-critical — don't block the completion alert
+          // Non-critical — don't block the results screen
         }
       }
-      Alert.alert(
-        isDaily === 'true' ? 'Daily Challenge Complete!' : 'Practice Complete!',
-        isDaily === 'true'
-          ? "You've completed today's challenge. Come back tomorrow for a new one!"
-          : "You've completed all problems in this set.",
-        [{ text: 'Back to Practice', onPress: () => router.back() }]
-      );
+      setShowResults(true);
     }
   };
 
@@ -257,6 +263,79 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // ── Results screen shown after the last problem ───────────────────────────
+  if (showResults) {
+    const finalScore = correctCount;
+    const finalTotal = problems.length;
+    const pct = Math.round((finalScore / finalTotal) * 100);
+    const scoreColor = pct >= 80 ? '#00a472' : pct >= 50 ? '#f59e0b' : '#ef4444';
+    const message =
+      pct >= 80 ? 'Excellent work!' :
+      pct >= 50 ? 'Good effort!' :
+      'Keep practicing!';
+
+    return (
+      <View style={[styles.container, { backgroundColor: PR.bg }]}>
+        <View style={[styles.header, { backgroundColor: PR.header, borderBottomColor: PR.border }]}>
+          <TouchableOpacity style={[styles.backIcon, { backgroundColor: PR.backIconBg }]} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color={PR.backIconColor} />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={[styles.headerSubtitle, { color: PR.textLight }]}>{title || 'Practice Complete'}</Text>
+            <Text style={[styles.headerTitle, { color: PR.text }]}>Results</Text>
+          </View>
+        </View>
+
+        <ScrollView contentContainerStyle={{ padding: 24, alignItems: 'center' }}>
+          {/* Score circle */}
+          <View style={[styles.resultsCircle, { borderColor: scoreColor }]}>
+            <Text style={[styles.resultsFraction, { color: scoreColor }]}>
+              {finalScore}/{finalTotal}
+            </Text>
+            <Text style={[styles.resultsPct, { color: PR.textLight }]}>{pct}%</Text>
+          </View>
+
+          <Text style={[styles.resultsMessage, { color: PR.text }]}>{message}</Text>
+
+          {isDaily === 'true' && (
+            <View style={[styles.resultsDailyBadge, { backgroundColor: scoreColor + '20', borderColor: scoreColor }]}>
+              <Ionicons name="trophy" size={18} color={scoreColor} />
+              <Text style={[styles.resultsDailyText, { color: scoreColor }]}>
+                Daily Challenge — {finalScore}/{finalTotal} correct
+              </Text>
+            </View>
+          )}
+
+          {/* Per-problem breakdown */}
+          <View style={[styles.resultsBreakdown, { backgroundColor: PR.card }]}>
+            <Text style={[styles.resultsBreakdownTitle, { color: PR.text }]}>Breakdown</Text>
+            <View style={styles.resultsRow}>
+              <Text style={[styles.resultsRowLabel, { color: PR.textLight }]}>Correct answers</Text>
+              <Text style={[styles.resultsRowValue, { color: '#00a472' }]}>{finalScore}</Text>
+            </View>
+            <View style={styles.resultsRow}>
+              <Text style={[styles.resultsRowLabel, { color: PR.textLight }]}>Incorrect answers</Text>
+              <Text style={[styles.resultsRowValue, { color: '#ef4444' }]}>{finalTotal - finalScore}</Text>
+            </View>
+            <View style={[styles.resultsRow, { borderBottomWidth: 0 }]}>
+              <Text style={[styles.resultsRowLabel, { color: PR.textLight }]}>Total problems</Text>
+              <Text style={[styles.resultsRowValue, { color: PR.text }]}>{finalTotal}</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.resultsDoneButton, { backgroundColor: scoreColor }]}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.resultsDoneButtonText}>
+              {isDaily === 'true' ? 'Back to Practice' : 'Done'}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
     );
   }
@@ -945,6 +1024,86 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 14,
     fontWeight: '600',
+    color: '#ffffff',
+  },
+  // ── Results screen ──────────────────────────────────────────────────────────
+  resultsCircle: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    borderWidth: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 32,
+    marginBottom: 24,
+  },
+  resultsFraction: {
+    fontSize: 32,
+    fontWeight: '800',
+    lineHeight: 36,
+  },
+  resultsPct: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  resultsMessage: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  resultsDailyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    marginBottom: 24,
+  },
+  resultsDailyText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  resultsBreakdown: {
+    width: '100%',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 28,
+  },
+  resultsBreakdownTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 16,
+  },
+  resultsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.surfaceContainer,
+  },
+  resultsRowLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  resultsRowValue: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  resultsDoneButton: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  resultsDoneButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
     color: '#ffffff',
   },
 });

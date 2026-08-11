@@ -8,6 +8,7 @@ import { dashboardService, DashboardStats } from '@/services/dashboardService';
 import api from '@/services/api';
 import { PROGRESS_ENDPOINTS } from '@/constants/api';
 import { useTheme } from '@/context/ThemeContext';
+import { dashCache } from '@/utils/tabCache';
 
 interface TopicProgress {
   name: string;
@@ -42,17 +43,8 @@ const TOPIC_META: Record<string, { icon: string; description: string }> = {
 };
 
 // Module-level cache so tab switches don't re-show the loading screen
-const _dashCache: {
-  data: { stats: DashboardStats; topics: TopicProgress[] } | null;
-  topicMastery: { topic: string; mastery: number }[];
-  nextStep: NextStep | null;
-  recommendationProgress: { progressPercentage: number; completedLessons: number; totalLessons: number };
-} = {
-  data: null,
-  topicMastery: [],
-  nextStep: null,
-  recommendationProgress: { progressPercentage: 0, completedLessons: 0, totalLessons: 0 },
-};
+// (Imported from tabCache so logout can clear it centrally)
+const _dashCache = dashCache;
 
 export default function DashboardScreen() {
   const { user, loading } = useAuth();
@@ -102,6 +94,8 @@ export default function DashboardScreen() {
     currentStreak: 0,
     xpEarned: 0,
     accuracy: 0,
+    accuracyCorrect: 0,
+    accuracyTotal: 0,
     avgSpeed: 0,
   };
 
@@ -160,7 +154,13 @@ export default function DashboardScreen() {
         dashboardService.getTopicProgress(),
         dashboardService.getDiagnosticStats(),
       ]);
-      const stats = dashboardService.calculateStats(data, diagnosticStats.accuracy, diagnosticStats.avgSpeed);
+      const stats = dashboardService.calculateStats(
+        data,
+        diagnosticStats.accuracy,
+        diagnosticStats.avgSpeed,
+        diagnosticStats.accuracyCorrect,
+        diagnosticStats.accuracyTotal,
+      );
 
       // Merge with default topics to ensure all 3 topics are shown
       const mergedTopics = defaultTopics.map(defaultTopic => {
@@ -477,9 +477,16 @@ export default function DashboardScreen() {
                 <Ionicons name="checkmark-done" size={24} color={darkMode ? '#a5b4fc' : '#091426'} />
               </View>
               <Text style={[styles.statLabel, { color: D.textLight }]}>Accuracy</Text>
-              <Text style={[styles.statValue, { color: D.text }]}>
-                {stats.accuracy > 0 ? `${stats.accuracy}%` : '—'}
-              </Text>
+              {stats.accuracyTotal > 0 ? (
+                <>
+                  <Text style={[styles.statValue, { color: D.text }]}>
+                    {stats.accuracyCorrect}/{stats.accuracyTotal}
+                  </Text>
+                  <Text style={[styles.statSource, { color: D.textLight }]}>diagnostic</Text>
+                </>
+              ) : (
+                <Text style={[styles.statValue, { color: D.text }]}>—</Text>
+              )}
             </View>
 
             <View style={[styles.statCard, { backgroundColor: D.card }]}>
@@ -824,6 +831,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     color: '#091426',
+  },
+  statSource: {
+    fontSize: 11,
+    color: '#45474c',
+    marginTop: 2,
+    fontStyle: 'italic',
   },
   loadingDataContainer: {
     paddingVertical: 60,

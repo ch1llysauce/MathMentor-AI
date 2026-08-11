@@ -98,16 +98,26 @@ export const getCategories = (req, res) => {
 };
 
 // ─── GET /api/practice/daily-status ───────────────────────────────────────────
-// Returns whether the current user has completed today's daily challenge.
+// Returns whether the current user has completed today's daily challenge,
+// along with the score if they have.
 
 export const getDailyStatus = async (req, res) => {
   try {
     const todayKey = new Date().toISOString().slice(0, 10);
     const user = await User.findById(req.user._id).select('dailyChallengeCompletions');
 
-    const done = user.dailyChallengeCompletions?.some(c => c.date === todayKey) ?? false;
+    const entry = user.dailyChallengeCompletions?.find(c => c.date === todayKey) ?? null;
+    const done = entry !== null;
 
-    res.json({ success: true, data: { done, date: todayKey } });
+    res.json({
+      success: true,
+      data: {
+        done,
+        date: todayKey,
+        score: done ? entry.score : null,
+        total: done ? entry.total : null,
+      },
+    });
   } catch (error) {
     console.error('Error in getDailyStatus:', error);
     res.status(500).json({ success: false, message: 'Failed to get daily challenge status' });
@@ -115,23 +125,38 @@ export const getDailyStatus = async (req, res) => {
 };
 
 // ─── POST /api/practice/daily-complete ────────────────────────────────────────
-// Marks today's daily challenge as completed for the current user.
+// Marks today's daily challenge as completed and stores the score.
+// Body: { topic, score, total }
 
 export const completeDailyChallenge = async (req, res) => {
   try {
     const todayKey = new Date().toISOString().slice(0, 10);
-    const { topic } = req.body;
+    const { topic, score = 0, total = 10 } = req.body;
 
     const user = await User.findById(req.user._id);
 
-    // Idempotent: only record once per day
-    const alreadyDone = user.dailyChallengeCompletions?.some(c => c.date === todayKey);
-    if (!alreadyDone) {
-      user.dailyChallengeCompletions.push({ date: todayKey, topic: topic || 'unknown' });
-      await user.save();
+    const existingIdx = user.dailyChallengeCompletions?.findIndex(c => c.date === todayKey);
+    if (existingIdx === -1 || existingIdx === undefined) {
+      // First completion today — push new entry
+      user.dailyChallengeCompletions.push({
+        date: todayKey,
+        topic: topic || 'unknown',
+        score,
+        total,
+      });
+    } else {
+      // Already completed — update score with the latest attempt
+      user.dailyChallengeCompletions[existingIdx].score = score;
+      user.dailyChallengeCompletions[existingIdx].total = total;
+      user.dailyChallengeCompletions[existingIdx].completedAt = new Date();
     }
 
-    res.json({ success: true, data: { done: true, date: todayKey } });
+    await user.save();
+
+    res.json({
+      success: true,
+      data: { done: true, date: todayKey, score, total },
+    });
   } catch (error) {
     console.error('Error in completeDailyChallenge:', error);
     res.status(500).json({ success: false, message: 'Failed to record daily challenge completion' });

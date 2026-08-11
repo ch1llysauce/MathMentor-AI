@@ -17,10 +17,11 @@ import { lessonService } from '@/services/lessonService';
 import { useTheme } from '@/context/ThemeContext';
 import api from '@/services/api';
 import { PRACTICE_ENDPOINTS } from '@/constants/api';
+import { practiceCache } from '@/utils/tabCache';
 
 // Module-level cache so tab re-focuses don't re-fetch from scratch
-let _cachedTopics: Topic[] | null = null;
-let _cachedMastery: any = null;
+// (Imported from tabCache so logout can clear it centrally)
+const _cachedTopics = practiceCache;
 
 type TopicFilter = 'all' | 'weak' | 'strong';
 
@@ -56,9 +57,9 @@ export default function PracticeScreen() {
   };
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<TopicFilter>('all');
-  const [loading, setLoading] = useState(!_cachedTopics);
-  const [userMastery, setUserMastery] = useState<any>(_cachedMastery);
-  const [topics, setTopics] = useState<Topic[]>(_cachedTopics ?? []);
+  const [loading, setLoading] = useState(!_cachedTopics.topics);
+  const [userMastery, setUserMastery] = useState<any>(_cachedTopics.mastery);
+  const [topics, setTopics] = useState<Topic[]>(_cachedTopics.topics ?? []);
 
   // ── Daily Challenge ─────────────────────────────────────────────────────────
   const DAILY_TOPICS = ['algebra', 'geometry', 'trigonometry'];
@@ -67,14 +68,21 @@ export default function PracticeScreen() {
   const dailyTopic     = DAILY_TOPICS[dailyTopicIndex];
   const dailyTopicLabel = dailyTopic.charAt(0).toUpperCase() + dailyTopic.slice(1);
   const [dailyDone, setDailyDone] = useState(false);
+  const [dailyScore, setDailyScore] = useState<{ score: number; total: number } | null>(null);
 
   const checkDailyStatus = async () => {
     try {
       const res = await api.get(PRACTICE_ENDPOINTS.DAILY_STATUS);
-      setDailyDone(res.data?.data?.done ?? false);
+      const data = res.data?.data;
+      setDailyDone(data?.done ?? false);
+      if (data?.done && data.score !== null && data.total !== null) {
+        setDailyScore({ score: data.score, total: data.total });
+      } else {
+        setDailyScore(null);
+      }
     } catch {
-      // If offline or error, default to not done so the user isn't blocked
       setDailyDone(false);
+      setDailyScore(null);
     }
   };
 
@@ -92,15 +100,15 @@ export default function PracticeScreen() {
   };
 
   useEffect(() => {
-    if (!_cachedTopics) loadData();
+    if (!_cachedTopics.topics) loadData();
   }, []);
 
-  // Silently refresh when tab is re-focused (e.g. returning from topic screen)
+      // Silently refresh when tab is re-focused (e.g. returning from topic screen)
   useFocusEffect(
     useCallback(() => {
       // Always re-check daily challenge completion on focus (server-side)
       checkDailyStatus();
-      if (_cachedTopics) loadData(true);
+      if (_cachedTopics.topics) loadData(true);
     }, [])
   );
 
@@ -183,8 +191,8 @@ export default function PracticeScreen() {
         });
 
         setTopics(topicsArray);
-        _cachedTopics = topicsArray;
-        _cachedMastery = diagnosticData;
+        _cachedTopics.topics = topicsArray;
+        _cachedTopics.mastery = diagnosticData;
       } catch (error) {
         console.error('Error loading lessons:', error);
         // Fallback to default topics
@@ -446,7 +454,14 @@ export default function PracticeScreen() {
             <View style={styles.actionContent}>
               <View style={styles.actionTitleRow}>
                 <Text style={[styles.actionTitle, { color: P.text }]}>Daily Challenge</Text>
-                {dailyDone && (
+                {dailyDone && dailyScore && (
+                  <View style={styles.scoreBadge}>
+                    <Text style={styles.scoreBadgeText}>
+                      {dailyScore.score}/{dailyScore.total}
+                    </Text>
+                  </View>
+                )}
+                {dailyDone && !dailyScore && (
                   <View style={styles.doneBadge}>
                     <Text style={styles.doneBadgeText}>Done ✓</Text>
                   </View>
@@ -454,7 +469,9 @@ export default function PracticeScreen() {
               </View>
               <Text style={[styles.actionSubtitle, { color: P.textLight }]}>
                 {dailyDone
-                  ? 'Come back tomorrow for a new challenge!'
+                  ? dailyScore
+                    ? `Score: ${dailyScore.score}/${dailyScore.total} · Come back tomorrow!`
+                    : 'Come back tomorrow for a new challenge!'
                   : `Today: ${dailyTopicLabel} — 10 mixed problems`}
               </Text>
             </View>
@@ -724,6 +741,19 @@ const styles = StyleSheet.create({
   doneBadgeText: {
     fontSize: 11,
     fontWeight: '600',
+    color: '#00a472',
+  },
+  scoreBadge: {
+    backgroundColor: '#d1fae5',
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#00a472',
+  },
+  scoreBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
     color: '#00a472',
   },
   actionIcon: {

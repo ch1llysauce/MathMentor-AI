@@ -4,6 +4,7 @@ import api from '../services/api';
 import { AUTH_ENDPOINTS } from '../constants/api';
 import { storage } from '../utils/storage';
 import { User, AuthResponse, RegisterData } from '../types/auth';
+import { clearTabCaches } from '../utils/tabCache';
 
 interface AuthContextType {
   user: User | null;
@@ -137,6 +138,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = async () => {
+    clearTabCaches();
     await authService.logout();
     setUser(null);
   };

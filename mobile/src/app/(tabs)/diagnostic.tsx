@@ -19,15 +19,13 @@ import { TimelineChart } from '@/components/TimelineChart';
 import diagnosticService from '@/services/diagnosticService';
 import { DiagnosticResult, WeakTopic } from '@/types/diagnostic';
 import { useTheme } from '@/context/ThemeContext';
+import { diagCache } from '@/utils/tabCache';
 
 type TimelinePeriod = 'week' | 'month' | '6months';
 
 // Module-level cache so switching tabs doesn't re-show the loading screen
-const _diagCache: {
-  diagnostic: DiagnosticResult | null;
-  timelineData: any[];
-  loaded: boolean;
-} = { diagnostic: null, timelineData: [], loaded: false };
+// (Imported from tabCache so logout can clear it centrally)
+const _diagCache = diagCache;
 
 export default function DiagnosticScreen() {
   const router = useRouter();
