@@ -11,13 +11,16 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/colors';
 import { lessonService } from '@/services/lessonService';
 import { generateProblems } from '@/services/clientProblemGenerator';
 import { PracticeProblem } from '@/types/lesson';
 import { useTheme } from '@/context/ThemeContext';
 import MessageRenderer from '@/components/MessageRenderer';
+import MathToolbar from '@/components/MathToolbar';
+import ScientificCalculator from '@/components/ScientificCalculator';
+import api from '@/services/api';
+import { PRACTICE_ENDPOINTS } from '@/constants/api';
 
 export default function ProblemsScreen() {
 const { lessonId, difficulty, category, count, title, topic, isDaily } = useLocalSearchParams<{
@@ -80,6 +83,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
   const [submitting, setSubmitting] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [showCalculator, setShowCalculator] = useState(false);
 
   useEffect(() => {
     fetchProblems();
@@ -140,19 +144,37 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
           const normalize = (s: string) =>
             s.trim()
               .toLowerCase()
+              // Strip LaTeX wrappers that might appear in correctAnswer
+              .replace(/\$([^$]+)\$/g, '$1')
+              // Treat π symbol and the word "pi" as identical
+              .replace(/π/g, 'pi')
+              // Remove spaces
               .replace(/\s+/g, '')
+              // Strip "x = " prefix
               .replace(/x\s*=\s*/g, '')
+              // Strip common units and symbols that don't affect numeric value
               .replace(/[°²³]/g, '')
               .replace(/cm|m²|m³|cm²|cm³/g, '')
-              .replace(/≈/g, '');
+              .replace(/≈/g, '')
+              .replace(/\*/g, '');
 
-          const userNorm    = normalize(selectedAnswer);
-          const correctNorm = normalize(currentProblem.correctAnswer ?? '');
           const extractNums = (s: string) => s.match(/-?\d+\.?\d*/g)?.join(',') ?? s;
 
-          correct =
-            userNorm === correctNorm ||
-            extractNums(userNorm) === extractNums(correctNorm);
+          const userNorm    = normalize(selectedAnswer);
+          const correctRaw  = currentProblem.correctAnswer ?? '';
+
+          // Split multi-value answers separated by "or" / "and" / commas
+          // e.g. "$x = -1.00$ or $x = -4.33$"  →  ["-1.00", "-4.33"]
+          const correctParts = correctRaw
+            .split(/\s+or\s+|\s+and\s+|,\s*/i)
+            .map(normalize);
+
+          // User answer is correct if it matches ANY of the expected values
+          correct = correctParts.some(
+            part =>
+              userNorm === part ||
+              extractNums(userNorm) === extractNums(part),
+          );
         }
 
         setIsCorrect(correct);
@@ -185,10 +207,14 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
     } else {
       // Mark daily challenge done if applicable
       if (isDaily === 'true') {
-        await AsyncStorage.setItem(`daily_challenge_${todayKey}`, 'done');
+        try {
+          await api.post(PRACTICE_ENDPOINTS.DAILY_COMPLETE, { topic: topic || 'unknown' });
+        } catch {
+          // Non-critical — don't block the completion alert
+        }
       }
       Alert.alert(
-        isDaily === 'true' ? 'Daily Challenge Complete! 🏆' : 'Practice Complete! 🎉',
+        isDaily === 'true' ? 'Daily Challenge Complete!' : 'Practice Complete!',
         isDaily === 'true'
           ? "You've completed today's challenge. Come back tomorrow for a new one!"
           : "You've completed all problems in this set.",
@@ -322,7 +348,18 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
         {/* Free Response */}
         {currentProblem.type === 'free-response' && (
           <View style={styles.freeResponseContainer}>
-            <Text style={[styles.freeResponseLabel, { color: PR.textLight }]}>Type your answer:</Text>
+            <View style={styles.freeResponseLabelRow}>
+              <Text style={[styles.freeResponseLabel, { color: PR.textLight }]}>Type your answer:</Text>
+              {!showExplanation && (
+                <TouchableOpacity
+                  style={[styles.calcButton, { backgroundColor: PR.surface }]}
+                  onPress={() => setShowCalculator(true)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.calcButtonText, { color: darkMode ? '#a5b4fc' : '#4b41e1' }]}>🧮 Calculator</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             <TextInput
               style={[styles.freeResponseInput, { backgroundColor: PR.inputBg, borderColor: PR.inputBorder, color: PR.text },
                 showExplanation && isCorrect  && { backgroundColor: PR.inputCorrectBg, borderColor: PR.inputCorrectBorder },
@@ -334,12 +371,20 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
               onChangeText={(text) => !showExplanation && setSelectedAnswer(text)}
               editable={!showExplanation}
               autoCapitalize="none"
-              keyboardType="default"
+              keyboardType="decimal-pad"
             />
+            {!showExplanation && (
+              <MathToolbar
+                darkMode={darkMode}
+                onInsert={(sym) => !showExplanation && setSelectedAnswer((prev) => (prev ?? '') + sym)}
+              />
+            )}
             {showExplanation && !isCorrect && (
               <View style={[styles.correctAnswerHint, { backgroundColor: PR.correctAnswerHintBg }]}>
                 <Ionicons name="checkmark-circle" size={16} color={PR.correctText} />
-                <Text style={[styles.correctAnswerText, { color: PR.correctAnswerHintText }]}>Correct answer: {currentProblem.correctAnswer}</Text>
+                <Text style={[styles.correctAnswerText, { color: PR.correctAnswerHintText }]}>
+                  Correct answer: {(currentProblem.correctAnswer ?? '').replace(/\$([^$]+)\$/g, '$1')}
+                </Text>
               </View>
             )}
           </View>
@@ -463,6 +508,14 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
         )}
       </View>
       <View style={{ height: 30 }} />
+
+      {/* Scientific Calculator */}
+      <ScientificCalculator
+        visible={showCalculator}
+        onClose={() => setShowCalculator(false)}
+        onUseResult={(val) => setSelectedAnswer(val)}
+        darkMode={darkMode}
+      />
     </View>
   );
 }
@@ -638,11 +691,25 @@ const styles = StyleSheet.create({
   freeResponseContainer: {
     marginBottom: 24,
   },
+  freeResponseLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
   freeResponseLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: Colors.textLight,
-    marginBottom: 12,
+  },
+  calcButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  calcButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   freeResponseInput: {
     backgroundColor: Colors.white,

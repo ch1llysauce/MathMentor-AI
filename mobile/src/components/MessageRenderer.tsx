@@ -1,21 +1,19 @@
 /**
  * MessageRenderer
  *
- * Renders AI/lesson chat message text with:
- * - **bold** markdown support
- * - Display LaTeX blocks: $$...$$ via KaTeX WebView (fixed height, no jiggle)
- * - Inline LaTeX: $...$ rendered as styled monospace text (no WebView — avoids jiggle)
- * - Numbered lists (1. item)
- * - Bullet lists (- item or * item)
- * - Plain text with dark mode support
+ * Renders math-heavy text with zero WebView usage — pure React Native Text.
  *
- * Usage:
- *   <MessageRenderer content={message.content} isUser={false} textColor="#091426" />
+ * Handles:
+ * - $$...$$ display blocks  → cleaned, styled in a distinct block
+ * - $...$ inline math       → cleaned, styled monospace inline
+ * - Bare \command tokens    → converted to Unicode (π, θ, √, ×, etc.)
+ * - **bold** markdown
+ * - Numbered and bullet lists
+ * - Plain paragraphs
  */
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { WebView } from 'react-native-webview';
 import { useTheme } from '@/context/ThemeContext';
 
 interface Props {
@@ -25,92 +23,121 @@ interface Props {
   fontSize?: number;
 }
 
-// ─── KaTeX display block HTML ─────────────────────────────────────────────────
-function makeKatexHtml(latex: string, bgColor: string, fgColor: string): string {
-  return `<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<style>
-  html, body { margin:0; padding:0; background:${bgColor}; overflow:hidden; }
-  #math { padding: 6px 4px; display:flex; justify-content:center; }
-  .katex { font-size:15px; color:${fgColor}; }
-  .katex-display { margin:0; }
-</style>
-</head>
-<body>
-<div id="math"></div>
-<script>
-  try {
-    katex.render(${JSON.stringify(latex)}, document.getElementById('math'), {
-      displayMode: true,
-      throwOnError: false
-    });
-  } catch(e) {
-    document.getElementById('math').innerText = ${JSON.stringify(latex)};
-  }
-  // Post rendered height once, after fonts settle
-  setTimeout(function() {
-    var h = document.getElementById('math').scrollHeight;
-    window.ReactNativeWebView && window.ReactNativeWebView.postMessage(String(h + 16));
-  }, 120);
-</script>
-</body>
-</html>`;
+// ─── Subscript digit helper ───────────────────────────────────────────────────
+const SUB_DIGITS: Record<string, string> = {
+  '0':'₀','1':'₁','2':'₂','3':'₃','4':'₄',
+  '5':'₅','6':'₆','7':'₇','8':'₈','9':'₉',
+};
+function toSubscript(s: string): string {
+  // Convert digit strings to Unicode subscripts; leave letters as-is with underscore
+  const allDigits = /^\d+$/.test(s);
+  if (allDigits) return s.split('').map(c => SUB_DIGITS[c] ?? c).join('');
+  return `_${s}`;
 }
 
-// ─── Display LaTeX block (WebView, fixed initial height, one resize) ──────────
-function DisplayLatexBlock({
-  latex,
-  bgColor,
-  fgColor,
-}: {
-  latex: string;
-  bgColor: string;
-  fgColor: string;
-}) {
-  const [height, setHeight] = useState(56);
-  const html = useMemo(
-    () => makeKatexHtml(latex, bgColor, fgColor),
-    // Only recompute when content or colors actually change — not on every parent re-render
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [latex, bgColor, fgColor]
-  );
+// ─── Bare LaTeX → readable Unicode/text ──────────────────────────────────────
+const BARE_LATEX_MAP: [RegExp, string | ((...args: string[]) => string)][] = [
+  // Multi-arg commands first
+  [/\\frac\{([^}]+)\}\{([^}]+)\}/g, (_, num, den) => {
+    // Render as "num/den" — wrap in parens only if either part is compound
+    const needsParens = (s: string) => /[+\-]/.test(s);
+    const n = needsParens(num) ? `(${num})` : num;
+    const d = needsParens(den) ? `(${den})` : den;
+    return `${n}/${d}`;
+  }],
+  [/\\sqrt\{([^}]+)\}/g,            '√($1)'],
+  [/\\text\{([^}]+)\}/g,            '$1'],
+  // log with base: \log_{5}(x) → log₅(x)
+  [/\\log_\{([^}]+)\}/g, (_: string, base: string) => `log${toSubscript(base)}`],
+  [/\\log_([0-9a-zA-Z])/g, (_: string, base: string) => `log${toSubscript(base)}`],
+  // subscript: _{n} → Unicode subscript digits where possible
+  [/_\{([^}]+)\}/g, (_: string, sub: string) => toSubscript(sub)],
+  [/_([0-9])/g,     (_: string, d: string)   => toSubscript(d)],
+  // superscript: ^{n}
+  [/\^\{([^}]+)\}/g, (_: string, sup: string) => `^${sup}`],
+  [/\^([0-9])/g,    (_: string, d: string)   => `^${d}`],
+  // Brackets
+  [/\\left\(/g,   '('],  [/\\right\)/g,  ')'],
+  [/\\left\[/g,   '['],  [/\\right\]/g,  ']'],
+  [/\\left\\{/g,  '{'],  [/\\right\\}/g, '}'],
+  // Operators
+  [/\\times/g,    '×'],  [/\\cdot/g,     '·'],
+  [/\\div/g,      '÷'],  [/\\pm/g,       '±'],
+  [/\\mp/g,       '∓'],
+  // Relations
+  [/\\neq/g,      '≠'],  [/\\leq/g,      '≤'],
+  [/\\geq/g,      '≥'],  [/\\approx/g,   '≈'],
+  [/\\equiv/g,    '≡'],  [/\\sim/g,      '~'],
+  // Arrows
+  [/\\Rightarrow/g, '⇒'], [/\\Leftarrow/g,  '⇐'],
+  [/\\rightarrow/g, '→'], [/\\leftarrow/g,  '←'],
+  [/\\Leftrightarrow/g, '⟺'],
+  // Greek letters
+  [/\\pi/g,       'π'],  [/\\theta/g,    'θ'],
+  [/\\alpha/g,    'α'],  [/\\beta/g,     'β'],
+  [/\\gamma/g,    'γ'],  [/\\delta/g,    'δ'],
+  [/\\epsilon/g,  'ε'],  [/\\zeta/g,     'ζ'],
+  [/\\eta/g,      'η'],  [/\\lambda/g,   'λ'],
+  [/\\mu/g,       'μ'],  [/\\nu/g,       'ν'],
+  [/\\xi/g,       'ξ'],  [/\\rho/g,      'ρ'],
+  [/\\sigma/g,    'σ'],  [/\\tau/g,      'τ'],
+  [/\\phi/g,      'φ'],  [/\\chi/g,      'χ'],
+  [/\\psi/g,      'ψ'],  [/\\omega/g,    'ω'],
+  [/\\Gamma/g,    'Γ'],  [/\\Delta/g,    'Δ'],
+  [/\\Theta/g,    'Θ'],  [/\\Lambda/g,   'Λ'],
+  [/\\Pi/g,       'Π'],  [/\\Sigma/g,    'Σ'],
+  [/\\Omega/g,    'Ω'],
+  // Trig functions
+  [/\\arctan/g,   'arctan'], [/\\arcsin/g, 'arcsin'],
+  [/\\arccos/g,   'arccos'], [/\\sin/g,    'sin'],
+  [/\\cos/g,      'cos'],    [/\\tan/g,    'tan'],
+  [/\\cot/g,      'cot'],    [/\\sec/g,    'sec'],
+  [/\\csc/g,      'csc'],
+  // Log/misc
+  // Plain-text log with attached base: log2(x) → log₂(x), log10(x) → log₁₀(x)
+  [/\blog(\d+)\b/g, (_: string, base: string) => `log${toSubscript(base)}`],
+  [/\\log/g,      'log'],   [/\\ln/g,     'ln'],
+  [/\\exp/g,      'exp'],   [/\\lim/g,    'lim'],
+  [/\\infty/g,    '∞'],     [/\\emptyset/g, '∅'],
+  [/\\sqrt/g,     '√'],
+  // Superscript shorthands (^2, ^3)
+  [/\^2/g, '²'], [/\^3/g, '³'],
+  // Spacing commands
+  [/\\!/g,  ''],  [/\\,/g,  ' '],
+  [/\\;/g,  ' '], [/\\:/g,  ' '],
+  [/\\ /g,  ' '],
+  // Strip remaining bare braces
+  [/\{([^}]*)\}/g, '$1'],
+  // Any remaining lone backslash-word
+  [/\\[a-zA-Z]+/g, ''],
+];
 
-  return (
-    <WebView
-      source={{ html }}
-      style={{ width: '100%', height, backgroundColor: 'transparent' }}
-      scrollEnabled={false}
-      originWhitelist={['*']}
-      javaScriptEnabled
-      onMessage={(e) => {
-        const h = parseInt(e.nativeEvent.data, 10);
-        if (!isNaN(h) && h > 0) setHeight(h);
-      }}
-    />
-  );
+function cleanLatex(raw: string): string {
+  let s = raw;
+  for (const [re, rep] of BARE_LATEX_MAP) {
+    s = s.replace(re, rep as string);
+  }
+  return s.trim();
 }
 
 // ─── Block types ──────────────────────────────────────────────────────────────
 type Block =
-  | { type: 'display-latex'; latex: string }
-  | { type: 'bullet'; text: string }
-  | { type: 'numbered'; n: number; text: string }
-  | { type: 'paragraph'; text: string };
+  | { type: 'display-math'; text: string }
+  | { type: 'bullet';       text: string }
+  | { type: 'numbered';     n: number; text: string }
+  | { type: 'paragraph';    text: string };
 
-// ─── Parse $$...$$ display blocks, then split remainder into line-blocks ──────
 function parseBlocks(content: string): Block[] {
   const blocks: Block[] = [];
+
+  // Split on $$...$$ first
   const displayRe = /\$\$([\s\S]+?)\$\$/g;
   let last = 0;
   let m: RegExpExecArray | null;
 
   while ((m = displayRe.exec(content)) !== null) {
     if (m.index > last) parseLineBlocks(content.slice(last, m.index), blocks);
-    blocks.push({ type: 'display-latex', latex: m[1].trim() });
+    blocks.push({ type: 'display-math', text: cleanLatex(m[1].trim()) });
     last = m.index + m[0].length;
   }
   if (last < content.length) parseLineBlocks(content.slice(last), blocks);
@@ -129,47 +156,63 @@ function parseLineBlocks(text: string, out: Block[]) {
     if (!t) { flush(); continue; }
     const bullet = t.match(/^[-*•]\s+(.+)$/);
     const num    = t.match(/^(\d+)\.\s+(.+)$/);
-    if (bullet)      { flush(); out.push({ type: 'bullet',   text: bullet[1] }); }
-    else if (num)    { flush(); out.push({ type: 'numbered', n: parseInt(num[1]), text: num[2] }); }
-    else             { para += (para ? ' ' : '') + t; }
+    if (bullet)   { flush(); out.push({ type: 'bullet',   text: bullet[1] }); }
+    else if (num) { flush(); out.push({ type: 'numbered', n: parseInt(num[1]), text: num[2] }); }
+    else          { para += (para ? ' ' : '') + t; }
   }
   flush();
 }
 
-// ─── Inline span renderer: **bold**, $inline LaTeX$ (as styled text), plain ──
+// ─── Inline text: **bold** + $math$ + plain ──────────────────────────────────
 function InlineText({
   text,
   color,
   fontSize,
+  mathBg,
 }: {
   text: string;
   color: string;
   fontSize: number;
+  mathBg: string;
 }) {
-  // Split on **bold** and $inline$ patterns
-  const parts: Array<{ t: 'plain' | 'bold' | 'math'; v: string }> = [];
-  const re = /(\*\*(.+?)\*\*|\$([^$\n]+?)\$)/g;
-  let last = 0, m: RegExpExecArray | null;
+  type Part = { t: 'plain' | 'bold' | 'math'; v: string };
+  const parts: Part[] = [];
+  const re = /(\*\*(.+?)\*\*|\$(?!\$)([^$\n]+?)\$)/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
 
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) parts.push({ t: 'plain', v: text.slice(last, m.index) });
     if (m[0].startsWith('**')) parts.push({ t: 'bold', v: m[2] });
-    else                       parts.push({ t: 'math', v: m[3] });
+    else                        parts.push({ t: 'math', v: cleanLatex(m[3]) });
     last = m.index + m[0].length;
   }
-  if (last < text.length) parts.push({ t: 'plain', v: text.slice(last) });
+  if (last < text.length) parts.push({ t: 'plain', v: cleanLatex(text.slice(last)) });
 
   return (
-    <Text style={{ color, fontSize, lineHeight: fontSize * 1.6, flexShrink: 1 }}>
+    <Text style={{ color, fontSize, lineHeight: fontSize * 1.65, flexShrink: 1 }}>
       {parts.map((p, i) => {
         if (p.t === 'bold') {
-          return <Text key={i} style={{ fontWeight: '700', color }}>{p.v}</Text>;
+          return (
+            <Text key={i} style={{ fontWeight: '700', color }}>
+              {p.v}
+            </Text>
+          );
         }
         if (p.t === 'math') {
-          // Inline math: monospace block — avoids WebView jiggle entirely
           return (
-            <Text key={i} style={{ fontFamily: 'monospace', color, backgroundColor: 'rgba(128,128,128,0.12)', fontSize: fontSize - 1 }}>
-              {' '}{p.v}{' '}
+            <Text
+              key={i}
+              style={{
+                fontFamily: 'monospace',
+                color,
+                backgroundColor: mathBg,
+                fontSize: fontSize - 1,
+                paddingHorizontal: 3,
+                borderRadius: 3,
+              }}
+            >
+              {p.v}
             </Text>
           );
         }
@@ -188,20 +231,34 @@ export default function MessageRenderer({
 }: Props) {
   const { darkMode } = useTheme();
 
-  // Resolve colors
-  const resolvedTextColor = textColor ?? (isUser ? '#ffffff' : (darkMode ? '#f0f0f0' : '#091426'));
-  const latexBg  = isUser ? '#4b41e1' : (darkMode ? '#1a1a1a' : '#ffffff');
-  const latexFg  = isUser ? '#ffffff' : (darkMode ? '#f0f0f0' : '#091426');
+  const resolvedColor = textColor ?? (isUser ? '#ffffff' : (darkMode ? '#f0f0f0' : '#091426'));
+  const mathBg  = isUser
+    ? 'rgba(255,255,255,0.15)'
+    : (darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(75,65,225,0.08)');
+  const displayBg = isUser
+    ? 'rgba(255,255,255,0.1)'
+    : (darkMode ? '#242424' : '#f0eeff');
+  const displayColor = isUser ? '#ffffff' : (darkMode ? '#c4b5fd' : '#4b41e1');
 
   const blocks = useMemo(() => parseBlocks(content), [content]);
 
   return (
     <View style={styles.container}>
       {blocks.map((block, i) => {
-        if (block.type === 'display-latex') {
+        if (block.type === 'display-math') {
           return (
-            <View key={i} style={styles.displayLatexWrap}>
-              <DisplayLatexBlock latex={block.latex} bgColor={latexBg} fgColor={latexFg} />
+            <View key={i} style={[styles.displayBlock, { backgroundColor: displayBg }]}>
+              <Text
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: fontSize + 1,
+                  color: displayColor,
+                  textAlign: 'center',
+                  lineHeight: (fontSize + 1) * 1.6,
+                }}
+              >
+                {block.text}
+              </Text>
             </View>
           );
         }
@@ -209,9 +266,9 @@ export default function MessageRenderer({
         if (block.type === 'bullet') {
           return (
             <View key={i} style={styles.listRow}>
-              <Text style={[styles.bulletDot, { color: resolvedTextColor, fontSize }]}>{'•'}</Text>
+              <Text style={[styles.bullet, { color: resolvedColor, fontSize }]}>•</Text>
               <View style={styles.listContent}>
-                <InlineText text={block.text} color={resolvedTextColor} fontSize={fontSize} />
+                <InlineText text={block.text} color={resolvedColor} fontSize={fontSize} mathBg={mathBg} />
               </View>
             </View>
           );
@@ -220,9 +277,9 @@ export default function MessageRenderer({
         if (block.type === 'numbered') {
           return (
             <View key={i} style={styles.listRow}>
-              <Text style={[styles.bulletDot, { color: resolvedTextColor, fontSize }]}>{block.n}.</Text>
+              <Text style={[styles.bullet, { color: resolvedColor, fontSize }]}>{block.n}.</Text>
               <View style={styles.listContent}>
-                <InlineText text={block.text} color={resolvedTextColor} fontSize={fontSize} />
+                <InlineText text={block.text} color={resolvedColor} fontSize={fontSize} mathBg={mathBg} />
               </View>
             </View>
           );
@@ -231,7 +288,7 @@ export default function MessageRenderer({
         // paragraph
         return (
           <View key={i} style={i > 0 ? styles.paraGap : undefined}>
-            <InlineText text={block.text} color={resolvedTextColor} fontSize={fontSize} />
+            <InlineText text={block.text} color={resolvedColor} fontSize={fontSize} mathBg={mathBg} />
           </View>
         );
       })}
@@ -244,17 +301,18 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     gap: 4,
   },
-  displayLatexWrap: {
-    marginVertical: 4,
-    borderRadius: 8,
-    overflow: 'hidden',
+  displayBlock: {
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginVertical: 6,
   },
   listRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 6,
   },
-  bulletDot: {
+  bullet: {
     minWidth: 20,
     lineHeight: 24,
   },

@@ -11,11 +11,12 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/colors';
 import diagnosticService from '@/services/diagnosticService';
 import { lessonService } from '@/services/lessonService';
 import { useTheme } from '@/context/ThemeContext';
+import api from '@/services/api';
+import { PRACTICE_ENDPOINTS } from '@/constants/api';
 
 // Module-level cache so tab re-focuses don't re-fetch from scratch
 let _cachedTopics: Topic[] | null = null;
@@ -60,9 +61,6 @@ export default function PracticeScreen() {
   const [topics, setTopics] = useState<Topic[]>(_cachedTopics ?? []);
 
   // ── Daily Challenge ─────────────────────────────────────────────────────────
-  // Uses today's date as a seed so the topic rotates daily and is the same for
-  // every user. We store completion in AsyncStorage keyed by today's date string.
-  const todayKey = new Date().toISOString().slice(0, 10); // "2026-08-04"
   const DAILY_TOPICS = ['algebra', 'geometry', 'trigonometry'];
   const dailyTopicIndex =
     (new Date().getDate() + new Date().getMonth() * 3) % DAILY_TOPICS.length;
@@ -70,11 +68,15 @@ export default function PracticeScreen() {
   const dailyTopicLabel = dailyTopic.charAt(0).toUpperCase() + dailyTopic.slice(1);
   const [dailyDone, setDailyDone] = useState(false);
 
-  useEffect(() => {
-    AsyncStorage.getItem(`daily_challenge_${todayKey}`).then(val => {
-      if (val === 'done') setDailyDone(true);
-    });
-  }, []);
+  const checkDailyStatus = async () => {
+    try {
+      const res = await api.get(PRACTICE_ENDPOINTS.DAILY_STATUS);
+      setDailyDone(res.data?.data?.done ?? false);
+    } catch {
+      // If offline or error, default to not done so the user isn't blocked
+      setDailyDone(false);
+    }
+  };
 
   const handleDailyChallenge = () => {
     router.push({
@@ -96,6 +98,8 @@ export default function PracticeScreen() {
   // Silently refresh when tab is re-focused (e.g. returning from topic screen)
   useFocusEffect(
     useCallback(() => {
+      // Always re-check daily challenge completion on focus (server-side)
+      checkDailyStatus();
       if (_cachedTopics) loadData(true);
     }, [])
   );

@@ -5,6 +5,7 @@
  */
 
 import PracticeProblem from '../models/PracticeProblem.js';
+import User from '../models/User.js';
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -94,4 +95,45 @@ export const getCategories = (req, res) => {
       note: 'General practice problems are generated client-side. This endpoint only serves lesson-specific problems.',
     },
   });
+};
+
+// ─── GET /api/practice/daily-status ───────────────────────────────────────────
+// Returns whether the current user has completed today's daily challenge.
+
+export const getDailyStatus = async (req, res) => {
+  try {
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const user = await User.findById(req.user._id).select('dailyChallengeCompletions');
+
+    const done = user.dailyChallengeCompletions?.some(c => c.date === todayKey) ?? false;
+
+    res.json({ success: true, data: { done, date: todayKey } });
+  } catch (error) {
+    console.error('Error in getDailyStatus:', error);
+    res.status(500).json({ success: false, message: 'Failed to get daily challenge status' });
+  }
+};
+
+// ─── POST /api/practice/daily-complete ────────────────────────────────────────
+// Marks today's daily challenge as completed for the current user.
+
+export const completeDailyChallenge = async (req, res) => {
+  try {
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const { topic } = req.body;
+
+    const user = await User.findById(req.user._id);
+
+    // Idempotent: only record once per day
+    const alreadyDone = user.dailyChallengeCompletions?.some(c => c.date === todayKey);
+    if (!alreadyDone) {
+      user.dailyChallengeCompletions.push({ date: todayKey, topic: topic || 'unknown' });
+      await user.save();
+    }
+
+    res.json({ success: true, data: { done: true, date: todayKey } });
+  } catch (error) {
+    console.error('Error in completeDailyChallenge:', error);
+    res.status(500).json({ success: false, message: 'Failed to record daily challenge completion' });
+  }
 };

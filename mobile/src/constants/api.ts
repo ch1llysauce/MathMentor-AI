@@ -80,3 +80,10 @@ export const LEARNING_ENDPOINTS = {
   GET_DIAGNOSTIC: '/learning/diagnostic/latest',
   GET_REVIEW: '/learning/review',
 };
+
+export const PRACTICE_ENDPOINTS = {
+  CATEGORIES: '/practice/categories',
+  PROBLEMS: '/practice/problems',
+  DAILY_STATUS: '/practice/daily-status',
+  DAILY_COMPLETE: '/practice/daily-complete',
+};

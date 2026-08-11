@@ -126,7 +126,22 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: null,
         sparse: true  // allows multiple null values but enforces uniqueness for non-null
-    }
+    },
+
+    dailyChallengeCompletions: [{
+        date: {
+            type: String, // stored as "YYYY-MM-DD"
+            required: true
+        },
+        topic: {
+            type: String,
+            required: true
+        },
+        completedAt: {
+            type: Date,
+            default: Date.now
+        }
+    }]
 
 }, {
     timestamps: true
