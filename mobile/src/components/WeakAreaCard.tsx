@@ -39,7 +39,7 @@ export const WeakAreaCard: React.FC<WeakAreaCardProps> = ({
           <View style={[styles.progressBar, { width: `${masteryPercentage}%` }]} />
         </View>
         
-        <TouchableOpacity style={styles.actionButton}>
+        <TouchableOpacity style={styles.actionButton} onPress={onPress}>
           <Text style={[styles.actionText, { color: reviewColor }]}>REVIEW NOW</Text>
         </TouchableOpacity>
       </View>

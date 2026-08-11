@@ -81,7 +81,14 @@ export default function DashboardScreen() {
   }>(_dashCache.recommendationProgress);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingData, setLoadingData] = useState(!_dashCache.data);
-  const [resumeLoading, setResumeLoading] = useState(false);
+  // Tracks whether the user has a diagnostic — starts from the stored flag
+  // but gets corrected by the live API response (fixes stale-cache issue).
+  const [diagnosticDone, setDiagnosticDone] = useState<boolean>(
+    !!user?.diagnosticCompleted
+  );
+  // Prevents the featured card from rendering until at least one API fetch
+  // has confirmed the diagnostic/nextStep state, eliminating the 1-second flash.
+  const [cardReady, setCardReady] = useState<boolean>(dashCache.cardReady);
 
   // Default fallback data
   const defaultTopics: TopicProgress[] = [
@@ -101,47 +108,12 @@ export default function DashboardScreen() {
 
   // Handle Diagnostic button press
   const handleDiagnosticPress = () => {
-    if (user?.diagnosticCompleted) {
+    if (diagnosticDone) {
       // User has results — show their diagnostic tab
       router.push('/(tabs)/diagnostic');
     } else {
       // No diagnostic yet — send them to the test
       router.push('/diagnostic/retake');
-    }
-  };
-
-  // Handle Resume Tutoring button press
-  const handleResumeTutoring = async () => {
-    if (!user?.diagnosticCompleted) {
-      // No diagnostic done — prompt them to take it first
-      router.push('/diagnostic/retake');
-      return;
-    }
-
-    try {
-      setResumeLoading(true);
-      const response = await api.get(PROGRESS_ENDPOINTS.NEXT_RECOMMENDATION);
-      const recommendation = response.data.data;
-
-      // Navigate to the recommended topic
-      const topicName = recommendation.nextStep?.topic || recommendation.topic || 'Algebra';
-      const mastery = recommendation.nextStep?.currentScore ?? recommendation.masteryLevel ?? 0;
-      const subtopicFilter = recommendation.nextStep?.subtopic ?? '';
-
-      router.push({
-        pathname: '/practice/topic',
-        params: {
-          topicName,
-          mastery: mastery.toString(),
-          subtopicFilter,
-        },
-      });
-    } catch (error: any) {
-      // If no recommendation available (e.g. no diagnostic), fall back to practice tab
-      console.warn('Resume tutoring fallback:', error?.message);
-      router.push('/(tabs)/practice');
-    } finally {
-      setResumeLoading(false);
     }
   };
 
@@ -161,6 +133,12 @@ export default function DashboardScreen() {
         diagnosticStats.accuracyCorrect,
         diagnosticStats.accuracyTotal,
       );
+
+      // diagnosticStats returns accuracy > 0 only when a diagnostic exists
+      // Use it as authoritative source — fixes stale user.diagnosticCompleted flag
+      if (diagnosticStats.accuracyTotal > 0) {
+        setDiagnosticDone(true);
+      }
 
       // Merge with default topics to ensure all 3 topics are shown
       const mergedTopics = defaultTopics.map(defaultTopic => {
@@ -192,10 +170,14 @@ export default function DashboardScreen() {
       });
     }
 
-    // Fetch next recommendation if diagnostic is done
+    // Fetch next recommendation — a successful response also confirms a diagnostic exists
     try {
       const recResponse = await api.get(PROGRESS_ENDPOINTS.NEXT_RECOMMENDATION);
       const rec = recResponse.data.data;
+
+      // Any valid response from this endpoint means a diagnostic was completed
+      setDiagnosticDone(true);
+
       if (rec?.nextStep) {
         const ns = {
           topic: rec.nextStep.topic,
@@ -216,7 +198,14 @@ export default function DashboardScreen() {
       };
       setRecommendationProgress(recProgress);
       _dashCache.recommendationProgress = recProgress;
+    } catch (recErr: any) {
+      // 404 means no diagnostic yet — don't override a true flag already set above
+      if (recErr?.response?.status === 404) {
+        // Leave diagnosticDone as-is (may already be true from diagnosticStats)
+      }
     } finally {
+      setCardReady(true);
+      dashCache.cardReady = true;
       if (!silent) setLoadingData(false);
       setRefreshing(false);
     }
@@ -265,7 +254,11 @@ export default function DashboardScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: D.headerBg, borderBottomColor: D.border }]}>
         <View style={styles.headerLeft}>
-          <View style={[styles.avatar, { borderColor: darkMode ? '#312e81' : '#e2dfff' }]}>
+          <TouchableOpacity
+            style={[styles.avatar, { borderColor: darkMode ? '#312e81' : '#e2dfff' }]}
+            onPress={() => router.push('/(tabs)/profile')}
+            activeOpacity={0.8}
+          >
             {user.profileImage ? (
               <Image
                 source={{ uri: user.profileImage }}
@@ -275,12 +268,9 @@ export default function DashboardScreen() {
             ) : (
               <Ionicons name="person" size={20} color="#ffffff" />
             )}
-          </View>
+          </TouchableOpacity>
           <Text style={[styles.logoText, { color: D.text }]}>MathMentor AI</Text>
         </View>
-        <TouchableOpacity style={[styles.insightsButton, { backgroundColor: D.insightsBtnBg }]}>
-          <Ionicons name="stats-chart" size={24} color={D.text} />
-        </TouchableOpacity>
       </View>
 
       <ScrollView 
@@ -305,24 +295,14 @@ export default function DashboardScreen() {
             <Text style={[styles.welcomeSubtitle, { color: D.textLight }]}>Ready to solve some problems today?</Text>
           </View>
           <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={[styles.primaryButton, resumeLoading && styles.primaryButtonDisabled]}
-              onPress={handleResumeTutoring}
-              disabled={resumeLoading}
-            >
-              {resumeLoading ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <Ionicons name="school" size={20} color="#ffffff" />
-              )}
-              <Text style={styles.primaryButtonText}>
-                {resumeLoading ? 'Loading...' : 'Resume Tutoring'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.secondaryButton, { backgroundColor: D.secondaryBtnBg }]} onPress={handleDiagnosticPress}>
+            <View style={[styles.primaryButton, styles.primaryButtonDisabled]}>
+              <Ionicons name="school" size={20} color="#ffffff" />
+              <Text style={styles.primaryButtonText}>Resume Tutoring</Text>
+            </View>
+            <TouchableOpacity style={[styles.primaryButton, { backgroundColor: D.secondaryBtnBg }]} onPress={handleDiagnosticPress}>
               <Ionicons name="analytics" size={20} color={D.secondaryBtnText} />
-              <Text style={[styles.secondaryButtonText, { color: D.secondaryBtnText }]}>
-                {user?.diagnosticCompleted ? 'Diagnostic' : 'Take Diagnostic'}
+              <Text style={[styles.primaryButtonText, { color: D.secondaryBtnText }]}>
+                {diagnosticDone ? 'Diagnostic' : 'Take Diagnostic'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -331,7 +311,15 @@ export default function DashboardScreen() {
         {/* Main Content Grid */}
         <View style={styles.mainGrid}>
           {/* Featured Topic Card */}
-           {nextStep ? (
+          {!cardReady ? (
+            /* Skeleton — shown for the brief moment before the first API response */
+            <View style={[styles.featuredCard, styles.featuredCardSkeleton]}>
+              <View style={styles.skeletonBadge} />
+              <View style={styles.skeletonTitle} />
+              <View style={styles.skeletonDesc} />
+              <View style={styles.skeletonDescShort} />
+            </View>
+          ) : nextStep ? (
             <TouchableOpacity
               style={styles.featuredCard}
               activeOpacity={0.92}
@@ -388,7 +376,7 @@ export default function DashboardScreen() {
                 />
               </View>
             </TouchableOpacity>
-          ) : user?.diagnosticCompleted ? (
+          ) : diagnosticDone ? (
             /* Diagnostic done but no next step — check if user has any progress */
             <TouchableOpacity
               style={styles.featuredCard}
@@ -480,9 +468,9 @@ export default function DashboardScreen() {
               {stats.accuracyTotal > 0 ? (
                 <>
                   <Text style={[styles.statValue, { color: D.text }]}>
-                    {`${stats.accuracy}%`} {stats.accuracyCorrect}/{stats.accuracyTotal}
+                    {`${stats.accuracy}%`} <Text style={[styles.statScore, { color: D.textLight }]}>{stats.accuracyCorrect}/{stats.accuracyTotal}</Text>
                   </Text>
-                  <Text style={[styles.statSource, { color: D.textLight }]}>diagnostic</Text>
+                  <Text style={[styles.statSource, { color: D.textLight }]}>Diagnostic Results</Text>
                 </>
               ) : (
                 <Text style={[styles.statValue, { color: D.text }]}>—</Text>
@@ -643,6 +631,34 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 6,
+  },
+  featuredCardSkeleton: {
+    justifyContent: 'flex-start',
+    gap: 16,
+  },
+  skeletonBadge: {
+    width: 120,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  skeletonTitle: {
+    width: '70%',
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  skeletonDesc: {
+    width: '100%',
+    height: 16,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  skeletonDescShort: {
+    width: '60%',
+    height: 16,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   featuredBadge: {
     alignSelf: 'flex-start',
@@ -832,6 +848,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#091426',
   },
+  statScore: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#091426',
+  }, 
   statSource: {
     fontSize: 11,
     color: '#45474c',

@@ -299,6 +299,7 @@ export default function DiagnosticScreen() {
                     params: {
                       topicName: weak.topic,
                       mastery: weak.score.toString(),
+                      subtopicFilter: weak.subtopic ?? '',
                     },
                   })
                 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,13 +9,19 @@ import { useTheme } from '@/context/ThemeContext';
 import MessageRenderer from '@/components/MessageRenderer';
 
 export default function LessonScreen() {
-  const { lessonId, topicName, mastery } = useLocalSearchParams<{
+  const params = useLocalSearchParams<{
     lessonId: string;
     topicName?: string;
     mastery?: string;
   }>();
   const router = useRouter();
   const { darkMode } = useTheme();
+
+  // Use local state for the active lessonId so prev/next swaps content
+  // in-place without triggering a navigation transition.
+  const [activeLessonId, setActiveLessonId] = useState(params.lessonId);
+  const topicName = params.topicName;
+  const mastery = params.mastery;
 
   const L = {
     bg: darkMode ? '#0a0a0a' : Colors.background,
@@ -42,12 +48,15 @@ export default function LessonScreen() {
   const [startTime] = useState(Date.now());
   const [lessonList, setLessonList] = useState<Lesson[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  // Track whether the next fetch is triggered by prev/next navigation
+  const isNavigationFetch = useRef(false);
 
   useEffect(() => {
-    if (lessonId) {
-      fetchLesson();
+    if (activeLessonId) {
+      fetchLesson(isNavigationFetch.current);
+      isNavigationFetch.current = false;
     }
-  }, [lessonId]);
+  }, [activeLessonId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -57,26 +66,27 @@ export default function LessonScreen() {
     }, [lesson])
   );
 
-  const fetchLessonList = async (topic: string) => {
+  const fetchLessonList = async (topic: string, setIndex = true) => {
     try {
       const data = await lessonService.getLessons(topic);
       const lessons = data.lessons;
       setLessonList(lessons);
-      const idx = lessons.findIndex(l => l._id === lessonId);
-      if (idx >= 0) {
-        setCurrentIndex(idx);
+      if (setIndex) {
+        const idx = lessons.findIndex((l: any) => l._id === activeLessonId);
+        if (idx >= 0) setCurrentIndex(idx);
       }
     } catch (error) {
       console.error('Error fetching lesson list:', error);
     }
   };
 
-  const fetchLesson = async () => {
+  const fetchLesson = async (isNavigation = false) => {
     try {
       setLoading(true);
-      const data = await lessonService.getLesson(lessonId);
+      const data = await lessonService.getLesson(activeLessonId);
       setLesson({ ...data.lesson, userProgress: data.progress });
-      fetchLessonList(data.lesson.topic);
+      // On navigation (prev/next), don't overwrite the eagerly-set currentIndex
+      fetchLessonList(data.lesson.topic, !isNavigation);
     } catch (error: any) {
       console.error('Error fetching lesson:', error);
       Alert.alert('Error', 'Failed to load lesson');
@@ -128,15 +138,17 @@ export default function LessonScreen() {
 
   const handlePreviousLesson = () => {
     if (currentIndex > 0 && lessonList[currentIndex - 1]) {
-      const prevLesson = lessonList[currentIndex - 1];
-      router.replace(`/practice/lesson?lessonId=${prevLesson._id}`);
+      setCurrentIndex(currentIndex - 1);
+      isNavigationFetch.current = true;
+      setActiveLessonId(lessonList[currentIndex - 1]._id);
     }
   };
 
   const handleNextLesson = () => {
     if (currentIndex < lessonList.length - 1 && lessonList[currentIndex + 1]) {
-      const nextLesson = lessonList[currentIndex + 1];
-      router.replace(`/practice/lesson?lessonId=${nextLesson._id}`);
+      setCurrentIndex(currentIndex + 1);
+      isNavigationFetch.current = true;
+      setActiveLessonId(lessonList[currentIndex + 1]._id);
     }
   };
 
@@ -308,25 +320,25 @@ export default function LessonScreen() {
         </TouchableOpacity>
         <View style={styles.navButtonsContainer}>
           <TouchableOpacity
-            style={[styles.navButton, { backgroundColor: L.navBtnBg }, currentIndex === 0 && styles.navButtonDisabled]}
+            style={[styles.navButton, { backgroundColor: L.navBtnBg }, (currentIndex === 0 || lessonList.length === 0) && styles.navButtonDisabled]}
             onPress={handlePreviousLesson}
-            disabled={currentIndex === 0}
+            disabled={currentIndex === 0 || lessonList.length === 0}
             activeOpacity={0.7}
           >
-            <Ionicons name="arrow-back" size={20} color={currentIndex === 0 ? L.textLight : L.primary} />
-            <Text style={[styles.navButtonText, { color: currentIndex === 0 ? L.textLight : L.primary }]}>Previous</Text>
+            <Ionicons name="arrow-back" size={20} color={(currentIndex === 0 || lessonList.length === 0) ? L.textLight : L.primary} />
+            <Text style={[styles.navButtonText, { color: (currentIndex === 0 || lessonList.length === 0) ? L.textLight : L.primary }]}>Previous</Text>
           </TouchableOpacity>
           <Text style={[styles.navIndicator, { color: L.textLight }]}>
-            {currentIndex + 1} / {lessonList.length}
+            {lessonList.length > 0 ? `${currentIndex + 1} / ${lessonList.length}` : '—'}
           </Text>
           <TouchableOpacity
-            style={[styles.navButton, { backgroundColor: L.navBtnBg }, currentIndex >= lessonList.length - 1 && styles.navButtonDisabled]}
+            style={[styles.navButton, { backgroundColor: L.navBtnBg }, (currentIndex >= lessonList.length - 1 || lessonList.length === 0) && styles.navButtonDisabled]}
             onPress={handleNextLesson}
-            disabled={currentIndex >= lessonList.length - 1}
+            disabled={currentIndex >= lessonList.length - 1 || lessonList.length === 0}
             activeOpacity={0.7}
           >
-            <Text style={[styles.navButtonText, { color: currentIndex >= lessonList.length - 1 ? L.textLight : L.primary }]}>Next</Text>
-            <Ionicons name="arrow-forward" size={20} color={currentIndex >= lessonList.length - 1 ? L.textLight : L.primary} />
+            <Text style={[styles.navButtonText, { color: (currentIndex >= lessonList.length - 1 || lessonList.length === 0) ? L.textLight : L.primary }]}>Next</Text>
+            <Ionicons name="arrow-forward" size={20} color={(currentIndex >= lessonList.length - 1 || lessonList.length === 0) ? L.textLight : L.primary} />
           </TouchableOpacity>
         </View>
       </View>

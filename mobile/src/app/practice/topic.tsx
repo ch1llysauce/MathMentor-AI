@@ -68,16 +68,34 @@ export default function TopicScreen() {
   const subtopicFilterParam = (params.subtopicFilter as string) || '';
 
   const [selectedTab, setSelectedTab] = useState<TabType>('lessons');
+  // Always start as loading when there's no cache so the unfiltered "All"
+  // view never flashes before the subtopic filter can be applied.
   const [loading, setLoading] = useState(!_topicCache.has(topicName));
   const [lessons, setLessons] = useState<Lesson[]>(_topicCache.get(topicName) ?? []);
   const [practiceSets] = useState<PracticeSet[]>(PRACTICE_SETS);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedModule, setSelectedModule] = useState<string | null>(null);
   const didApplyFilter = useRef(false);
+
+  // Compute initial selectedModule eagerly from cache so the filter is applied
+  // instantly, without waiting for the async fetch to complete.
+  const getInitialModule = (): string | null => {
+    if (!subtopicFilterParam) return null;
+    const cached = _topicCache.get(topicName);
+    if (!cached || cached.length === 0) return null;
+    const allModules = Array.from(new Set(cached.map((l: Lesson) => l.subtopic)));
+    return allModules.find((mod: string) =>
+      mod === subtopicFilterParam ||
+      mod.toLowerCase().includes(subtopicFilterParam.toLowerCase()) ||
+      subtopicFilterParam.toLowerCase().includes(mod.toLowerCase())
+    ) ?? null;
+  };
+
+  const [selectedModule, setSelectedModule] = useState<string | null>(getInitialModule);
 
   // On mount: load data (skip blocking fetch if cache exists) and apply filter once
   useEffect(() => {
-    didApplyFilter.current = false;
+    // If we already applied the filter from cache, mark it done
+    didApplyFilter.current = getInitialModule() !== null || !subtopicFilterParam;
     loadTopicData(!_topicCache.has(topicName) ? false : true);
   }, [topicName]);
 
@@ -250,7 +268,11 @@ export default function TopicScreen() {
         </View>
         <View style={[styles.statDivider, { backgroundColor: T.surface }]} />
         <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: T.primary }]}>{lessons.filter(l => l.completed).length}/{lessons.length}</Text>
+          <Text style={[styles.statValue, { color: T.primary }]}>
+            {lessons.length > 0
+              ? `${lessons.filter(l => l.completed).length}/${lessons.length}`
+              : '—'}
+          </Text>
           <Text style={[styles.statLabel, { color: T.textLight }]}>Lessons</Text>
         </View>
       </View>
@@ -288,6 +310,75 @@ export default function TopicScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Sticky search bar + module chips — lessons tab only */}
+      {selectedTab === 'lessons' && (
+        <View style={[styles.stickyFilters, { backgroundColor: T.bg, borderBottomColor: T.border }]}>
+          {/* Search bar */}
+          <View style={[styles.searchContainer, { backgroundColor: T.card, borderColor: T.border }]}>
+            <Ionicons name="search-outline" size={18} color={T.textLight} />
+            <TextInput
+              style={[styles.searchInput, { color: T.text }]}
+              placeholder="Search lessons..."
+              placeholderTextColor={T.textLight}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              returnKeyType="search"
+              clearButtonMode="while-editing"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close-circle" size={18} color={T.textLight} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Module filter chips */}
+          {moduleNames.length > 1 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipsRow}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.chip,
+                  { backgroundColor: T.surface, borderColor: T.border },
+                  selectedModule === null && { backgroundColor: T.primary, borderColor: T.primary },
+                ]}
+                onPress={() => setSelectedModule(null)}
+              >
+                <Text style={[
+                  styles.chipText,
+                  { color: T.textLight },
+                  selectedModule === null && { color: '#ffffff' },
+                ]}>All</Text>
+              </TouchableOpacity>
+              {moduleNames.map(mod => {
+                const label = mod.includes(': ') ? mod.split(': ')[1] : mod;
+                const active = selectedModule === mod;
+                return (
+                  <TouchableOpacity
+                    key={mod}
+                    style={[
+                      styles.chip,
+                      { backgroundColor: T.surface, borderColor: T.border },
+                      active && { backgroundColor: T.primary, borderColor: T.primary },
+                    ]}
+                    onPress={() => setSelectedModule(active ? null : mod)}
+                  >
+                    <Text style={[
+                      styles.chipText,
+                      { color: T.textLight },
+                      active && { color: '#ffffff' },
+                    ]}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
+        </View>
+      )}
+
       {/* Content */}
       <ScrollView 
         ref={scrollViewRef}
@@ -297,71 +388,6 @@ export default function TopicScreen() {
       >
         {selectedTab === 'lessons' ? (
           <View style={styles.contentSection}>
-            {/* Search bar */}
-            <View style={[styles.searchContainer, { backgroundColor: T.card, borderColor: T.border }]}>
-              <Ionicons name="search-outline" size={18} color={T.textLight} />
-              <TextInput
-                style={[styles.searchInput, { color: T.text }]}
-                placeholder="Search lessons..."
-                placeholderTextColor={T.textLight}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                returnKeyType="search"
-                clearButtonMode="while-editing"
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="close-circle" size={18} color={T.textLight} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Module filter chips */}
-            {moduleNames.length > 1 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipsRow}
-              >
-                <TouchableOpacity
-                  style={[
-                    styles.chip,
-                    { backgroundColor: T.surface, borderColor: T.border },
-                    selectedModule === null && { backgroundColor: T.primary, borderColor: T.primary },
-                  ]}
-                  onPress={() => setSelectedModule(null)}
-                >
-                  <Text style={[
-                    styles.chipText,
-                    { color: T.textLight },
-                    selectedModule === null && { color: '#ffffff' },
-                  ]}>All</Text>
-                </TouchableOpacity>
-                {moduleNames.map(mod => {
-                  // Show just the module name after the colon if it has "Module N: Name" format
-                  const label = mod.includes(': ') ? mod.split(': ')[1] : mod;
-                  const active = selectedModule === mod;
-                  return (
-                    <TouchableOpacity
-                      key={mod}
-                      style={[
-                        styles.chip,
-                        { backgroundColor: T.surface, borderColor: T.border },
-                        active && { backgroundColor: T.primary, borderColor: T.primary },
-                      ]}
-                      onPress={() => setSelectedModule(active ? null : mod)}
-                    >
-                      <Text style={[
-                        styles.chipText,
-                        { color: T.textLight },
-                        active && { color: '#ffffff' },
-                      ]}>{label}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            )}
-
             {/* Results count */}
             {(searchQuery.length > 0 || selectedModule !== null) && (
               <Text style={[styles.resultsCount, { color: T.textLight }]}>
@@ -604,6 +630,7 @@ const styles = StyleSheet.create({
   },
   contentSection: {
     gap: 12,
+    paddingTop: 10
   },
   lessonCard: {
     flexDirection: 'row',
@@ -739,7 +766,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderWidth: 1,
-    marginBottom: 4,
   },
   searchInput: {
     flex: 1,
@@ -749,7 +775,14 @@ const styles = StyleSheet.create({
   chipsRow: {
     gap: 8,
     paddingVertical: 4,
+    paddingBottom: 4,
+  },
+  stickyFilters: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 8,
+    gap: 8,
+    borderBottomWidth: 1,
   },
   chip: {
     paddingHorizontal: 14,

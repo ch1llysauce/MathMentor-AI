@@ -14,9 +14,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import api from '@/services/api';
 import diagnosticService from '@/services/diagnosticService';
+import { authService } from '@/services/authService';
 import { TopicScores } from '@/types/diagnostic';
 import { useTheme } from '@/context/ThemeContext';
 import MessageRenderer from '@/components/MessageRenderer';
+import { useAuth } from '@/hooks/useAuth';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface DiagQuestion {
@@ -106,6 +108,7 @@ function buildTopicScores(
 export default function RetakeDiagnosticScreen() {
   const router = useRouter();
   const { darkMode } = useTheme();
+  const { updateUser } = useAuth();
 
   const RK = {
     bg: darkMode ? '#0a0a0a' : '#f7f9fb',
@@ -224,6 +227,17 @@ export default function RetakeDiagnosticScreen() {
         correctAnswers: totalCorrect,
         timeSpent,
       });
+
+      // Refresh the stored user so diagnosticCompleted flips to true immediately
+      // without requiring the user to log out and back in.
+      try {
+        const profileRes = await authService.getProfile();
+        if (profileRes.success && profileRes.data?.user) {
+          await updateUser({ diagnosticCompleted: true });
+        }
+      } catch {
+        // Non-critical — dashboard will re-check on next focus
+      }
 
       Alert.alert(
         'Diagnostic Complete!',

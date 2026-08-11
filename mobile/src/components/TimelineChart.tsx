@@ -12,91 +12,162 @@ interface TimelineChartProps {
   height?: number;
 }
 
+// Fixed Y-axis ticks (always 0–100 since scores are percentages)
+const Y_TICKS = [100, 75, 50, 25, 0];
+const Y_AXIS_WIDTH = 32;   // px for tick-number column
+const Y_TITLE_WIDTH = 16;  // px for the rotated axis-title column
+const X_TITLE_HEIGHT = 20; // px for the x-axis title row
+
 export const TimelineChart: React.FC<TimelineChartProps> = ({
   data,
-  height = 256
+  height = 256,
 }) => {
+  // Height used for the bar area (date labels already sit inside the 40 px bottom padding)
+  const chartHeight = height - 40;
+
   if (!data || data.length === 0) {
     return (
-      <View style={[styles.container, { height }]}>
+      <View style={[styles.outerColumn, { height: height + X_TITLE_HEIGHT }]}>
         <Text style={styles.noData}>No timeline data available</Text>
       </View>
     );
   }
 
-  const maxScore = Math.max(...data.map(d => d.score), 100);
-  
   return (
-    <ScrollView 
-      horizontal 
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.scrollContent}
-    >
-      <View style={[styles.container, { height }]}>
-        {/* Gridlines */}
-        <View style={styles.gridLineTop} />
-        <View style={styles.gridLineMiddle} />
-        <View style={styles.gridLineBottom} />
-        
-        {/* Bars */}
-        <View style={styles.barsContainer}>
-          {data.map((point, index) => {
-            const barHeight = (point.score / maxScore) * 100;
-            
+    <View style={styles.outerColumn}>
+      {/* ── Row: rotated Y-title + tick numbers + bars ─────────────── */}
+      <View style={[styles.chartRow, { height }]}>
+
+        {/* Rotated Y-axis title */}
+        <View style={[styles.yTitleContainer, { width: Y_TITLE_WIDTH, height: chartHeight }]}>
+          <Text style={styles.yTitle}>Mastery Score (%)</Text>
+        </View>
+
+        {/* Tick-number column */}
+        <View style={[styles.yAxis, { height: chartHeight, width: Y_AXIS_WIDTH }]}>
+          {Y_TICKS.map((tick) => {
+            const topOffset = ((100 - tick) / 100) * chartHeight;
             return (
-              <View key={index} style={styles.barWrapper}>
-                <View style={styles.barContainer}>
-                  <View 
-                    style={[
-                      styles.barBackground,
-                      { height: `${barHeight}%` }
-                    ]}
-                  >
-                    <View style={styles.bar} />
-                  </View>
-                </View>
-                <Text style={styles.label}>{point.date}</Text>
-              </View>
+              <Text key={tick} style={[styles.yLabel, { top: topOffset - 7 }]}>
+                {tick}
+              </Text>
             );
           })}
         </View>
+
+        {/* Scrollable bar area */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          style={styles.scrollArea}
+        >
+          <View style={[styles.chartArea, { height }]}>
+            {/* Gridlines */}
+            {Y_TICKS.map((tick) => {
+              const topOffset = ((100 - tick) / 100) * chartHeight;
+              return (
+                <View
+                  key={tick}
+                  style={[
+                    styles.gridLine,
+                    { top: topOffset },
+                    tick === 0 && styles.gridLineBaseline,
+                  ]}
+                />
+              );
+            })}
+
+            {/* Bars */}
+            <View style={[styles.barsContainer, { paddingBottom: 40 }]}>
+              {data.map((point, index) => {
+                const barHeightPct = Math.min(point.score, 100);
+                return (
+                  <View key={index} style={styles.barWrapper}>
+                    <View style={styles.barContainer}>
+                      <View style={[styles.bar, { height: `${barHeightPct}%` }]} />
+                    </View>
+                    <Text style={styles.dateLabel}>{point.date}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        </ScrollView>
       </View>
-    </ScrollView>
+
+      {/* ── X-axis title row ────────────────────────────────────────── */}
+      <View style={[styles.xTitleRow, { height: X_TITLE_HEIGHT, paddingLeft: Y_TITLE_WIDTH + Y_AXIS_WIDTH + 4 }]}>
+        <Text style={styles.xTitle}>Date</Text>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  // Outer column wraps chart row + x-axis title
+  outerColumn: {
+    flexDirection: 'column',
+  },
+  chartRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+
+  // ── Y-axis title ────────────────────────────────────────────────────
+  yTitleContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
+  },
+  yTitle: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: Colors.textLight,
+    letterSpacing: 0.3,
+    // Rotate so text reads bottom-to-top
+    transform: [{ rotate: '-90deg' }],
+    // Width must be set to the *height* we want after rotation so it fits in the column
+    width: 120,
+    textAlign: 'center',
+  },
+
+  // ── Tick numbers ────────────────────────────────────────────────────
+  yAxis: {
+    position: 'relative',
+    marginRight: 4,
+  },
+  yLabel: {
+    position: 'absolute',
+    right: 2,
+    fontSize: 10,
+    fontWeight: '500',
+    color: Colors.textLight,
+    width: Y_AXIS_WIDTH,
+    textAlign: 'right',
+  },
+
+  // ── Bar / scroll area ───────────────────────────────────────────────
+  scrollArea: {
+    flex: 1,
+  },
   scrollContent: {
     flexGrow: 1,
   },
-  container: {
+  chartArea: {
     flex: 1,
     minWidth: '100%',
     position: 'relative',
     paddingHorizontal: 8,
   },
-  gridLineTop: {
+  gridLine: {
     position: 'absolute',
-    top: 0,
     left: 0,
     right: 0,
     height: 1,
     backgroundColor: Colors.surfaceContainerLow,
   },
-  gridLineMiddle: {
-    position: 'absolute',
-    top: '50%',
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: Colors.surfaceContainerLow,
-  },
-  gridLineBottom: {
-    position: 'absolute',
-    bottom: 40,
-    left: 0,
-    right: 0,
-    height: 1,
+  gridLineBaseline: {
     backgroundColor: Colors.outlineVariant,
   },
   barsContainer: {
@@ -104,7 +175,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    paddingBottom: 40,
   },
   barWrapper: {
     flex: 1,
@@ -117,28 +187,33 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     paddingHorizontal: 2,
   },
-  barBackground: {
-    width: '100%',
-    backgroundColor: `${Colors.secondary}1A`,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    justifyContent: 'flex-end',
-    padding: 2,
-  },
   bar: {
     width: '100%',
-    height: '66.67%',
     backgroundColor: Colors.secondary,
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
   },
-  label: {
+  dateLabel: {
     fontSize: 10,
     fontWeight: '500',
     color: Colors.textLight,
     marginTop: 16,
     textAlign: 'center',
   },
+
+  // ── X-axis title ────────────────────────────────────────────────────
+  xTitleRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  xTitle: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.textLight,
+    letterSpacing: 0.3,
+  },
+
   noData: {
     flex: 1,
     textAlign: 'center',

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -84,11 +84,15 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
   const [showExplanation, setShowExplanation] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showCalculator, setShowCalculator] = useState(false);
-  // Scoring
-  const [correctCount, setCorrectCount] = useState(0);
+  // Scoring — use a ref so the count is always synchronously current
+  // when handleNextProblem reads it immediately after handleSubmitAnswer.
+  const correctCountRef = useRef(0);
+  const [correctCount, setCorrectCount] = useState(0); // drives the results UI
   const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
+    correctCountRef.current = 0;
+    setCorrectCount(0);
     fetchProblems();
   }, []);
 
@@ -180,7 +184,10 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
           );
         }
 
-        if (correct) setCorrectCount(prev => prev + 1);
+        if (correct) {
+          correctCountRef.current += 1;
+          setCorrectCount(correctCountRef.current);
+        }
         setIsCorrect(correct);
         setShowExplanation(true);
         return;
@@ -194,7 +201,10 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
         timeSpent,
         hintsUsed
       );
-      if (response.isCorrect) setCorrectCount(prev => prev + 1);
+      if (response.isCorrect) {
+        correctCountRef.current += 1;
+        setCorrectCount(correctCountRef.current);
+      }
       setIsCorrect(response.isCorrect);
       setShowExplanation(true);
     } catch (error: any) {
@@ -210,8 +220,8 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
       setCurrentIndex(currentIndex + 1);
       resetProblem();
     } else {
-      // Last problem — calculate final score
-      const finalScore = correctCount + (isCorrect ? 1 : 0);
+      // Last problem — read from ref which is always synchronously up to date
+      const finalScore = correctCountRef.current;
       const finalTotal = problems.length;
 
       if (isDaily === 'true') {
@@ -269,7 +279,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
 
   // ── Results screen shown after the last problem ───────────────────────────
   if (showResults) {
-    const finalScore = correctCount;
+    const finalScore = correctCountRef.current;
     const finalTotal = problems.length;
     const pct = Math.round((finalScore / finalTotal) * 100);
     const scoreColor = pct >= 80 ? '#00a472' : pct >= 50 ? '#f59e0b' : '#ef4444';

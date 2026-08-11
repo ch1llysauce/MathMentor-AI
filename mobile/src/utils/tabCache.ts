@@ -10,11 +10,13 @@ export const dashCache: {
   topicMastery: { topic: string; mastery: number }[];
   nextStep: any | null;
   recommendationProgress: { progressPercentage: number; completedLessons: number; totalLessons: number };
+  cardReady: boolean;
 } = {
   data: null,
   topicMastery: [],
   nextStep: null,
   recommendationProgress: { progressPercentage: 0, completedLessons: 0, totalLessons: 0 },
+  cardReady: false,
 };
 
 // ── Diagnostic ────────────────────────────────────────────────────────────────
@@ -36,6 +38,7 @@ export function clearTabCaches() {
   dashCache.topicMastery = [];
   dashCache.nextStep = null;
   dashCache.recommendationProgress = { progressPercentage: 0, completedLessons: 0, totalLessons: 0 };
+  dashCache.cardReady = false;
 
   diagCache.diagnostic = null;
   diagCache.timelineData = [];

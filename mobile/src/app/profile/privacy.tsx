@@ -764,7 +764,7 @@ export default function PrivacySecurityScreen() {
                 {`• You can download a copy of your data at any time\n• You can request permanent deletion using "Delete My Data"\n• You can update your profile information in Edit Profile`}
               </PolicySection>
               <Text style={[styles.policyFooter, { color: PV.textLight }]}>
-                Last updated: January 2025 · MathMentor AI
+                Last updated: August 2026 · MathMentor AI
               </Text>
             </ScrollView>
             <TouchableOpacity style={[styles.primaryButton, { marginTop: 16, width: '100%' }]} onPress={closeModal}>
