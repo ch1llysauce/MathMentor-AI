@@ -480,7 +480,7 @@ export default function DashboardScreen() {
               {stats.accuracyTotal > 0 ? (
                 <>
                   <Text style={[styles.statValue, { color: D.text }]}>
-                    {stats.accuracyCorrect}/{stats.accuracyTotal}
+                    {`${stats.accuracy}%`} {stats.accuracyCorrect}/{stats.accuracyTotal}
                   </Text>
                   <Text style={[styles.statSource, { color: D.textLight }]}>diagnostic</Text>
                 </>
