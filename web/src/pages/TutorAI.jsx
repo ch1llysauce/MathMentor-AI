@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { IoSendOutline, IoRefreshOutline, IoSparklesOutline, IoPersonOutline, IoBookOutline, IoCalculatorOutline, IoCreateOutline, IoBulbOutline } from 'react-icons/io5';
 import { tutorApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import MathText from '../components/MathText';
 
 const QUICK_ACTIONS = [
   { id: '1', label: 'Explain a concept',    message: 'Can you explain a math concept to me?',                     Icon: IoBookOutline },
@@ -22,13 +23,13 @@ function Message({ msg }) {
         {isUser ? <IoPersonOutline size={16} /> : <IoSparklesOutline size={16} />}
       </div>
       <div
-        className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+        className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
           isUser
             ? 'bg-purple-600 text-white rounded-tr-sm'
             : 'bg-white border border-gray-100 text-gray-800 shadow-sm rounded-tl-sm'
         }`}
       >
-        {msg.content}
+        <MathText text={msg.content} />
       </div>
     </div>
   );

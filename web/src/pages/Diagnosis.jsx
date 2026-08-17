@@ -17,6 +17,7 @@ import {
   IoChevronForwardOutline,
 } from 'react-icons/io5';
 import { questionApi, learningApi } from '../services/api';
+import MathText from '../components/MathText';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const SUBTOPIC_DB_KEY = {
@@ -295,7 +296,7 @@ function TestScreen({ questions, onSubmit }) {
       </div>
       <span className="inline-block bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full mb-4">{q?.subtopic}</span>
       <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm mb-4">
-        <p className="text-gray-900 font-medium leading-relaxed text-base">{q?.question}</p>
+        <div className="text-gray-900 font-medium leading-relaxed text-base"><MathText text={q?.question} /></div>
       </div>
       {q?.choices?.length > 0 && (
         <div className="space-y-2.5 mb-4">
@@ -317,7 +318,7 @@ function TestScreen({ questions, onSubmit }) {
               <button key={idx} onClick={() => !showExplanation && setSelectedAnswer(choice)} disabled={showExplanation}
                 className={`w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-sm transition-colors ${cardClass}`}>
                 <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${bubbleClass}`}>{letter}</span>
-                <span className="flex-1">{choice}</span>
+                <span className="flex-1"><MathText text={choice} /></span>
                 {showExplanation && isSel && isCorrect  && <IoCheckmarkCircleOutline size={20} className="shrink-0 text-emerald-600" />}
                 {showExplanation && isSel && !isCorrect && <IoCloseOutline size={20} className="shrink-0 text-red-500" />}
                 {showExplanation && !isSel && isRight   && <IoCheckmarkCircleOutline size={20} className="shrink-0 text-emerald-600" />}
@@ -336,7 +337,7 @@ function TestScreen({ questions, onSubmit }) {
           ) : (
             <div className="flex gap-2 bg-yellow-50 border-l-4 border-yellow-400 rounded-xl p-4 text-sm text-yellow-900">
               <IoBulbOutline size={16} className="text-yellow-500 shrink-0 mt-0.5" />
-              <p>{q.hints[0]}</p>
+              <div><MathText text={q.hints[0]} /></div>
             </div>
           )}
         </div>
@@ -344,8 +345,8 @@ function TestScreen({ questions, onSubmit }) {
       {showExplanation && (
         <div className={`rounded-2xl border-l-4 p-4 mb-4 text-sm ${isCorrect ? 'bg-emerald-50 border-emerald-500' : 'bg-red-50 border-red-500'}`}>
           <p className={`font-bold text-base mb-1 ${isCorrect ? 'text-emerald-700' : 'text-red-700'}`}>{isCorrect ? '✓ Correct!' : '✗ Incorrect'}</p>
-          <p className={isCorrect ? 'text-emerald-800' : 'text-red-800'}>{q?.explanation}</p>
-          {!isCorrect && <p className="text-emerald-700 font-semibold mt-2">Correct answer: {q?.correctAnswer}</p>}
+          <div className={isCorrect ? 'text-emerald-800' : 'text-red-800'}><MathText text={q?.explanation} /></div>
+          {!isCorrect && <div className="text-emerald-700 font-semibold mt-2 flex items-center gap-1">Correct answer: <MathText text={q?.correctAnswer} /></div>}
         </div>
       )}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 lg:static lg:bg-transparent lg:border-0 lg:p-0 lg:mt-2">

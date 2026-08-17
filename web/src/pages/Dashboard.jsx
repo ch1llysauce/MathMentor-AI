@@ -17,9 +17,9 @@ import { progressApi, learningApi } from '../services/api';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const TOPIC_META = {
-  Algebra:      { Icon: IoCalculatorOutline, color: '#2563eb', description: 'Build your foundation with equations, expressions, and algebraic reasoning.' },
-  Geometry:     { Icon: IoShapesOutline,     color: '#00a472', description: 'Explore angles, shapes, areas, and spatial relationships.' },
-  Trigonometry: { Icon: IoCompassOutline,    color: '#f59e0b', description: 'Master ratios, triangles, and the unit circle with confidence.' },
+  Algebra: { Icon: IoCalculatorOutline, color: '#2563eb', description: 'Build your foundation with equations, expressions, and algebraic reasoning.' },
+  Geometry: { Icon: IoShapesOutline, color: '#00a472', description: 'Explore angles, shapes, areas, and spatial relationships.' },
+  Trigonometry: { Icon: IoCompassOutline, color: '#f59e0b', description: 'Master ratios, triangles, and the unit circle with confidence.' },
 };
 
 function StatCard({ label, value, sub, icon: Icon, iconBg, iconColor }) {
@@ -71,14 +71,14 @@ export default function Dashboard() {
           setDiagnostic(diag);
           setDiagnosticDone(true);
           const correct = diag.correctAnswers ?? 0;
-          const total   = diag.totalQuestions ?? 0;
-          const time    = diag.timeSpent ?? 0;
+          const total = diag.totalQuestions ?? 0;
+          const time = diag.timeSpent ?? 0;
           setStats((prev) => ({
             ...prev,
-            accuracy:         total > 0 ? Math.round((correct / total) * 100) : 0,
-            accuracyCorrect:  correct,
-            accuracyTotal:    total,
-            avgSpeed:         total > 0 ? Math.round(time / total) : 0,
+            accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
+            accuracyCorrect: correct,
+            accuracyTotal: total,
+            avgSpeed: total > 0 ? Math.round(time / total) : 0,
           }));
         }
       }
@@ -91,19 +91,19 @@ export default function Dashboard() {
       setDiagnosticDone(true);
       if (rec?.nextStep) {
         setNextStep({
-          topic:                  rec.nextStep.topic,
-          subtopic:               rec.nextStep.subtopic,
-          currentScore:           rec.nextStep.currentScore ?? 0,
-          reason:                 rec.nextStep.reason ?? '',
-          difficulty:             rec.nextStep.difficulty ?? 'Easy',
-          completedLessons:       rec.nextStep.completedLessons ?? 0,
+          topic: rec.nextStep.topic,
+          subtopic: rec.nextStep.subtopic,
+          currentScore: rec.nextStep.currentScore ?? 0,
+          reason: rec.nextStep.reason ?? '',
+          difficulty: rec.nextStep.difficulty ?? 'Easy',
+          completedLessons: rec.nextStep.completedLessons ?? 0,
           totalLessonsInSubtopic: rec.nextStep.totalLessonsInSubtopic ?? 0,
         });
       }
       setRecProgress({
         progressPercentage: rec?.progressPercentage ?? 0,
-        completedLessons:   rec?.completedLessons ?? 0,
-        totalLessons:       rec?.totalLessons ?? 0,
+        completedLessons: rec?.completedLessons ?? 0,
+        totalLessons: rec?.totalLessons ?? 0,
       });
     } catch (err) {
       if (err?.response?.status !== 404) console.error(err);

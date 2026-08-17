@@ -11,6 +11,7 @@ import {
   IoArrowForwardCircleOutline,
 } from 'react-icons/io5';
 import { tutorApi, learningApi } from '../../services/api';
+import MathText from '../../components/MathText';
 
 export default function LessonChat() {
   const { lessonId } = useParams();
@@ -265,25 +266,18 @@ export default function LessonChat() {
 
 function ChatMessage({ msg }) {
   const isUser = msg.role === 'user';
-  // Render **bold** markdown simply
-  const renderContent = (text) =>
-    text.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
-      part.startsWith('**') && part.endsWith('**')
-        ? <strong key={i}>{part.slice(2, -2)}</strong>
-        : part
-    );
 
   return (
     <div className={`flex gap-3 mb-4 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${isUser ? 'bg-purple-600' : 'bg-purple-600'}`}>
         {isUser ? <IoPersonOutline size={15} className="text-white" /> : <IoSparklesOutline size={15} className="text-white" />}
       </div>
-      <div className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+      <div className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
         isUser
           ? 'bg-purple-600 text-white rounded-tr-sm'
           : 'bg-white border border-gray-100 shadow-sm text-gray-800 rounded-tl-sm'
       }`}>
-        {renderContent(msg.content)}
+        <MathText text={msg.content} />
       </div>
     </div>
   );

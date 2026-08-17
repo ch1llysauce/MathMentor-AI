@@ -14,6 +14,7 @@ import { generateProblems } from '../../services/clientProblemGenerator';
 import { practiceApi } from '../../services/api';
 import MathToolbar from '../../components/MathToolbar';
 import ScientificCalculator from '../../components/ScientificCalculator';
+import MathText from '../../components/MathText';
 
 const diffColor = (d) =>
   d === 'Easy' ? { bg: 'bg-emerald-50', text: 'text-emerald-700', hex: '#00a472' } :
@@ -219,9 +220,9 @@ export default function Problems() {
               <IoHelpCircleOutline size={20} className="text-purple-600" />
               <span className="text-sm font-semibold text-gray-700">Question</span>
             </div>
-            <p className="text-base text-gray-900 font-medium leading-relaxed">
-              {current?.question || current?.problem?.text}
-            </p>
+            <div className="text-base text-gray-900 font-medium leading-relaxed">
+              <MathText text={current?.question || current?.problem?.text} />
+            </div>
           </div>
 
           {/* Multiple-choice options */}
@@ -243,7 +244,7 @@ export default function Problems() {
                     <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${bubbleCls}`}>
                       {String.fromCharCode(65 + i)}
                     </span>
-                    <span className="flex-1">{val}</span>
+                    <span className="flex-1"><MathText text={val} /></span>
                     {showExplanation && isRight && <IoCheckmarkCircle size={20} className="shrink-0 text-emerald-600" />}
                     {showExplanation && isWrong && <IoCloseCircle size={20} className="shrink-0 text-red-500" />}
                   </button>
@@ -288,9 +289,9 @@ export default function Problems() {
               {showExplanation && !isCorrect && (
                 <div className="flex items-center gap-2 mt-2 bg-emerald-50 px-3 py-2 rounded-lg">
                   <IoCheckmarkCircle size={15} className="text-emerald-600 shrink-0" />
-                  <p className="text-sm text-emerald-700 font-semibold">
-                    Correct answer: {String(current.correctAnswer ?? current.answer ?? '').replace(/\$([^$]+)\$/g, '$1')}
-                  </p>
+                  <div className="text-sm text-emerald-700 font-semibold">
+                    Correct answer: <MathText text={String(current.correctAnswer ?? current.answer ?? '')} />
+                  </div>
                 </div>
               )}
             </div>
@@ -307,7 +308,7 @@ export default function Problems() {
               ) : (
                 <div className="flex gap-2 bg-yellow-50 border-l-4 border-yellow-400 rounded-xl p-4 text-sm text-yellow-900">
                   <IoBulbOutline size={16} className="shrink-0 mt-0.5 text-yellow-500" />
-                  <p>{current.hints[0]}</p>
+                  <div><MathText text={current.hints[0]} /></div>
                 </div>
               )}
             </div>
@@ -327,7 +328,9 @@ export default function Problems() {
               </div>
               <div className="bg-white border border-gray-100 px-5 py-4 space-y-2">
                 {current.explanation && (
-                  <p className="text-sm text-gray-700 leading-relaxed">{current.explanation}</p>
+                  <div className="text-sm text-gray-700 leading-relaxed">
+                    <MathText text={current.explanation} />
+                  </div>
                 )}
                 {current.solution?.steps?.length > 0 && (
                   <div className="pt-2 border-t border-gray-50">
@@ -335,11 +338,15 @@ export default function Problems() {
                     {current.solution.steps.map((step, i) => (
                       <div key={i} className="flex items-start gap-2 mb-1.5">
                         <span className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5">{i + 1}</span>
-                        <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
+                        <div className="text-sm text-gray-700 leading-relaxed">
+                          <MathText text={step} />
+                        </div>
                       </div>
                     ))}
                     {current.solution.finalAnswer && (
-                      <p className="text-sm font-bold text-purple-700 mt-2">Final Answer: {current.solution.finalAnswer}</p>
+                      <div className="text-sm font-bold text-purple-700 mt-2 flex items-center gap-1">
+                        Final Answer: <MathText text={current.solution.finalAnswer} />
+                      </div>
                     )}
                   </div>
                 )}

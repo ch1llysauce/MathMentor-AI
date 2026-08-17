@@ -12,6 +12,7 @@ import {
   IoCheckmarkCircle,
 } from 'react-icons/io5';
 import { learningApi } from '../../services/api';
+import MathText from '../../components/MathText';
 
 export default function LessonScreen() {
   const { lessonId } = useParams();
@@ -142,13 +143,13 @@ export default function LessonScreen() {
 
         {/* Introduction */}
         <Section title="Introduction">
-          <p className="text-sm text-gray-700 leading-relaxed">{lesson.content?.introduction}</p>
+          <div className="text-sm text-gray-700 leading-relaxed"><MathText text={lesson.content?.introduction} /></div>
         </Section>
 
         {/* Sections */}
         {lesson.content?.sections?.map((section, i) => (
           <Section key={i} title={section.title}>
-            <p className="text-sm text-gray-700 leading-relaxed mb-4">{section.content}</p>
+            <div className="text-sm text-gray-700 leading-relaxed mb-4"><MathText text={section.content} /></div>
             {section.examples?.length > 0 && (
               <div>
                 <p className="text-sm font-semibold text-gray-700 mb-3">Examples:</p>
@@ -158,7 +159,7 @@ export default function LessonScreen() {
                       <IoBulbOutline size={16} className="text-yellow-500" />
                       <span className="text-xs font-semibold text-yellow-800">Example {j + 1}</span>
                     </div>
-                    <p className="text-sm font-semibold text-yellow-900 mb-2">{ex.problem}</p>
+                    <div className="text-sm font-semibold text-yellow-900 mb-2"><MathText text={ex.problem} /></div>
                     {ex.steps?.length > 0 && (
                       <div className="mb-3">
                         <p className="text-xs font-semibold text-yellow-800 mb-2">Solution Steps:</p>
@@ -167,14 +168,14 @@ export default function LessonScreen() {
                             <span className="w-5 h-5 rounded-full bg-yellow-400 flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5">
                               {k + 1}
                             </span>
-                            <p className="text-xs text-yellow-900 leading-relaxed">{step}</p>
+                            <div className="text-xs text-yellow-900 leading-relaxed"><MathText text={step} /></div>
                           </div>
                         ))}
                       </div>
                     )}
                     <div className="flex items-center gap-2 pt-2 border-t border-yellow-300">
                       <span className="text-xs font-semibold text-yellow-800">Answer:</span>
-                      <span className="text-sm font-bold text-yellow-900">{ex.solution}</span>
+                      <span className="text-sm font-bold text-yellow-900"><MathText text={ex.solution} /></span>
                     </div>
                   </div>
                 ))}
@@ -186,7 +187,7 @@ export default function LessonScreen() {
         {/* Summary */}
         {lesson.content?.summary && (
           <Section title="Summary">
-            <p className="text-sm text-gray-700 leading-relaxed">{lesson.content.summary}</p>
+            <div className="text-sm text-gray-700 leading-relaxed"><MathText text={lesson.content.summary} /></div>
           </Section>
         )}
 
@@ -197,7 +198,7 @@ export default function LessonScreen() {
               {lesson.content.keyTakeaways.map((t, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <IoCheckmarkCircle size={18} className="text-emerald-500 shrink-0 mt-0.5" />
-                  <p className="text-sm text-gray-700 leading-relaxed">{t}</p>
+                  <div className="text-sm text-gray-700 leading-relaxed"><MathText text={t} /></div>
                 </div>
               ))}
             </div>

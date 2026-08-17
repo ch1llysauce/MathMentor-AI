@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { Resend } from "resend";
 import { OAuth2Client } from "google-auth-library";
+import axios from "axios";
 import speakeasy from "speakeasy";
 import QRCode from "qrcode";
 import { User, Progress, DiagnosticResult, LoginSession } from "../models/index.js";
@@ -813,25 +814,42 @@ export const resetPassword = asyncHandler(async (req, res) => {
  * @access  Public
  */
 export const googleRegister = asyncHandler(async (req, res) => {
-    const { idToken, gradeLevel, focusAreas, displayName: overrideName, profileImage: overrideImage } = req.body;
+    const { idToken, accessToken, gradeLevel, focusAreas, displayName: overrideName, profileImage: overrideImage } = req.body;
 
-    if (!idToken) {
-        throw new AppError("Google ID token is required", 400);
+    if (!idToken && !accessToken) {
+        throw new AppError("Google ID token or access token is required", 400);
     }
 
-    // Re-verify the token so we don't trust client-supplied profile data
-    let payload;
-    try {
-        const ticket = await googleClient.verifyIdToken({
-            idToken,
-            audience: process.env.GOOGLE_WEB_CLIENT_ID,
-        });
-        payload = ticket.getPayload();
-    } catch (err) {
-        throw new AppError("Invalid Google token", 401);
-    }
+    let googleId, email, name, picture;
 
-    const { sub: googleId, email, name, picture } = payload;
+    if (idToken) {
+        let payload;
+        try {
+            const ticket = await googleClient.verifyIdToken({
+                idToken,
+                audience: process.env.GOOGLE_WEB_CLIENT_ID,
+            });
+            payload = ticket.getPayload();
+        } catch (err) {
+            throw new AppError("Invalid Google ID token", 401);
+        }
+        googleId = payload.sub;
+        email = payload.email;
+        name = payload.name;
+        picture = payload.picture;
+    } else if (accessToken) {
+        try {
+            const { data } = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            googleId = data.sub;
+            email = data.email;
+            name = data.name;
+            picture = data.picture;
+        } catch (err) {
+            throw new AppError("Failed to verify Google access token", 401);
+        }
+    }
 
     if (!email) {
         throw new AppError("Google account has no email address", 400);
@@ -895,25 +913,42 @@ export const googleRegister = asyncHandler(async (req, res) => {
  * @access  Public
  */
 export const googleAuth = asyncHandler(async (req, res) => {
-    const { idToken } = req.body;
+    const { idToken, accessToken } = req.body;
 
-    if (!idToken) {
-        throw new AppError("Google ID token is required", 400);
+    if (!idToken && !accessToken) {
+        throw new AppError("Google ID token or access token is required", 400);
     }
 
-    // Verify the token with Google
-    let payload;
-    try {
-        const ticket = await googleClient.verifyIdToken({
-            idToken,
-            audience: process.env.GOOGLE_WEB_CLIENT_ID,
-        });
-        payload = ticket.getPayload();
-    } catch (err) {
-        throw new AppError("Invalid Google token", 401);
-    }
+    let googleId, email, name, picture;
 
-    const { sub: googleId, email, name, picture } = payload;
+    if (idToken) {
+        let payload;
+        try {
+            const ticket = await googleClient.verifyIdToken({
+                idToken,
+                audience: process.env.GOOGLE_WEB_CLIENT_ID,
+            });
+            payload = ticket.getPayload();
+        } catch (err) {
+            throw new AppError("Invalid Google ID token", 401);
+        }
+        googleId = payload.sub;
+        email = payload.email;
+        name = payload.name;
+        picture = payload.picture;
+    } else if (accessToken) {
+        try {
+            const { data } = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            googleId = data.sub;
+            email = data.email;
+            name = data.name;
+            picture = data.picture;
+        } catch (err) {
+            throw new AppError("Failed to verify Google access token", 401);
+        }
+    }
 
     if (!email) {
         throw new AppError("Google account has no email address", 400);
@@ -923,19 +958,14 @@ export const googleAuth = asyncHandler(async (req, res) => {
     let user = await User.findOne({ $or: [{ googleId }, { email }] });
 
     if (!user) {
-        // No account found — tell the app to redirect to registration with pre-filled data
-        return res.status(200).json({
-            success: false,
-            requiresRegistration: true,
-            message: "No account found. Please complete registration.",
-            data: {
-                googleProfile: {
-                    googleId,
-                    email,
-                    displayName: name || email.split("@")[0],
-                    profileImage: picture || "",
-                },
-            },
+        // Auto-create user account directly from Google profile
+        user = await User.create({
+            displayName: name || email.split("@")[0],
+            email,
+            googleId,
+            profileImage: picture || "",
+            isVerified: true,
+            focusAreas: [],
         });
     }
 

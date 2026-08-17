@@ -39,6 +39,7 @@ export default function TopicScreen() {
   const navigate = useNavigate();
   const location = useLocation();
   const mastery = location.state?.mastery ?? 0;
+  const subtopicFilter = location.state?.subtopicFilter ?? 0;
 
   const [tab, setTab]           = useState('lessons');
   const [lessons, setLessons]   = useState([]);
@@ -55,6 +56,32 @@ export default function TopicScreen() {
       .catch(() => setLessons([]))
       .finally(() => setLoading(false));
   }, [topicName]);
+
+  useEffect(() => {
+  if (!subtopicFilter || lessons.length === 0) return;
+
+  const exists = lessons.some(
+    (lesson) => lesson.subtopic === subtopicFilter
+  );
+
+  if (exists) {
+    setSelectedModule(subtopicFilter);
+    setSearch('');
+  }
+}, [subtopicFilter, lessons]);
+
+useEffect(() => {
+  if (!subtopicFilter || !lessons.length || loading) return;
+
+  const timer = setTimeout(() => {
+    scrollRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }, 100);
+
+  return () => clearTimeout(timer);
+}, [subtopicFilter, lessons, loading]);
 
   // Unique subtopic modules
   const moduleNames = [...new Set(lessons.map((l) => l.subtopic))].filter(Boolean);
