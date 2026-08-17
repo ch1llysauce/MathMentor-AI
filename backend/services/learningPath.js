@@ -66,39 +66,50 @@ export const analyzeDiagnosticResults = (diagnosticResult) => {
         recommendations: []
     };
 
-    const { topicScores, overallScore } = diagnosticResult;
+    let { topicScores, overallScore } = diagnosticResult;
+    
+    // Fallback for legacy diagnostic results
+    if (!topicScores) {
+        topicScores = {
+            algebra: { score: diagnosticResult.algebraScore || 0 },
+            geometry: { score: diagnosticResult.geometryScore || 0 },
+            trigonometry: { score: diagnosticResult.trigonometryScore || 0 }
+        };
+    }
 
     // Analyze each topic
-    Object.entries(topicScores).forEach(([topicKey, topicData]) => {
-        const topicName = topicKey.charAt(0).toUpperCase() + topicKey.slice(1);
-        const score = topicData.score || 0;
+    if (topicScores) {
+        Object.entries(topicScores).forEach(([topicKey, topicData]) => {
+            const topicName = topicKey.charAt(0).toUpperCase() + topicKey.slice(1);
+            const score = topicData.score || 0;
 
-        const topicAnalysis = {
-            topic: topicName,
-            score: score,
-            subtopics: []
-        };
+            const topicAnalysis = {
+                topic: topicName,
+                score: score,
+                subtopics: []
+            };
 
-        // Analyze subtopics
-        if (topicData.subtopicScores) {
-            Object.entries(topicData.subtopicScores).forEach(([subtopicKey, subtopicScore]) => {
-                const subtopicName = formatSubtopicName(subtopicKey);
-                topicAnalysis.subtopics.push({
-                    name: subtopicName,
-                    score: subtopicScore
+            // Analyze subtopics
+            if (topicData.subtopicScores) {
+                Object.entries(topicData.subtopicScores).forEach(([subtopicKey, subtopicScore]) => {
+                    const subtopicName = formatSubtopicName(subtopicKey);
+                    topicAnalysis.subtopics.push({
+                        name: subtopicName,
+                        score: subtopicScore
+                    });
                 });
-            });
-        }
+            }
 
-        // Categorize topic
-        if (score >= MASTERY_THRESHOLDS.STRONG) {
-            analysis.strongTopics.push(topicAnalysis);
-        } else if (score >= MASTERY_THRESHOLDS.MODERATE) {
-            analysis.moderateTopics.push(topicAnalysis);
-        } else {
-            analysis.weakTopics.push(topicAnalysis);
-        }
-    });
+            // Categorize topic
+            if (score >= MASTERY_THRESHOLDS.STRONG) {
+                analysis.strongTopics.push(topicAnalysis);
+            } else if (score >= MASTERY_THRESHOLDS.MODERATE) {
+                analysis.moderateTopics.push(topicAnalysis);
+            } else {
+                analysis.weakTopics.push(topicAnalysis);
+            }
+        });
+    }
 
     // Determine overall level
     if (overallScore >= 80) {

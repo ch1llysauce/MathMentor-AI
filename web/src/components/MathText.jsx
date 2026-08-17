@@ -77,12 +77,6 @@ export default function MathText({ text, className = '' }) {
 
   const str = String(text);
 
-  // Auto-wrap unwrapped latex commands like \frac{a}{b} or \sqrt{x} if not already wrapped in $ or \( or \[
-  const normalizedStr = str.replace(
-    /(?<![\$\\\(])(\\frac\{[^{}]+\}\{[^{}]+\}|\\sqrt\{[^{}]+\}|\\sqrt\[[^{}]*\]\{[^{}]+\}|\\int_\{[^{}]+\}\^\{[^{}]+\}|\\sum_\{[^{}]+\}\^\{[^{}]+\})(?![\$\\\)])/g,
-    '$$1$'
-  );
-
   // Match KaTeX math blocks and inline delimiters:
   // 1. $$...$$ (Block)
   // 2. \[...\] (Block)
@@ -90,7 +84,7 @@ export default function MathText({ text, className = '' }) {
   // 4. \(...\) (Inline)
   const regex = /(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\$[^\$\n]+?\$|\\\([\s\S]*?\\\))/g;
 
-  const parts = normalizedStr.split(regex);
+  const parts = str.split(regex);
 
   return (
     <span className={`math-text-container ${className}`}>
@@ -111,6 +105,22 @@ export default function MathText({ text, className = '' }) {
         }
         if (part.startsWith('\\(') && part.endsWith('\\)')) {
           return <InlineMath key={index} math={part.slice(2, -2)} />;
+        }
+
+        // Non-math text: Auto-wrap unwrapped latex commands like \frac{a}{b} or \sqrt{x} if present
+        const normalizedPart = part.replace(
+          /(\\frac\{[^{}]+\}\{[^{}]+\}|\\sqrt\{[^{}]+\}|\\sqrt\[[^{}]*\]\{[^{}]+\}|\\int_\{[^{}]+\}\^\{[^{}]+\}|\\sum_\{[^{}]+\}\^\{[^{}]+\})/g,
+          (_, match) => `$${match}$`
+        );
+
+        if (normalizedPart !== part) {
+          const subParts = normalizedPart.split(/(\$[^\$\n]+?\$)/g);
+          return subParts.map((sub, subIdx) => {
+            if (sub.startsWith('$') && sub.endsWith('$')) {
+              return <InlineMath key={`${index}-${subIdx}`} math={sub.slice(1, -1)} />;
+            }
+            return <FormattedSpan key={`${index}-${subIdx}`} text={sub} />;
+          });
         }
 
         return <FormattedSpan key={index} text={part} />;

@@ -13,8 +13,9 @@ import {
   IoShapesOutline,
   IoAnalyticsOutline,
   IoLockClosedOutline,
+  IoSparklesOutline,
 } from 'react-icons/io5';
-import { learningApi, practiceApi } from '../../services/api';
+import { learningApi, practiceApi, progressApi } from '../../services/api';
 
 const TOPIC_META = {
   Algebra:      { color: '#2563eb', bg: 'rgba(37,99,235,0.12)',  Icon: IoCalculatorOutline },
@@ -27,21 +28,22 @@ const DAILY_TOPICS = ['Algebra', 'Geometry', 'Trigonometry'];
 export default function PracticeIndex() {
   const navigate = useNavigate();
 
-  const [topics, setTopics]       = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [search, setSearch]       = useState('');
-  const [filter, setFilter]       = useState('all');
-  const [dailyDone, setDailyDone] = useState(false);
-  const [dailyScore, setDailyScore] = useState(null);
+  const [topics, setTopics]          = useState([]);
+  const [loading, setLoading]        = useState(true);
+  const [search, setSearch]          = useState('');
+  const [filter, setFilter]          = useState('all');
+  const [dailyDone, setDailyDone]    = useState(false);
+  const [dailyScore, setDailyScore]  = useState(null);
 
   const dailyTopic = DAILY_TOPICS[(new Date().getDate() + new Date().getMonth() * 3) % DAILY_TOPICS.length];
 
   useEffect(() => {
     const loadAll = async () => {
       try {
-        const [diagRes, lessonsRes] = await Promise.allSettled([
+        const [diagRes, lessonsRes, summaryRes] = await Promise.allSettled([
           learningApi.getLatestDiagnostic(),
           learningApi.getLessons(),
+          progressApi.getSummary(),
         ]);
 
         let diagData = null;
@@ -54,6 +56,12 @@ export default function PracticeIndex() {
           ? (lessonsRes.value?.data?.data?.lessons ?? lessonsRes.value?.data?.lessons ?? [])
           : [];
 
+        let topicStats = [];
+        if (summaryRes.status === 'fulfilled') {
+          const s = summaryRes.value?.data;
+          topicStats = s?.data?.topicStats ?? s?.topicStats ?? [];
+        }
+
         const topicMap = {};
         lessonsData.forEach((l) => {
           const t = l.topic;
@@ -63,27 +71,32 @@ export default function PracticeIndex() {
           if (l.userProgress?.status === 'completed') topicMap[t].completedLessons += 1;
         });
 
-        const topicList = Object.entries(topicMap).map(([name, data]) => {
-          let mastery = 0;
+        // Compute combined topic mastery (max of diagnostic vs. practice stats)
+        const getCombinedMastery = (topicName) => {
+          const k = topicName.toLowerCase();
+          let diagScore = 0;
           if (diagData) {
-            const k = name.toLowerCase();
-            if (k === 'algebra')           mastery = diagData.algebraScore ?? 0;
-            else if (k === 'geometry')     mastery = diagData.geometryScore ?? 0;
-            else if (k === 'trigonometry') mastery = diagData.trigonometryScore ?? 0;
+            if (k === 'algebra')           diagScore = diagData.algebraScore ?? diagData.topicScores?.algebra?.score ?? 0;
+            else if (k === 'geometry')     diagScore = diagData.geometryScore ?? diagData.topicScores?.geometry?.score ?? 0;
+            else if (k === 'trigonometry') diagScore = diagData.trigonometryScore ?? diagData.topicScores?.trigonometry?.score ?? 0;
           }
-          return {
-            name,
-            mastery,
-            lessons: data.lessons,
-            completedLessons: data.completedLessons,
-            subtopics: [...data.subtopics],
-          };
-        });
+          const statObj = topicStats.find((ts) => ts.topic?.toLowerCase() === k);
+          const statScore = statObj?.averageMastery ?? statObj?.accuracy ?? 0;
+          return Math.round(Math.max(diagScore, statScore));
+        };
+
+        const topicList = Object.entries(topicMap).map(([name, data]) => ({
+          name,
+          mastery: getCombinedMastery(name),
+          lessons: data.lessons,
+          completedLessons: data.completedLessons,
+          subtopics: [...data.subtopics],
+        }));
 
         setTopics(topicList.length ? topicList : [
-          { name: 'Algebra',      mastery: diagData?.algebraScore ?? 0,      lessons: 0, completedLessons: 0, subtopics: [] },
-          { name: 'Geometry',     mastery: diagData?.geometryScore ?? 0,     lessons: 0, completedLessons: 0, subtopics: [] },
-          { name: 'Trigonometry', mastery: diagData?.trigonometryScore ?? 0, lessons: 0, completedLessons: 0, subtopics: [] },
+          { name: 'Algebra',      mastery: getCombinedMastery('Algebra'),      lessons: 0, completedLessons: 0, subtopics: [] },
+          { name: 'Geometry',     mastery: getCombinedMastery('Geometry'),     lessons: 0, completedLessons: 0, subtopics: [] },
+          { name: 'Trigonometry', mastery: getCombinedMastery('Trigonometry'), lessons: 0, completedLessons: 0, subtopics: [] },
         ]);
       } catch {
         setTopics([
@@ -108,9 +121,9 @@ export default function PracticeIndex() {
   }, []);
 
   const masteryLabel = (m) =>
-    m >= 80 ? { label: 'Expert',     color: 'text-emerald-600' } :
-    m >= 60 ? { label: 'Proficient', color: 'text-yellow-600'  } :
-              { label: 'Learning',   color: 'text-red-500'      };
+    m >= 80 ? { label: 'Expert',     color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' } :
+    m >= 60 ? { label: 'Proficient', color: 'text-yellow-600',  bg: 'bg-yellow-50 border-yellow-100'  } :
+              { label: 'Learning',   color: 'text-red-500',      bg: 'bg-red-50 border-red-100'        };
 
   const filteredTopics = topics.filter((t) => {
     const matchSearch = t.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -121,60 +134,71 @@ export default function PracticeIndex() {
   });
 
   return (
-    <div className="p-4 sm:p-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">Practice</h1>
-      <p className="text-gray-500 text-sm mb-5">Choose a topic to master</p>
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6">
+      {/* Header & Controls */}
+      <div className="bg-white border border-gray-100 rounded-3xl p-5 sm:p-6 shadow-sm">
+        <div className="max-w-2xl">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100 uppercase tracking-wider flex items-center gap-1">
+              <IoSparklesOutline size={12} /> Adaptive Learning
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Practice</h1>
+          <p className="text-gray-500 text-sm mt-1 mb-5">Choose a topic to master through lessons and practice modules</p>
 
-      {/* Search */}
-      <div className="relative mb-4">
-        <IoSearchOutline size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search topics or subtopics…"
-          className="w-full bg-white border border-gray-200 rounded-xl py-3 pl-10 pr-9 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-        />
-        {search && (
-          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-            <IoCloseOutline size={16} />
-          </button>
-        )}
-      </div>
+          {/* Search bar */}
+          <div className="relative mb-4">
+            <IoSearchOutline size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search topics or subtopics…"
+              className="w-full bg-gray-50/80 border border-gray-200/80 rounded-2xl py-3 pl-11 pr-10 text-sm shadow-2xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <IoCloseOutline size={18} />
+              </button>
+            )}
+          </div>
 
-      {/* Filter chips */}
-      <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
-        {[
-          { id: 'all',    label: 'All Topics' },
-          { id: 'weak',   label: 'Need Practice', Icon: IoArrowDownOutline },
-          { id: 'strong', label: 'Strong Areas',  Icon: IoArrowUpOutline },
-        ].map(({ id, label, Icon }) => (
-          <button
-            key={id}
-            onClick={() => setFilter(id)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full border text-sm font-medium whitespace-nowrap transition-colors ${
-              filter === id
-                ? 'bg-purple-600 border-purple-600 text-white'
-                : 'bg-white border-gray-200 text-gray-600 hover:border-purple-300'
-            }`}
-          >
-            {Icon && <Icon size={13} />}
-            {label}
-          </button>
-        ))}
+          {/* Filter chips */}
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {[
+              { id: 'all',    label: 'All Topics' },
+              { id: 'weak',   label: 'Need Practice', Icon: IoArrowDownOutline },
+              { id: 'strong', label: 'Strong Areas',  Icon: IoArrowUpOutline },
+            ].map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                onClick={() => setFilter(id)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-bold whitespace-nowrap transition-all ${
+                  filter === id
+                    ? 'bg-purple-600 border-purple-600 text-white shadow-md shadow-purple-600/20'
+                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                }`}
+              >
+                {Icon && <Icon size={14} />}
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Topic cards */}
       {loading ? (
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => <div key={i} className="h-44 bg-gray-100 rounded-2xl animate-pulse" />)}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[1, 2, 3].map((i) => <div key={i} className="h-48 bg-gray-100 rounded-3xl animate-pulse" />)}
         </div>
       ) : filteredTopics.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
-          <IoSearchOutline size={40} className="mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No topics found</p>
+        <div className="text-center py-16 bg-white border border-gray-100 rounded-3xl p-8 shadow-2xs">
+          <IoSearchOutline size={44} className="mx-auto mb-3 text-gray-300" />
+          <p className="text-base font-semibold text-gray-700">No topics found</p>
+          <p className="text-xs text-gray-400 mt-1">Try searching for a different keyword or resetting your filter.</p>
         </div>
       ) : (
-        <div className="space-y-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredTopics.map((topic) => {
             const meta = TOPIC_META[topic.name] ?? { color: '#4b41e1', bg: 'rgba(75,65,225,0.12)', Icon: IoBookOutline };
             const TopicIcon = meta.Icon;
@@ -185,54 +209,56 @@ export default function PracticeIndex() {
               <button
                 key={topic.name}
                 onClick={() => navigate(`/practice/topic/${encodeURIComponent(topic.name)}`, { state: { mastery: topic.mastery } })}
-                className="w-full bg-white border border-gray-100 rounded-2xl p-5 shadow-sm text-left hover:border-purple-200 hover:shadow-md transition-all"
+                className="w-full bg-white border border-gray-100 rounded-3xl p-5 sm:p-6 shadow-2xs text-left hover:border-purple-300 hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col group"
               >
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: meta.bg }}>
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs" style={{ backgroundColor: meta.bg }}>
                     <TopicIcon size={28} style={{ color: meta.color }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-lg font-bold text-gray-900">{topic.name}</p>
-                    <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
-                      <span className="flex items-center gap-1">
-                        <IoBookOutline size={12} />
+                    <p className="text-lg font-bold text-gray-900 group-hover:text-purple-700 transition-colors">{topic.name}</p>
+                    <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                      <span className="flex items-center gap-1 font-medium">
+                        <IoBookOutline size={13} className="text-gray-400" />
                         {topic.lessons > 0
                           ? `${topic.completedLessons}/${topic.lessons} lessons`
                           : '0 lessons'}
                       </span>
                     </div>
                   </div>
-                  <IoChevronForwardOutline size={18} className="text-gray-300 shrink-0" />
+                  <div className="w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center shrink-0 group-hover:bg-purple-50 transition-colors">
+                    <IoChevronForwardOutline size={18} className="text-gray-400 group-hover:text-purple-600" />
+                  </div>
                 </div>
 
                 {/* Mastery progress */}
-                <div className="mb-3">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-gray-400">Mastery Level</span>
+                <div className="mb-4 mt-auto w-full">
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="text-gray-400 font-medium">Mastery Level</span>
                     <div className="flex items-center gap-2">
-                      <span className={`font-semibold ${ml.color}`}>{ml.label}</span>
+                      <span className={`font-semibold text-xs px-2 py-0.5 rounded-md border ${ml.bg} ${ml.color}`}>{ml.label}</span>
                       <span className="font-bold text-gray-900">{topic.mastery}%</span>
                     </div>
                   </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full rounded-full transition-all"
-                      style={{ width: `${topic.mastery}%`, backgroundColor: barColor }}
+                      className="h-full rounded-full transition-all duration-500 shadow-2xs"
+                      style={{ width: `${Math.min(topic.mastery, 100)}%`, backgroundColor: barColor }}
                     />
                   </div>
                 </div>
 
                 {/* Subtopic tags */}
                 {topic.subtopics.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-gray-600 mb-1.5">Key Subtopics:</p>
+                  <div className="w-full pt-3 border-t border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 mb-2">Key Subtopics:</p>
                     <div className="flex flex-wrap gap-1.5">
                       {topic.subtopics.slice(0, 3).map((s) => (
-                        <span key={s} className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">{s}</span>
+                        <span key={s} className="text-xs bg-gray-50 border border-gray-100 text-gray-600 px-2.5 py-1 rounded-xl truncate max-w-[140px] font-medium">{s}</span>
                       ))}
                       {topic.subtopics.length > 3 && (
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">+{topic.subtopics.length - 3}</span>
+                        <span className="text-xs bg-gray-50 border border-gray-100 text-gray-500 px-2.5 py-1 rounded-xl shrink-0 font-medium">+{topic.subtopics.length - 3}</span>
                       )}
                     </div>
                   </div>
@@ -244,34 +270,34 @@ export default function PracticeIndex() {
       )}
 
       {/* Daily challenge */}
-      <div>
-        <p className="text-sm font-semibold text-gray-700 mb-3">Quick Actions</p>
+      <div className="bg-white border border-gray-100 rounded-3xl p-5 sm:p-6 shadow-2xs">
+        <p className="text-sm font-bold text-gray-900 mb-3">Quick Actions</p>
         <button
           onClick={dailyDone ? undefined : () => navigate(`/practice/problems`, { state: { topic: dailyTopic, category: 'mixed', count: 10, title: `Daily Challenge — ${dailyTopic}`, isDaily: true } })}
           disabled={dailyDone}
-          className={`w-full bg-white border rounded-2xl p-4 text-left flex items-center gap-4 shadow-sm transition-all ${
-            dailyDone ? 'border-emerald-400 cursor-default' : 'border-gray-100 hover:border-yellow-300 hover:shadow-md'
+          className={`w-full bg-white border rounded-2xl p-4 text-left flex items-center gap-4 shadow-2xs transition-all ${
+            dailyDone ? 'border-emerald-300 bg-emerald-50/30 cursor-default' : 'border-gray-100 hover:border-purple-300 hover:shadow-md hover:-translate-y-0.5'
           }`}
         >
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${dailyDone ? 'bg-emerald-100' : 'bg-yellow-100'}`}>
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs ${dailyDone ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>
             {dailyDone
-              ? <IoCheckmarkCircle size={24} className="text-emerald-500" />
-              : <IoTrophyOutline size={24} className="text-yellow-500" />
+              ? <IoCheckmarkCircle size={26} />
+              : <IoTrophyOutline size={26} />
             }
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
-              <p className="font-semibold text-gray-900">Daily Challenge</p>
+              <p className="font-bold text-gray-900">Daily Challenge</p>
               {dailyDone && dailyScore && (
-                <span className="text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">
                   {dailyScore.score}/{dailyScore.total}
                 </span>
               )}
               {dailyDone && !dailyScore && (
-                <span className="text-xs font-semibold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">Done ✓</span>
+                <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">Done ✓</span>
               )}
             </div>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-500">
               {dailyDone
                 ? (dailyScore ? `Score: ${dailyScore.score}/${dailyScore.total} · Come back tomorrow!` : 'Come back tomorrow for a new challenge!')
                 : `Today: ${dailyTopic} — 10 mixed problems`}
@@ -279,7 +305,7 @@ export default function PracticeIndex() {
           </div>
           {dailyDone
             ? <IoLockClosedOutline size={18} className="text-emerald-500 shrink-0" />
-            : <IoChevronForwardOutline size={18} className="text-gray-300 shrink-0" />
+            : <IoChevronForwardOutline size={18} className="text-gray-400 shrink-0" />
           }
         </button>
       </div>

@@ -1,28 +1,55 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  IoPersonOutline, IoLockClosedOutline, IoLogOutOutline,
-  IoCreateOutline, IoShieldCheckmarkOutline, IoChevronForwardOutline,
+  IoPersonOutline,
+  IoLockClosedOutline,
+  IoLogOutOutline,
+  IoShieldCheckmarkOutline,
+  IoSettingsOutline,
+  IoHelpCircleOutline,
+  IoInformationCircleOutline,
+  IoChevronForwardOutline,
   IoCheckmarkCircleOutline,
+  IoFlameOutline,
+  IoFlame,
+  IoRibbonOutline,
+  IoSparklesOutline,
+  IoSchoolOutline,
 } from 'react-icons/io5';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../services/api';
 
-function MenuItem({ icon: Icon, label, iconBg = 'bg-[rgba(75,65,225,0.1)]', iconColor = 'text-[#4b41e1]', onClick, right }) {
+function MenuCardItem({ icon: Icon, title, description, badgeText, badgeColor = 'bg-[#f2f4f6] text-[#45474c]', iconBg = 'bg-[rgba(75,65,225,0.1)]', iconColor = 'text-[#4b41e1]', onClick }) {
   return (
-    <button onClick={onClick}
-      className="w-full flex items-center justify-between p-4 hover:bg-[#f7f9fb] transition-colors last:rounded-b-2xl first:rounded-t-2xl">
-      <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center`}>
-          <Icon size={20} className={iconColor} />
+    <button
+      onClick={onClick}
+      className="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-[#e0e3e5] hover:border-[#4b41e1]/40 hover:shadow-md hover:-translate-y-0.5 transition-all group text-left cursor-pointer"
+    >
+      <div className="flex items-center gap-3.5">
+        <div className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
+          <Icon size={22} className={iconColor} />
         </div>
-        <span className="text-sm font-medium text-[#091426]">{label}</span>
+        <div>
+          <div className="flex items-center gap-2">
+            <p className="text-base font-bold text-[#091426] group-hover:text-[#4b41e1] transition-colors">{title}</p>
+            {badgeText && (
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeColor}`}>
+                {badgeText}
+              </span>
+            )}
+          </div>
+          {description && <p className="text-xs text-[#75777d] mt-0.5 leading-relaxed">{description}</p>}
+        </div>
       </div>
-      {right ?? <IoChevronForwardOutline size={18} className="text-[#75777d]" />}
+      <div className="w-8 h-8 rounded-full bg-[#f7f9fb] group-hover:bg-[#4b41e1] text-[#75777d] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+        <IoChevronForwardOutline size={16} />
+      </div>
     </button>
   );
 }
 
 export default function Profile() {
+  const navigate = useNavigate();
   const { user, refreshProfile, logout, saveAuth } = useAuth();
 
   const [editMode, setEditMode] = useState(false);
@@ -38,7 +65,10 @@ export default function Profile() {
   const [pwError, setPwError] = useState('');
 
   const handleEditSubmit = async (e) => {
-    e.preventDefault(); setEditLoading(true); setEditError(''); setEditSuccess('');
+    e.preventDefault();
+    setEditLoading(true);
+    setEditError('');
+    setEditSuccess('');
     try {
       const { data } = await authApi.updateProfile({ displayName: editForm.name });
       const payload = data.data ?? data;
@@ -47,131 +77,308 @@ export default function Profile() {
       setEditSuccess('Profile updated successfully.');
       setEditMode(false);
       await refreshProfile();
-    } catch (err) { setEditError(err.response?.data?.message || 'Failed to update profile.'); }
-    finally { setEditLoading(false); }
+    } catch (err) {
+      setEditError(err.response?.data?.message || 'Failed to update profile.');
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
-    if (pwForm.newPassword !== pwForm.confirmPassword) { setPwError('New passwords do not match.'); return; }
-    if (pwForm.newPassword.length < 8) { setPwError('New password must be at least 8 characters.'); return; }
-    setPwLoading(true); setPwError(''); setPwSuccess('');
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      setPwError('New passwords do not match.');
+      return;
+    }
+    if (pwForm.newPassword.length < 8) {
+      setPwError('New password must be at least 8 characters.');
+      return;
+    }
+    setPwLoading(true);
+    setPwError('');
+    setPwSuccess('');
     try {
       await authApi.changePassword({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
       setPwSuccess('Password changed successfully.');
       setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (err) { setPwError(err.response?.data?.message || 'Failed to change password.'); }
-    finally { setPwLoading(false); }
+      setPwOpen(false);
+    } catch (err) {
+      setPwError(err.response?.data?.message || 'Failed to change password.');
+    } finally {
+      setPwLoading(false);
+    }
   };
 
-  const inputClass = "w-full bg-[#f2f4f6] border border-[#c5c6cd] rounded-xl px-4 py-3 text-sm text-[#091426] placeholder-[#75777d] focus:outline-none focus:ring-2 focus:ring-[#4b41e1] focus:border-transparent transition";
+  const inputClass =
+    'w-full bg-[#f2f4f6] border border-[#c5c6cd] rounded-xl px-4 py-3 text-sm text-[#091426] placeholder-[#75777d] focus:outline-none focus:ring-2 focus:ring-[#4b41e1] focus:border-transparent transition';
   const displayName = user?.displayName ?? 'User';
   const initial = displayName[0]?.toUpperCase() ?? 'U';
 
+  const memberSince = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    : 'Active Student';
+
   return (
-    <div className="p-4 sm:p-6 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold text-[#091426] tracking-tight mb-6">Profile</h1>
-
-      {/* Profile card */}
-      <div className="bg-white rounded-3xl p-6 shadow-sm mb-5 flex flex-col items-center text-center">
-        <div className="relative mb-4">
-          {user?.profileImage ? (
-            <img src={user.profileImage} referrerPolicy="no-referrer"
-              className="w-20 h-20 rounded-full object-cover border-3 border-[#e2dfff]" alt="" />
-          ) : (
-            <div className="w-20 h-20 rounded-full bg-[#4b41e1] flex items-center justify-center text-white text-3xl font-bold border-3 border-[#e2dfff]">
-              {initial}
-            </div>
-          )}
-          <div className="absolute bottom-0 right-0 bg-white rounded-full p-0.5">
-            <IoCheckmarkCircleOutline size={22} className="text-[#00a472]" />
-          </div>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto pb-16">
+      {/* Header Title Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-extrabold text-[#091426] tracking-tight">Profile & Preferences</h1>
+          <p className="text-sm text-[#75777d] mt-1">Manage your account settings, security options, and study preferences.</p>
         </div>
-        <p className="text-xl font-bold text-[#091426]">{displayName}</p>
-        <p className="text-sm text-[#75777d] mt-1">{user?.email ?? ''}</p>
-        {editSuccess && <p className="text-sm text-[#00a472] mt-2">{editSuccess}</p>}
-      </div>
-
-      {/* Account section */}
-      <p className="text-sm font-semibold text-[#091426] mb-2 ml-1">Account</p>
-      <div className="bg-white rounded-2xl shadow-sm mb-5 divide-y divide-[#f2f4f6] overflow-hidden">
-        <MenuItem icon={IoPersonOutline} label="Edit Profile" onClick={() => { setEditMode(p => !p); setEditSuccess(''); }} />
-        <MenuItem icon={IoLockClosedOutline} label="Change Password"
-          iconBg="bg-[rgba(216,227,251,1)]" iconColor="text-[#091426]"
-          onClick={() => setPwOpen(p => !p)} />
-      </div>
-
-      {/* Edit profile form */}
-      {editMode && (
-        <div className="bg-white rounded-2xl p-5 shadow-sm mb-5">
-          <form onSubmit={handleEditSubmit} className="space-y-4">
-            {editError && <p className="text-sm text-[#ba1a1a]">{editError}</p>}
-            <div>
-              <label className="block text-xs font-semibold text-[#45474c] uppercase tracking-wide mb-1.5 ml-1">Display name</label>
-              <input type="text" required value={editForm.name} onChange={e => setEditForm({ name: e.target.value })} className={inputClass} />
-            </div>
-            <div className="flex gap-2">
-              <button type="submit" disabled={editLoading}
-                className="flex-1 bg-[#4b41e1] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#3323cc] disabled:opacity-60 transition-colors">
-                {editLoading ? 'Saving…' : 'Save changes'}
-              </button>
-              <button type="button" onClick={() => setEditMode(false)}
-                className="flex-1 border border-[#e0e3e5] text-sm text-[#45474c] py-2.5 rounded-xl hover:bg-[#f2f4f6] transition-colors">
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Change password form */}
-      {pwOpen && (
-        <div className="bg-white rounded-2xl p-5 shadow-sm mb-5">
-          <form onSubmit={handlePasswordSubmit} className="space-y-4">
-            {pwError && <p className="text-sm text-[#ba1a1a]">{pwError}</p>}
-            {pwSuccess && <p className="text-sm text-[#00a472]">{pwSuccess}</p>}
-            {['currentPassword', 'newPassword', 'confirmPassword'].map((field, i) => (
-              <div key={field}>
-                <label className="block text-xs font-semibold text-[#45474c] uppercase tracking-wide mb-1.5 ml-1">
-                  {['Current password', 'New password', 'Confirm new password'][i]}
-                </label>
-                <input type="password" required value={pwForm[field]}
-                  onChange={e => setPwForm(p => ({ ...p, [field]: e.target.value }))}
-                  placeholder={['••••••••', 'Minimum 8 characters', 'Re-enter new password'][i]}
-                  className={inputClass} />
-              </div>
-            ))}
-            <button type="submit" disabled={pwLoading}
-              className="w-full bg-[#4b41e1] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#3323cc] disabled:opacity-60 transition-colors">
-              {pwLoading ? 'Updating…' : 'Update password'}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* Security section */}
-      <p className="text-sm font-semibold text-[#091426] mb-2 ml-1">Security</p>
-      <div className="bg-white rounded-2xl shadow-sm mb-5 overflow-hidden">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[rgba(75,65,225,0.1)] flex items-center justify-center">
-              <IoShieldCheckmarkOutline size={20} className="text-[#4b41e1]" />
-            </div>
-            <span className="text-sm font-medium text-[#091426]">Two-factor authentication</span>
-          </div>
-          <span className={`text-xs font-semibold px-3 py-1 rounded-full ${user?.twoFactorEnabled ? 'bg-[rgba(0,164,114,0.12)] text-[#00a472]' : 'bg-[#f2f4f6] text-[#75777d]'}`}>
-            {user?.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 bg-[rgba(0,164,114,0.1)] text-[#00a472] px-3 py-1.5 rounded-full text-xs font-bold border border-[rgba(0,164,114,0.2)]">
+            <IoCheckmarkCircleOutline size={16} /> Verified Account
           </span>
         </div>
       </div>
 
-      {/* Sign out */}
-      <button onClick={logout}
-        className="w-full flex items-center justify-center gap-2 border border-[#ffdad6] text-[#ba1a1a] font-semibold py-3.5 rounded-2xl hover:bg-red-50 transition-colors mt-2 mb-4">
-        <IoLogOutOutline size={18} /> Sign out
-      </button>
+      {/* Main Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column: Hero User Identity Card */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-gradient-to-br from-[#4b41e1] via-[#3d33d0] to-[#2b1fb8] rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+            {/* Background Accent Graphic */}
+            <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-white/10 rounded-full blur-xl pointer-events-none" />
 
-      <p className="text-center text-xs text-[#75777d]">Version 1.0.0</p>
+            <div className="flex flex-col items-center text-center relative z-10">
+              <div className="relative mb-4">
+                {user?.profileImage ? (
+                  <img
+                    src={user.profileImage}
+                    referrerPolicy="no-referrer"
+                    className="w-24 h-24 rounded-full object-cover border-4 border-white/30 shadow-md"
+                    alt=""
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-4xl font-extrabold border-4 border-white/30 shadow-md">
+                    {initial}
+                  </div>
+                )}
+                <div className="absolute bottom-1 right-1 bg-white rounded-full p-1 shadow-sm">
+                  <IoCheckmarkCircleOutline size={20} className="text-[#00a472]" />
+                </div>
+              </div>
+
+              <h2 className="text-2xl font-bold tracking-tight">{displayName}</h2>
+              <p className="text-xs text-white/80 mt-1 font-medium">{user?.email ?? ''}</p>
+
+              <div className="mt-4 pt-4 border-t border-white/15 w-full flex items-center justify-around text-center">
+                <div>
+                  <div className="flex items-center justify-center gap-1 text-amber-300">
+                    <IoFlame size={16} />
+                    <span className="text-base font-extrabold">{user?.currentStreak ?? 1}</span>
+                  </div>
+                  <p className="text-[11px] text-white/70 uppercase tracking-wider mt-0.5">Day Streak</p>
+                </div>
+                <div className="w-px h-8 bg-white/15" />
+                <div>
+                  <div className="flex items-center justify-center gap-1 text-emerald-300">
+                    <IoSchoolOutline size={16} />
+                    <span className="text-base font-extrabold">{user?.learningPreferences?.difficulty ? user.learningPreferences.difficulty.toUpperCase() : 'MEDIUM'}</span>
+                  </div>
+                  <p className="text-[11px] text-white/70 uppercase tracking-wider mt-0.5">Difficulty</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Details Card */}
+          <div className="bg-white rounded-3xl p-5 border border-[#e0e3e5] shadow-xs space-y-3">
+            <div className="flex items-center justify-between text-xs text-[#45474c] pb-2 border-b border-[#f2f4f6]">
+              <span className="text-[#75777d]">Member Since</span>
+              <span className="font-bold text-[#091426]">{memberSince}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-[#45474c] pb-2 border-b border-[#f2f4f6]">
+              <span className="text-[#75777d]">Two-Factor Auth</span>
+              <span className={`font-bold ${user?.twoFactorEnabled ? 'text-[#00a472]' : 'text-[#75777d]'}`}>
+                {user?.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-[#45474c]">
+              <span className="text-[#75777d]">App Platform</span>
+              <span className="font-bold text-[#091426]">Web Version 1.0.0</span>
+            </div>
+          </div>
+
+          {/* Logout Button */}
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-center gap-2 border border-[#ffdad6] text-[#ba1a1a] bg-white font-bold py-3.5 rounded-2xl hover:bg-red-50 transition-colors shadow-xs cursor-pointer"
+          >
+            <IoLogOutOutline size={20} /> Sign out of account
+          </button>
+        </div>
+
+        {/* Right Column: Profile Sub-Modules & Forms */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Account & Security Section */}
+          <div>
+            <h3 className="text-xs font-bold text-[#45474c] uppercase tracking-wider mb-3 ml-1">Account & Security</h3>
+            <div className="space-y-3">
+              <MenuCardItem
+                icon={IoPersonOutline}
+                title="Edit Display Name"
+                description="Update your public profile display name"
+                iconBg="bg-[rgba(75,65,225,0.1)]"
+                iconColor="text-[#4b41e1]"
+                onClick={() => {
+                  setEditMode((p) => !p);
+                  setEditSuccess('');
+                  setPwOpen(false);
+                }}
+              />
+
+              {editMode && (
+                <div className="bg-white rounded-2xl p-5 border border-[#4b41e1]/40 shadow-sm animate-fadeIn">
+                  <form onSubmit={handleEditSubmit} className="space-y-4">
+                    {editError && <p className="text-xs text-[#ba1a1a] font-semibold">{editError}</p>}
+                    <div>
+                      <label className="block text-xs font-semibold text-[#45474c] uppercase tracking-wide mb-1.5 ml-1">
+                        Display name
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({ name: e.target.value })}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={editLoading}
+                        className="flex-1 bg-[#4b41e1] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#3323cc] disabled:opacity-60 transition-colors"
+                      >
+                        {editLoading ? 'Saving…' : 'Save changes'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditMode(false)}
+                        className="flex-1 border border-[#e0e3e5] text-sm text-[#45474c] py-2.5 rounded-xl hover:bg-[#f2f4f6] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              <MenuCardItem
+                icon={IoLockClosedOutline}
+                title="Change Password"
+                description="Update your account password & authentication credentials"
+                iconBg="bg-[rgba(216,227,251,1)]"
+                iconColor="text-[#091426]"
+                onClick={() => {
+                  setPwOpen((p) => !p);
+                  setPwSuccess('');
+                  setEditMode(false);
+                }}
+              />
+
+              {pwOpen && (
+                <div className="bg-white rounded-2xl p-5 border border-[#4b41e1]/40 shadow-sm animate-fadeIn">
+                  <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                    {pwError && <p className="text-xs text-[#ba1a1a] font-semibold">{pwError}</p>}
+                    {['currentPassword', 'newPassword', 'confirmPassword'].map((field, i) => (
+                      <div key={field}>
+                        <label className="block text-xs font-semibold text-[#45474c] uppercase tracking-wide mb-1.5 ml-1">
+                          {['Current password', 'New password', 'Confirm new password'][i]}
+                        </label>
+                        <input
+                          type="password"
+                          required
+                          value={pwForm[field]}
+                          onChange={(e) => setPwForm((p) => ({ ...p, [field]: e.target.value }))}
+                          placeholder={['••••••••', 'Minimum 8 characters', 'Re-enter new password'][i]}
+                          className={inputClass}
+                        />
+                      </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={pwLoading}
+                        className="flex-1 bg-[#4b41e1] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#3323cc] disabled:opacity-60 transition-colors"
+                      >
+                        {pwLoading ? 'Updating…' : 'Update password'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPwOpen(false)}
+                        className="flex-1 border border-[#e0e3e5] text-sm text-[#45474c] py-2.5 rounded-xl hover:bg-[#f2f4f6] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              <MenuCardItem
+                icon={IoShieldCheckmarkOutline}
+                title="Privacy & Security"
+                description="Manage 2FA verification, active login sessions, and data exports"
+                badgeText={user?.twoFactorEnabled ? '2FA Active' : '2FA Recommended'}
+                badgeColor={user?.twoFactorEnabled ? 'bg-[rgba(0,164,114,0.15)] text-[#00a472]' : 'bg-[rgba(255,152,0,0.15)] text-[#ff9800]'}
+                iconBg="bg-[rgba(0,164,114,0.1)]"
+                iconColor="text-[#00a472]"
+                onClick={() => navigate('/profile/privacy')}
+              />
+            </div>
+          </div>
+
+          {/* Application Preferences Section */}
+          <div>
+            <h3 className="text-xs font-bold text-[#45474c] uppercase tracking-wider mb-3 ml-1">Preferences & Interface</h3>
+            <div className="space-y-3">
+              <MenuCardItem
+                icon={IoSettingsOutline}
+                title="App Settings"
+                description="Configure dark mode, audio cues, font sizes, target session lengths & app cache"
+                iconBg="bg-[rgba(33,150,243,0.1)]"
+                iconColor="text-[#2196f3]"
+                onClick={() => navigate('/profile/settings')}
+              />
+            </div>
+          </div>
+
+          {/* Support & Information Section */}
+          <div>
+            <h3 className="text-xs font-bold text-[#45474c] uppercase tracking-wider mb-3 ml-1">Support & Knowledge Base</h3>
+            <div className="space-y-3">
+              <MenuCardItem
+                icon={IoHelpCircleOutline}
+                title="Help Center & Feedback"
+                description="Search guides, request features, and contact direct email support"
+                iconBg="bg-[rgba(255,152,0,0.1)]"
+                iconColor="text-[#ff9800]"
+                onClick={() => navigate('/profile/help')}
+              />
+
+              <MenuCardItem
+                icon={IoHelpCircleOutline}
+                title="Frequently Asked Questions"
+                description="Find instant answers regarding diagnostic scoring, topic mastery & practice"
+                iconBg="bg-[rgba(75,65,225,0.1)]"
+                iconColor="text-[#4b41e1]"
+                onClick={() => navigate('/profile/faq')}
+              />
+
+              <MenuCardItem
+                icon={IoInformationCircleOutline}
+                title="About MathMentor AI"
+                description="App mission, curriculum details, core features & legal terms of service"
+                iconBg="bg-[rgba(0,164,114,0.1)]"
+                iconColor="text-[#00a472]"
+                onClick={() => navigate('/profile/about')}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

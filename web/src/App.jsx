@@ -12,6 +12,12 @@ import Dashboard    from './pages/Dashboard';
 import Diagnosis    from './pages/Diagnosis';
 import TutorAI      from './pages/TutorAI';
 import Profile      from './pages/Profile';
+import Settings     from './pages/profile/Settings';
+import Help         from './pages/profile/Help';
+import FAQ          from './pages/profile/FAQ';
+import About        from './pages/profile/About';
+import Privacy      from './pages/profile/Privacy';
+import Terms        from './pages/profile/Terms';
 
 // Practice sub-pages
 import PracticeIndex  from './pages/practice/index';
@@ -43,7 +49,13 @@ export default function App() {
               <Route path="/dashboard"  element={<Dashboard />} />
               <Route path="/diagnosis"  element={<Diagnosis />} />
               <Route path="/tutor"      element={<TutorAI />} />
-              <Route path="/profile"    element={<Profile />} />
+              <Route path="/profile"          element={<Profile />} />
+              <Route path="/profile/settings" element={<Settings />} />
+              <Route path="/profile/help"     element={<Help />} />
+              <Route path="/profile/faq"      element={<FAQ />} />
+              <Route path="/profile/about"    element={<About />} />
+              <Route path="/profile/privacy"  element={<Privacy />} />
+              <Route path="/profile/terms"    element={<Terms />} />
 
               {/* Practice hierarchy */}
               <Route path="/practice"                          element={<PracticeIndex />} />

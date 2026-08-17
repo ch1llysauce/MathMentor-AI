@@ -7,10 +7,10 @@ import {
   IoTimerOutline,
   IoArrowForwardOutline,
   IoFlameOutline,
-  IoSearchOutline,
   IoCalculatorOutline,
   IoShapesOutline,
   IoCompassOutline,
+  IoBarChartOutline,
 } from 'react-icons/io5';
 import { useAuth } from '../context/AuthContext';
 import { progressApi, learningApi } from '../services/api';
@@ -127,7 +127,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
       {/* Welcome */}
       <div className="mb-5">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
@@ -137,7 +137,7 @@ export default function Dashboard() {
       </div>
 
       {/* Action buttons */}
-      <div className="flex gap-3 mb-6">
+      <div className="flex gap-3 mb-6 w-full">
         <button
           disabled
           className="flex-1 flex items-center justify-center gap-2 bg-purple-600 text-white text-sm font-semibold py-3 px-4 rounded-xl opacity-60 cursor-not-allowed"
@@ -153,101 +153,156 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* Featured card */}
-      {!cardReady ? (
-        <FeaturedSkeleton />
-      ) : nextStep ? (
-        <FeaturedCard
-          badge="NEXT IN YOUR PATH"
-          title={nextStep.subtopic}
-          description={nextStep.reason || TOPIC_META[nextStep.topic]?.description || `Continue building your ${nextStep.topic} skills.`}
-          progressLabel={nextStep.totalLessonsInSubtopic ? `${nextStep.completedLessons ?? 0}/${nextStep.totalLessonsInSubtopic} lessons` : `${nextStep.subtopic} Progress`}
-          progressPct={nextStep.currentScore}
-          btnLabel="Start Lesson"
-          onPress={() => navigate(`/practice/topic/${encodeURIComponent(nextStep.topic)}`, {
-            state: { mastery: nextStep.currentScore, subtopicFilter: nextStep.subtopic }
-          })}
-          IconComponent={TOPIC_META[nextStep.topic]?.Icon ?? IoCalculatorOutline}
-        />
-      ) : diagnosticDone ? (
-        <FeaturedCard
-          badge={recProgress.progressPercentage > 0 ? 'GREAT JOB' : 'READY TO START'}
-          title={recProgress.progressPercentage > 0 ? "You're crushing it!" : "Let's get to work!"}
-          description={
-            recProgress.totalLessons > 0
-              ? `You've completed ${recProgress.completedLessons} of ${recProgress.totalLessons} lessons. Keep exploring to sharpen your skills.`
-              : 'All recommended topics are complete. Keep practicing to maintain your mastery.'
-          }
-          progressLabel="Overall Progress"
-          progressPct={recProgress.progressPercentage}
-          btnLabel="Browse Topics"
-          onPress={() => navigate('/practice')}
-          IconComponent={IoFlameOutline}
-        />
-      ) : (
-        <FeaturedCard
-          badge="GET STARTED"
-          title="Take the Diagnostic"
-          description="Complete a short assessment so MathMentor can build your personalised learning path."
-          progressLabel="Your Path"
-          progressPct={0}
-          btnLabel="Start Now"
-          onPress={() => navigate('/diagnosis')}
-          IconComponent={IoAnalyticsOutline}
-        />
-      )}
+      {/* Featured card + Stats — side by side on desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          {/* Featured card */}
+          {!cardReady ? (
+            <FeaturedSkeleton />
+          ) : nextStep ? (
+            <FeaturedCard
+              badge="NEXT IN YOUR PATH"
+              title={nextStep.subtopic}
+              description={nextStep.reason || TOPIC_META[nextStep.topic]?.description || `Continue building your ${nextStep.topic} skills.`}
+              progressLabel={nextStep.totalLessonsInSubtopic ? `${nextStep.completedLessons ?? 0}/${nextStep.totalLessonsInSubtopic} lessons` : `${nextStep.subtopic} Progress`}
+              progressPct={nextStep.currentScore}
+              btnLabel="Start Lesson"
+              onPress={() => navigate(`/practice/topic/${encodeURIComponent(nextStep.topic)}`, {
+                state: { mastery: nextStep.currentScore, subtopicFilter: nextStep.subtopic }
+              })}
+              IconComponent={TOPIC_META[nextStep.topic]?.Icon ?? IoCalculatorOutline}
+            />
+          ) : diagnosticDone ? (
+            <FeaturedCard
+              badge={recProgress.progressPercentage > 0 ? 'GREAT JOB' : 'READY TO START'}
+              title={recProgress.progressPercentage > 0 ? "You're crushing it!" : "Let's get to work!"}
+              description={
+                recProgress.totalLessons > 0
+                  ? `You've completed ${recProgress.completedLessons} of ${recProgress.totalLessons} lessons. Keep exploring to sharpen your skills.`
+                  : 'All recommended topics are complete. Keep practicing to maintain your mastery.'
+              }
+              progressLabel="Overall Progress"
+              progressPct={recProgress.progressPercentage}
+              btnLabel="Browse Topics"
+              onPress={() => navigate('/practice')}
+              IconComponent={IoFlameOutline}
+            />
+          ) : (
+            <FeaturedCard
+              badge="GET STARTED"
+              title="Take the Diagnostic"
+              description="Complete a short assessment so MathMentor can build your personalised learning path."
+              progressLabel="Your Path"
+              progressPct={0}
+              btnLabel="Start Now"
+              onPress={() => navigate('/diagnosis')}
+              IconComponent={IoAnalyticsOutline}
+            />
+          )}
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 gap-4 mt-6">
-        <StatCard
-          label="Accuracy"
-          value={stats.accuracyTotal > 0 ? `${stats.accuracy}%` : '—'}
-          sub={stats.accuracyTotal > 0 ? `${stats.accuracyCorrect}/${stats.accuracyTotal} · Diagnostic Results` : undefined}
-          icon={IoCheckmarkDoneOutline}
-          iconBg="bg-indigo-50"
-          iconColor="text-indigo-600"
-        />
-        <StatCard
-          label="Avg. Speed"
-          value={stats.avgSpeed > 0 ? `${stats.avgSpeed}s` : '—'}
-          icon={IoTimerOutline}
-          iconBg="bg-red-50"
-          iconColor="text-red-500"
-        />
+          {/* Topic Breakdown & Mastery Progress */}
+          <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-semibold text-gray-900 flex items-center gap-2 text-base">
+                  <IoBarChartOutline size={18} className="text-purple-600" /> Topic Breakdown & Mastery
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">Your progress across main domain areas</p>
+              </div>
+              <Link to="/practice" className="text-xs font-medium text-purple-600 hover:underline flex items-center gap-1">
+                View All <IoArrowForwardOutline size={12} />
+              </Link>
+            </div>
+
+            <div className="space-y-3.5">
+              {['Algebra', 'Geometry', 'Trigonometry'].map((topicName) => {
+                const meta = TOPIC_META[topicName] || { Icon: IoCalculatorOutline, color: '#8b5cf6' };
+                const Icon = meta.Icon;
+                const diagKey = topicName.toLowerCase();
+                const diagScore = diagnostic?.[`${diagKey}Score`] ?? diagnostic?.topicScores?.[diagKey]?.score ?? 0;
+                const stats = summary?.topicStats?.find(
+                  (t) => t.topic?.toLowerCase() === topicName.toLowerCase()
+                );
+                const statsScore = stats?.averageMastery ?? stats?.accuracy ?? 0;
+                const mastery = Math.round(Math.max(diagScore, statsScore));
+                const totalQuestions = stats?.totalQuestions ?? (diagnostic?.topicScores?.[diagKey]?.questionsAnswered ?? 0);
+                const subtopicCount = stats?.subtopics?.length ?? (diagnostic?.topicScores?.[diagKey]?.subtopicScores ? Object.keys(diagnostic.topicScores[diagKey].subtopicScores).length : 0);
+
+                return (
+                  <div
+                    key={topicName}
+                    onClick={() => navigate(`/practice/topic/${encodeURIComponent(topicName)}`)}
+                    className="p-3.5 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-purple-50/40 hover:border-purple-200 transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm"
+                          style={{ backgroundColor: meta.color }}
+                        >
+                          <Icon size={18} />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900 group-hover:text-purple-700 transition-colors">
+                            {topicName}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {subtopicCount > 0 ? `${subtopicCount} subtopics` : '0 subtopics'}
+                            {totalQuestions > 0 ? ` · ${totalQuestions} questions` : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-gray-700 bg-white px-2.5 py-1 rounded-lg border border-gray-100">
+                        {mastery}% Mastery
+                      </span>
+                    </div>
+                    {/* Progress Bar */}
+                    <div className="w-full h-2 bg-gray-200/80 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${Math.min(mastery, 100)}%`,
+                          backgroundColor: meta.color,
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Streak */}
+          {stats.currentStreak > 0 && (
+            <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center gap-3">
+              <IoFlameOutline size={24} className="text-orange-500 shrink-0" />
+              <div>
+                <p className="font-semibold text-orange-800">{stats.currentStreak}-day streak</p>
+                <p className="text-xs text-orange-600">Keep it going — practice something today.</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Stats — stacked in the sidebar on desktop */}
+        <div className="grid grid-cols-2 lg:grid-cols-1 gap-4 h-fit">
+          <StatCard
+            label="Accuracy"
+            value={stats.accuracyTotal > 0 ? `${stats.accuracy}%` : '—'}
+            sub={stats.accuracyTotal > 0 ? `${stats.accuracyCorrect}/${stats.accuracyTotal} · Diagnostic Results` : undefined}
+            icon={IoCheckmarkDoneOutline}
+            iconBg="bg-indigo-50"
+            iconColor="text-indigo-600"
+          />
+          <StatCard
+            label="Avg. Speed"
+            value={stats.avgSpeed > 0 ? `${stats.avgSpeed}s` : '—'}
+            icon={IoTimerOutline}
+            iconBg="bg-red-50"
+            iconColor="text-red-500"
+          />
+        </div>
       </div>
-
-      {/* Weak areas quick link */}
-      {diagnostic?.weakTopics?.length > 0 && (
-        <div className="mt-4 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-              <IoSearchOutline size={16} className="text-red-400" /> Weak Areas
-            </h2>
-            <Link to="/diagnosis" className="text-xs text-purple-600 hover:underline flex items-center gap-1">
-              View all <IoArrowForwardOutline size={12} />
-            </Link>
-          </div>
-          <ul className="space-y-1.5">
-            {diagnostic.weakTopics.slice(0, 3).map((area, i) => (
-              <li key={i} className="flex items-center justify-between text-sm">
-                <span className="text-gray-700">{area.topic}{area.subtopic ? ` — ${area.subtopic}` : ''}</span>
-                <span className="text-red-500 font-semibold">{area.score}%</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Streak */}
-      {stats.currentStreak > 0 && (
-        <div className="mt-4 bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center gap-3">
-          <IoFlameOutline size={24} className="text-orange-500 shrink-0" />
-          <div>
-            <p className="font-semibold text-orange-800">{stats.currentStreak}-day streak</p>
-            <p className="text-xs text-orange-600">Keep it going — practice something today.</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

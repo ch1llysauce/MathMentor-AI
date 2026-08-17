@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authApi } from '../services/api';
-import { IoCalculatorOutline, IoMailOutline, IoLockClosedOutline, IoArrowBackOutline, IoCheckmarkCircleOutline } from 'react-icons/io5';
+import { IoCalculatorOutline, IoMailOutline, IoLockClosedOutline, IoArrowBackOutline, IoCheckmarkCircleOutline, IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 
 const STEPS = ['Email', 'Verify Code', 'New Password'];
 
@@ -11,6 +11,8 @@ export default function ForgotPassword() {
   const [otp, setOtp] = useState('');
   const [otpToken, setOtpToken] = useState('');
   const [passwords, setPasswords] = useState({ newPassword: '', confirm: '' });
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -79,9 +81,9 @@ export default function ForgotPassword() {
           ) : (
             <>
               {/* Step indicator */}
-              <div className="flex items-center gap-2 mb-6">
+              <div className="flex items-center justify-center gap-3 mb-6 max-w-xs mx-auto">
                 {STEPS.map((s, i) => (
-                  <div key={s} className="flex items-center gap-2 flex-1">
+                  <div key={s} className={`flex items-center gap-3 ${i < STEPS.length - 1 ? 'flex-1' : ''}`}>
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
                       i + 1 < step ? 'bg-[#00a472] text-white' :
                       i + 1 === step ? 'bg-[#4b41e1] text-white' :
@@ -153,18 +155,26 @@ export default function ForgotPassword() {
                     <label className="block text-xs font-semibold text-[#45474c] uppercase tracking-wide mb-1.5 ml-1">New password</label>
                     <div className="relative">
                       <IoLockClosedOutline size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#75777d]" />
-                      <input type="password" required value={passwords.newPassword}
+                      <input type={showNewPassword ? 'text' : 'password'} required value={passwords.newPassword}
                         onChange={e => setPasswords(p => ({ ...p, newPassword: e.target.value }))}
-                        placeholder="Minimum 8 characters" className={`${inputClass} pl-11`} />
+                        placeholder="Minimum 8 characters" className={`${inputClass} pl-11 pr-12`} />
+                      <button type="button" onClick={() => setShowNewPassword(p => !p)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[#75777d] hover:text-[#091426]">
+                        {showNewPassword ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
+                      </button>
                     </div>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-[#45474c] uppercase tracking-wide mb-1.5 ml-1">Confirm new password</label>
                     <div className="relative">
                       <IoLockClosedOutline size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#75777d]" />
-                      <input type="password" required value={passwords.confirm}
+                      <input type={showConfirmPassword ? 'text' : 'password'} required value={passwords.confirm}
                         onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))}
-                        placeholder="Re-enter password" className={`${inputClass} pl-11`} />
+                        placeholder="Re-enter password" className={`${inputClass} pl-11 pr-12`} />
+                      <button type="button" onClick={() => setShowConfirmPassword(p => !p)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[#75777d] hover:text-[#091426]">
+                        {showConfirmPassword ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
+                      </button>
                     </div>
                   </div>
                   <button type="submit" disabled={loading}

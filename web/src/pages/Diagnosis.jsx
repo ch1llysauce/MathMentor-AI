@@ -15,6 +15,7 @@ import {
   IoSparklesOutline,
   IoWarningOutline,
   IoChevronForwardOutline,
+  IoSchoolOutline,
 } from 'react-icons/io5';
 import { questionApi, learningApi } from '../services/api';
 import MathText from '../components/MathText';
@@ -78,41 +79,42 @@ function getRecommendation(diag) {
 }
 
 // ─── Mastery Ring (SVG) ───────────────────────────────────────────────────────
-function MasteryRing({ percentage, topic, subtitle, onClick }) {
-  const size = 128, stroke = 8;
+function MasteryRing({ percentage, topic, subtitle, onClick, color = '#4b41e1' }) {
+  const size = 120, stroke = 10;
   const radius = (size - stroke) / 2;
   const circ   = 2 * Math.PI * radius;
   const offset = circ - (Math.min(percentage, 100) / 100) * circ;
-  const scoreColor = percentage >= 80 ? '#00a472' : percentage >= 60 ? '#f59e0b' : '#ef4444';
 
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center gap-2 focus:outline-none group"
+      className="flex flex-col items-center gap-3 p-4 rounded-2xl hover:bg-gray-50/80 transition-all duration-300 focus:outline-none group border border-transparent hover:border-gray-200 hover:shadow-sm"
     >
       <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size}>
+        <svg width={size} height={size} className="drop-shadow-sm">
           {/* Track */}
-          <circle cx={size/2} cy={size/2} r={radius} stroke="#e5e7eb" strokeWidth={stroke} fill="none" />
+          <circle cx={size/2} cy={size/2} r={radius} stroke="#f2f4f6" strokeWidth={stroke} fill="none" />
           {/* Progress */}
           <circle
             cx={size/2} cy={size/2} r={radius}
-            stroke="#4b41e1"
+            stroke={color}
             strokeWidth={stroke}
             fill="none"
             strokeDasharray={circ}
             strokeDashoffset={offset}
             strokeLinecap="round"
             transform={`rotate(-90 ${size/2} ${size/2})`}
-            style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+            style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
           />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-lg font-bold text-purple-700">{Math.round(percentage)}%</span>
+        <div className="absolute inset-0 flex items-center justify-center flex-col">
+          <span className="text-2xl font-extrabold text-gray-900 tracking-tight" style={{ color: color }}>{Math.round(percentage)}%</span>
         </div>
       </div>
-      <p className="text-base font-semibold text-gray-900">{topic}</p>
-      {subtitle && <p className="text-xs text-gray-400">{subtitle}</p>}
+      <div className="text-center">
+        <p className="text-base font-bold text-gray-900 group-hover:text-purple-700 transition-colors">{topic}</p>
+        {subtitle && <p className="text-xs font-medium text-gray-500 mt-0.5">{subtitle}</p>}
+      </div>
     </button>
   );
 }
@@ -120,17 +122,19 @@ function MasteryRing({ percentage, topic, subtitle, onClick }) {
 // ─── Weak Area Card ───────────────────────────────────────────────────────────
 function WeakAreaCard({ subtopic, masteryPercentage, onPress }) {
   return (
-    <div className="rounded-xl p-4 mb-3 hover:bg-gray-50 transition-colors cursor-pointer" onClick={onPress}>
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-sm font-semibold text-gray-900 flex-1 mr-2">{subtopic}</span>
-        <span className="text-sm font-medium text-red-500">{masteryPercentage}% Mastery</span>
+    <div className="rounded-2xl p-4 mb-3 bg-white border border-red-100 hover:border-red-300 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group" onClick={onPress}>
+      <div className="flex justify-between items-center mb-3">
+        <span className="text-sm font-bold text-gray-900 group-hover:text-red-600 transition-colors">{subtopic}</span>
+        <span className="text-xs font-extrabold text-red-500 bg-red-50 px-2 py-1 rounded-md">{masteryPercentage}% Mastery</span>
       </div>
-      <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden mb-2">
-        <div className="h-full bg-red-400 rounded-full transition-all" style={{ width: `${masteryPercentage}%` }} />
+      <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
+        <div className="h-full bg-gradient-to-r from-red-400 to-orange-400 rounded-full transition-all" style={{ width: `${masteryPercentage}%` }} />
       </div>
-      <button className="text-xs font-medium text-purple-600 hover:text-purple-800 tracking-wide">
-        REVIEW NOW
-      </button>
+      <div className="flex justify-end">
+        <button className="text-xs font-bold text-red-600 group-hover:text-red-700 tracking-wider flex items-center gap-1 uppercase">
+          Review Now <IoArrowForwardOutline size={12} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -245,13 +249,14 @@ function IntroScreen({ onStart, loading }) {
   );
 }
 
-function TestScreen({ questions, onSubmit }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers]           = useState({});
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
+function TestScreen({ questions, onSubmit, onCancel }) {
+  const [currentIndex, setCurrentIndex]       = useState(0);
+  const [answers, setAnswers]                 = useState({});
+  const [selectedAnswer, setSelectedAnswer]   = useState(null);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [isCorrect, setIsCorrect]       = useState(null);
-  const [showHint, setShowHint]         = useState(false);
+  const [isCorrect, setIsCorrect]             = useState(null);
+  const [showHint, setShowHint]               = useState(false);
+  const [showQuitModal, setShowQuitModal]     = useState(false);
   const startTimeRef = useRef(Date.now());
 
   const q = questions[currentIndex];
@@ -281,91 +286,151 @@ function TestScreen({ questions, onSubmit }) {
   };
 
   return (
-    <div className="max-w-xl mx-auto px-4 py-6">
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-center">
-          <p className="text-base font-bold text-purple-700">{currentIndex + 1} / {questions.length}</p>
-          <p className="text-xs text-gray-400">{q?.topic}</p>
-        </div>
-        <span className="text-xs font-semibold px-2.5 py-1 rounded-lg" style={{ backgroundColor: diffColor + '20', color: diffColor }}>
-          {q?.difficulty}
-        </span>
-      </div>
-      <div className="h-1 bg-gray-100 rounded-full mb-5 overflow-hidden">
-        <div className="h-full bg-purple-600 rounded-full transition-all" style={{ width: `${progress * 100}%` }} />
-      </div>
-      <span className="inline-block bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full mb-4">{q?.subtopic}</span>
-      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm mb-4">
-        <div className="text-gray-900 font-medium leading-relaxed text-base"><MathText text={q?.question} /></div>
-      </div>
-      {q?.choices?.length > 0 && (
-        <div className="space-y-2.5 mb-4">
-          {q.choices.map((choice, idx) => {
-            const letter = String.fromCharCode(65 + idx);
-            const isSel  = selectedAnswer === choice;
-            const isRight = choice.trim().toLowerCase() === (q.correctAnswer ?? '').trim().toLowerCase();
-            let cardClass  = 'bg-white border-gray-200 text-gray-700';
-            let bubbleClass = 'bg-gray-100 text-gray-500';
-            if (showExplanation) {
-              if (isSel && isCorrect)      { cardClass = 'bg-emerald-50 border-emerald-400 text-emerald-800'; bubbleClass = 'bg-emerald-500 text-white'; }
-              else if (isSel && !isCorrect){ cardClass = 'bg-red-50 border-red-400 text-red-800';           bubbleClass = 'bg-red-500 text-white'; }
-              else if (!isSel && isRight)  { cardClass = 'bg-emerald-50 border-emerald-400 text-emerald-800'; }
-            } else if (isSel) {
-              cardClass  = 'bg-purple-50 border-purple-400 text-purple-800';
-              bubbleClass = 'bg-purple-600 text-white';
-            }
-            return (
-              <button key={idx} onClick={() => !showExplanation && setSelectedAnswer(choice)} disabled={showExplanation}
-                className={`w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-sm transition-colors ${cardClass}`}>
-                <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${bubbleClass}`}>{letter}</span>
-                <span className="flex-1"><MathText text={choice} /></span>
-                {showExplanation && isSel && isCorrect  && <IoCheckmarkCircleOutline size={20} className="shrink-0 text-emerald-600" />}
-                {showExplanation && isSel && !isCorrect && <IoCloseOutline size={20} className="shrink-0 text-red-500" />}
-                {showExplanation && !isSel && isRight   && <IoCheckmarkCircleOutline size={20} className="shrink-0 text-emerald-600" />}
+    <>
+      {/* Leave Warning Modal */}
+      {showQuitModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl text-center border border-gray-100 animate-in fade-in zoom-in duration-200">
+            <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 border border-amber-100 flex items-center justify-center mx-auto mb-4 shadow-2xs">
+              <IoWarningOutline size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Leave Diagnostic Test?</h3>
+            <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+              Are you sure you want to leave? Your progress in this diagnostic test will not be saved.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowQuitModal(false)}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3.5 px-4 rounded-2xl text-sm transition-colors"
+              >
+                Continue Test
               </button>
-            );
-          })}
+              <button
+                onClick={() => {
+                  setShowQuitModal(false);
+                  if (onCancel) onCancel();
+                }}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3.5 px-4 rounded-2xl text-sm transition-colors shadow-md shadow-red-500/20"
+              >
+                Leave Test
+              </button>
+            </div>
+          </div>
         </div>
       )}
-      {!showExplanation && q?.hints?.length > 0 && (
-        <div className="mb-4">
-          {!showHint ? (
-            <button onClick={() => setShowHint(true)}
-              className="w-full flex items-center justify-center gap-2 bg-yellow-50 border border-yellow-300 text-yellow-800 text-sm font-semibold py-2.5 rounded-xl">
-              <IoBulbOutline size={18} className="text-yellow-500" /> Show Hint
+
+      <div className="flex flex-col min-h-full">
+        {/* Header with Back Button */}
+        <div className="bg-white border-b border-gray-100 px-4 sm:px-6 py-3.5 sticky top-0 z-10 shadow-2xs">
+          <div className="flex items-center gap-4 max-w-3xl mx-auto">
+            <button
+              onClick={() => setShowQuitModal(true)}
+              className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 shrink-0 transition-colors"
+            >
+              <IoArrowBackOutline size={20} />
             </button>
-          ) : (
-            <div className="flex gap-2 bg-yellow-50 border-l-4 border-yellow-400 rounded-xl p-4 text-sm text-yellow-900">
-              <IoBulbOutline size={16} className="text-yellow-500 shrink-0 mt-0.5" />
-              <div><MathText text={q.hints[0]} /></div>
+            <div className="flex-1 text-center">
+              <p className="text-xs font-semibold text-purple-600 truncate uppercase tracking-wider">{q?.topic}</p>
+              <p className="text-sm font-extrabold text-gray-900">{currentIndex + 1} of {questions.length}</p>
+            </div>
+            <span className="text-xs font-bold px-3 py-1 rounded-xl border" style={{ backgroundColor: diffColor + '18', borderColor: diffColor + '30', color: diffColor }}>
+              {q?.difficulty}
+            </span>
+          </div>
+          <div className="mt-3 max-w-3xl mx-auto">
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full bg-purple-600 rounded-full transition-all duration-300" style={{ width: `${progress * 100}%` }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Question content */}
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-3xl mx-auto w-full pb-36">
+          {q?.subtopic && (
+            <span className="inline-block bg-purple-50 text-purple-700 border border-purple-100 text-xs font-bold px-3.5 py-1 rounded-xl mb-4">
+              {q.subtopic}
+            </span>
+          )}
+          <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-2xs mb-5">
+            <div className="text-gray-900 font-semibold leading-relaxed text-lg">
+              <MathText text={q?.question} />
+            </div>
+          </div>
+
+          {q?.choices?.length > 0 && (
+            <div className="space-y-3 mb-5">
+              {q.choices.map((choice, idx) => {
+                const letter  = String.fromCharCode(65 + idx);
+                const isSel   = selectedAnswer === choice;
+                const isRight = choice.trim().toLowerCase() === (q.correctAnswer ?? '').trim().toLowerCase();
+                let cardClass   = 'bg-white border-gray-200/90 text-gray-800 hover:border-purple-300 hover:bg-purple-50/20';
+                let bubbleClass = 'bg-gray-100 text-gray-600';
+                if (showExplanation) {
+                  if (isSel && isCorrect)      { cardClass = 'bg-emerald-50 border-emerald-400 text-emerald-900 font-medium'; bubbleClass = 'bg-emerald-500 text-white'; }
+                  else if (isSel && !isCorrect){ cardClass = 'bg-red-50 border-red-400 text-red-900 font-medium';           bubbleClass = 'bg-red-500 text-white'; }
+                  else if (!isSel && isRight)  { cardClass = 'bg-emerald-50 border-emerald-400 text-emerald-900 font-medium'; }
+                } else if (isSel) {
+                  cardClass   = 'bg-purple-50 border-purple-500 text-purple-900 font-medium shadow-2xs';
+                  bubbleClass = 'bg-purple-600 text-white';
+                }
+                return (
+                  <button key={idx} onClick={() => !showExplanation && setSelectedAnswer(choice)} disabled={showExplanation}
+                    className={`w-full text-left flex items-center gap-4 px-5 py-4 rounded-2xl border-2 text-base transition-all ${cardClass}`}>
+                    <span className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-2xs ${bubbleClass}`}>{letter}</span>
+                    <span className="flex-1 font-medium"><MathText text={choice} /></span>
+                    {showExplanation && isSel && isCorrect  && <IoCheckmarkCircleOutline size={22} className="shrink-0 text-emerald-600" />}
+                    {showExplanation && isSel && !isCorrect && <IoCloseOutline size={22} className="shrink-0 text-red-500" />}
+                    {showExplanation && !isSel && isRight   && <IoCheckmarkCircleOutline size={22} className="shrink-0 text-emerald-600" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {!showExplanation && q?.hints?.length > 0 && (
+            <div className="mb-5">
+              {!showHint ? (
+                <button onClick={() => setShowHint(true)}
+                  className="w-full flex items-center justify-center gap-2 bg-amber-50/60 border border-amber-200 text-amber-900 text-sm font-bold py-3 rounded-2xl hover:bg-amber-100/80 transition-colors shadow-2xs">
+                  <IoBulbOutline size={20} className="text-amber-500" /> Show Hint
+                </button>
+              ) : (
+                <div className="flex gap-3 bg-amber-50 border-l-4 border-amber-400 rounded-2xl p-4 text-sm text-amber-900 shadow-2xs">
+                  <IoBulbOutline size={20} className="text-amber-500 shrink-0 mt-0.5" />
+                  <div className="leading-relaxed"><MathText text={q.hints[0]} /></div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {showExplanation && (
+            <div className={`rounded-3xl border-l-4 p-5 mb-5 text-sm shadow-2xs ${isCorrect ? 'bg-emerald-50 border-emerald-500' : 'bg-red-50 border-red-500'}`}>
+              <p className={`font-extrabold text-base mb-1.5 ${isCorrect ? 'text-emerald-700' : 'text-red-700'}`}>{isCorrect ? '✓ Correct!' : '✗ Incorrect'}</p>
+              <div className={`leading-relaxed font-medium ${isCorrect ? 'text-emerald-800' : 'text-red-800'}`}><MathText text={q?.explanation} /></div>
+              {!isCorrect && <div className="text-emerald-700 font-extrabold mt-3 pt-2 border-t border-red-100 flex items-center gap-1">Correct answer: <MathText text={q?.correctAnswer} /></div>}
             </div>
           )}
         </div>
-      )}
-      {showExplanation && (
-        <div className={`rounded-2xl border-l-4 p-4 mb-4 text-sm ${isCorrect ? 'bg-emerald-50 border-emerald-500' : 'bg-red-50 border-red-500'}`}>
-          <p className={`font-bold text-base mb-1 ${isCorrect ? 'text-emerald-700' : 'text-red-700'}`}>{isCorrect ? '✓ Correct!' : '✗ Incorrect'}</p>
-          <div className={isCorrect ? 'text-emerald-800' : 'text-red-800'}><MathText text={q?.explanation} /></div>
-          {!isCorrect && <div className="text-emerald-700 font-semibold mt-2 flex items-center gap-1">Correct answer: <MathText text={q?.correctAnswer} /></div>}
+
+        {/* Fixed action bar */}
+        <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 shadow-lg z-20">
+          <div className="max-w-3xl mx-auto">
+            {!showExplanation ? (
+              <button onClick={handleConfirm} disabled={!selectedAnswer}
+                className="w-full bg-purple-600 text-white font-extrabold py-4 rounded-2xl hover:bg-purple-700 disabled:opacity-50 transition-all shadow-md shadow-purple-600/20">
+                Confirm Answer
+              </button>
+            ) : (
+              <button onClick={handleNext}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-4 rounded-2xl transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2">
+                {currentIndex < questions.length - 1 ? 'Next Question' : 'Finish & Submit'}
+                <IoArrowForwardOutline size={20} />
+              </button>
+            )}
+          </div>
         </div>
-      )}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 lg:static lg:bg-transparent lg:border-0 lg:p-0 lg:mt-2">
-        {!showExplanation ? (
-          <button onClick={handleConfirm} disabled={!selectedAnswer}
-            className="w-full bg-purple-600 text-white font-bold py-4 rounded-2xl hover:bg-purple-700 disabled:opacity-50 transition-colors">
-            Confirm Answer
-          </button>
-        ) : (
-          <button onClick={handleNext}
-            className="w-full bg-emerald-500 text-white font-bold py-4 rounded-2xl hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2">
-            {currentIndex < questions.length - 1 ? 'Next Question' : 'Finish & Submit'}
-            <IoArrowForwardOutline size={20} />
-          </button>
-        )}
-        <div className="h-4 lg:hidden" />
       </div>
-      <div className="h-20 lg:hidden" />
-    </div>
+    </>
   );
 }
 
@@ -489,13 +554,13 @@ export default function Diagnosis() {
     setView('submitting');
     try {
       const topicScores  = buildTopicScores(questions, answers);
-      const totalCorrect = Object.values(answers).filter(
-        (ans, i) => (ans ?? '').trim().toLowerCase() === (questions[i]?.correctAnswer ?? '').trim().toLowerCase()
+      const totalCorrect = Object.entries(answers).filter(
+        ([idx, ans]) => (ans ?? '').trim().toLowerCase() === (questions[idx]?.correctAnswer ?? '').trim().toLowerCase()
       ).length;
       const { data } = await learningApi.submitDiagnostic({
         topicScores, totalQuestions: questions.length, correctAnswers: totalCorrect, timeSpent,
       });
-      const diag = data?.data?.diagnostic ?? data?.diagnostic ?? data;
+      const diag = data?.data?.diagnosticResult ?? data?.data?.diagnostic ?? data?.diagnostic ?? data;
       setResult(diag);
       setLatestDiag(diag);
       loadTimeline(selectedPeriod);
@@ -507,7 +572,7 @@ export default function Diagnosis() {
   };
 
   if (view === 'intro')      return <IntroScreen onStart={startTest} loading={loadingQ} />;
-  if (view === 'test')       return <TestScreen questions={questions} onSubmit={handleSubmit} />;
+  if (view === 'test')       return <TestScreen questions={questions} onSubmit={handleSubmit} onCancel={() => setView('menu')} />;
   if (view === 'submitting') return <SubmittingScreen />;
   if (view === 'history')    return <HistoryScreen onBack={() => setView('menu')} />;
 
@@ -596,131 +661,166 @@ export default function Diagnosis() {
   }
 
   const subjects = [
-    { name: 'Algebra',      score: latestDiag.algebraScore ?? 0 },
-    { name: 'Geometry',     score: latestDiag.geometryScore ?? 0 },
-    { name: 'Trigonometry', score: latestDiag.trigonometryScore ?? 0 },
+    { name: 'Algebra',      score: latestDiag.algebraScore ?? 0, color: '#3b82f6' }, // Blue
+    { name: 'Geometry',     score: latestDiag.geometryScore ?? 0, color: '#10b981' }, // Emerald
+    { name: 'Trigonometry', score: latestDiag.trigonometryScore ?? 0, color: '#f59e0b' }, // Amber
   ];
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-purple-700">Knowledge Map</h1>
-          <p className="text-sm text-gray-400 mt-1">Visualizing your path to mathematical excellence</p>
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[rgba(75,65,225,0.1)] text-[#4b41e1] flex items-center justify-center">
+              <IoAnalyticsOutline size={22} />
+            </div>
+            Knowledge Map
+          </h1>
+          <p className="text-sm font-medium text-gray-500 mt-2">Visualizing your path to mathematical excellence</p>
         </div>
-        <span className="bg-purple-100 text-purple-700 text-sm font-semibold px-3 py-1.5 rounded-full whitespace-nowrap">
-          Overall {Math.round(latestDiag.overallScore ?? 0)}%
-        </span>
+        <div className="flex items-center">
+          <span className="inline-flex items-center gap-1.5 bg-purple-100 text-purple-700 px-4 py-2 rounded-xl text-sm font-extrabold border border-purple-200 shadow-sm">
+            <IoSparklesOutline size={16} />
+            Overall {Math.round(latestDiag.overallScore ?? 0)}%
+          </span>
+        </div>
       </div>
 
-      {error && <p className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded-lg">{error}</p>}
+      {error && <p className="text-sm text-red-600 bg-red-50 px-4 py-3 rounded-xl border border-red-100 shadow-sm">{error}</p>}
 
-      {/* ── Topic Mastery section ── */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold text-purple-700">Topic Mastery</h2>
-          <button
-            onClick={() => navigate('/practice')}
-            className="text-sm font-medium text-purple-600 hover:text-purple-800 tracking-wide"
-          >
-            VIEW DETAILS →
-          </button>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column: Topic Mastery (Larger width) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* ── Topic Mastery section ── */}
+          <div className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+            <div className="flex items-center justify-between mb-8 border-b border-gray-100 pb-4">
+              <h2 className="text-xl font-extrabold text-gray-900">Topic Mastery</h2>
+              <button
+                onClick={() => navigate('/practice')}
+                className="text-xs font-bold text-purple-600 hover:text-purple-800 tracking-wider uppercase flex items-center gap-1 transition-colors"
+              >
+                View Practice Details <IoChevronForwardOutline size={14} />
+              </button>
+            </div>
 
-        {/* Mastery rings */}
-        <div className="flex justify-around mb-6 overflow-x-auto gap-4 pb-2">
-          {subjects.map(({ name, score }) => (
-            <MasteryRing
-              key={name}
-              percentage={score}
-              topic={name}
-              subtitle={getTopicSubtitle(score)}
-              onClick={() => navigate('/practice', { state: { topicFilter: name } })}
-            />
-          ))}
-        </div>
+            {/* Mastery rings */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+              {subjects.map(({ name, score, color }) => (
+                <MasteryRing
+                  key={name}
+                  percentage={score}
+                  topic={name}
+                  color={color}
+                  subtitle={getTopicSubtitle(score)}
+                  onClick={() => navigate('/practice', { state: { topicFilter: name } })}
+                />
+              ))}
+            </div>
 
-        {/* AI Recommendation */}
-        <div className="flex gap-4 bg-gray-50 border-l-4 border-purple-500 rounded-xl p-4">
-          <IoSparklesOutline size={24} className="text-purple-600 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-purple-700 mb-1">AI Recommendation</p>
-            <p className="text-sm text-gray-700 leading-relaxed">{getRecommendation(latestDiag)}</p>
+            {/* AI Recommendation */}
+            <div className="bg-gradient-to-r from-[#4b41e1] to-[#3d33d0] rounded-2xl p-5 shadow-lg shadow-purple-500/20 text-white flex gap-4 items-start relative overflow-hidden">
+              <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none transform translate-x-1/2 -translate-y-1/2" />
+              <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0 backdrop-blur-sm shadow-inner">
+                <IoSparklesOutline size={24} className="text-white" />
+              </div>
+              <div className="relative z-10">
+                <p className="text-sm font-extrabold uppercase tracking-widest text-white/90 mb-1.5">AI Recommendation</p>
+                <p className="text-sm text-white/95 leading-relaxed font-medium">{getRecommendation(latestDiag)}</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* ── Mastery Timeline section ── */}
+          <div className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-100 pb-4">
+              <div>
+                <h2 className="text-xl font-extrabold text-gray-900">Mastery Timeline</h2>
+                <p className="text-xs font-medium text-gray-500 mt-1">Tracking your overall growth over time</p>
+              </div>
+              
+              {/* Period selector */}
+              <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+                {PERIODS.map(({ id, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => setSelectedPeriod(id)}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-200 ${
+                      selectedPeriod === id
+                        ? 'bg-white text-[#4b41e1] shadow-sm ring-1 ring-black/5'
+                        : 'text-gray-500 hover:text-gray-900'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <TimelineChart data={timelineData} />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* ── Weak Areas section ── */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-        <div className="flex items-center gap-2 mb-4">
-          <IoWarningOutline size={20} className="text-red-500" />
-          <h2 className="text-lg font-semibold text-gray-900">Weak Areas</h2>
-        </div>
+        {/* Right Column: Weak Areas & CTAs */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* ── Weak Areas section ── */}
+          <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm">
+            <div className="flex items-center gap-2.5 mb-6 border-b border-gray-100 pb-4">
+              <div className="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
+                <IoWarningOutline size={18} />
+              </div>
+              <h2 className="text-lg font-extrabold text-gray-900">Weak Areas</h2>
+            </div>
 
-        {latestDiag.weakTopics?.length > 0 ? (
-          // Deduplicate by topic name, show top 3
-          [...new Map(latestDiag.weakTopics.map((w) => [w.topic, w])).values()]
-            .slice(0, 3)
-            .map((weak, i) => (
-              <WeakAreaCard
-                key={i}
-                subtopic={weak.topic}
-                masteryPercentage={weak.score}
-                onPress={() => navigate(`/practice/topic/${encodeURIComponent(weak.topic)}`, { state: { mastery: weak.score } })}
-              />
-            ))
-        ) : (
-          <p className="text-sm text-gray-400 text-center py-4">Great work! No weak areas identified.</p>
-        )}
+            <div className="space-y-4">
+              {latestDiag.weakTopics?.length > 0 ? (
+                // Deduplicate by topic name, show top 3
+                [...new Map(latestDiag.weakTopics.map((w) => [w.topic, w])).values()]
+                  .slice(0, 3)
+                  .map((weak, i) => (
+                    <WeakAreaCard
+                      key={i}
+                      subtopic={weak.topic}
+                      masteryPercentage={weak.score}
+                      onPress={() => navigate(`/practice/topic/${encodeURIComponent(weak.topic)}`, { state: { mastery: weak.score } })}
+                    />
+                  ))
+              ) : (
+                <div className="text-center py-8 bg-emerald-50 rounded-2xl border border-emerald-100">
+                  <IoCheckmarkCircleOutline size={32} className="mx-auto text-emerald-500 mb-2" />
+                  <p className="text-sm font-bold text-emerald-800">Great work!</p>
+                  <p className="text-xs text-emerald-600 mt-1">No major weak areas identified right now.</p>
+                </div>
+              )}
+            </div>
 
-        {/* CTA card */}
-        <div className="bg-purple-700 rounded-2xl p-5 mt-4">
-          <p className="text-white font-semibold text-base mb-1">Ready for a challenge?</p>
-          <p className="text-purple-200 text-sm mb-4">Retake the diagnostic to update your personalised learning path</p>
+            {/* CTA card */}
+            <div className="bg-gradient-to-br from-purple-800 to-indigo-900 rounded-2xl p-6 mt-6 shadow-lg shadow-purple-900/20 text-center">
+              <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 text-white">
+                <IoSchoolOutline size={24} />
+              </div>
+              <p className="text-white font-bold text-lg mb-1">Ready for a challenge?</p>
+              <p className="text-purple-200 text-xs font-medium mb-5 leading-relaxed">Retake the diagnostic to update your personalised learning path</p>
+              <button
+                onClick={() => setView('intro')}
+                className="w-full bg-white text-purple-800 font-extrabold py-3.5 rounded-xl hover:bg-purple-50 transition-colors shadow-sm"
+              >
+                RETAKE DIAGNOSTIC
+              </button>
+            </div>
+          </div>
+
+          {/* History button */}
           <button
-            onClick={() => setView('intro')}
-            className="w-full bg-purple-500 text-white font-semibold py-3 rounded-xl hover:bg-purple-400 transition-colors tracking-wide"
+            onClick={() => setView('history')}
+            className="w-full bg-white border border-gray-200 text-gray-700 font-bold py-4 rounded-2xl hover:border-[#4b41e1]/40 hover:text-[#4b41e1] hover:bg-gray-50 transition-all flex items-center justify-center gap-2 shadow-sm"
           >
-            RETAKE DIAGNOSTIC
+            <IoTimeOutline size={20} /> View Diagnostic History
           </button>
         </div>
       </div>
-
-      {/* ── Mastery Timeline section ── */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Mastery Timeline</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Tracking your growth over time</p>
-        </div>
-
-        {/* Period selector */}
-        <div className="flex bg-gray-100 rounded-lg p-1 gap-1 self-start w-fit mb-5">
-          {PERIODS.map(({ id, label }) => (
-            <button
-              key={id}
-              onClick={() => setSelectedPeriod(id)}
-              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${
-                selectedPeriod === id
-                  ? 'bg-white text-purple-700 shadow-sm'
-                  : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <TimelineChart data={timelineData} />
-      </div>
-
-      {/* History button */}
-      <button
-        onClick={() => setView('history')}
-        className="w-full border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-      >
-        <IoTimeOutline size={18} /> View Diagnostic History
-      </button>
     </div>
   );
 }
