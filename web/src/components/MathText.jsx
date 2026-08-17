@@ -38,14 +38,114 @@ function InlineMath({ math }) {
 }
 
 /**
+ * Automatically isolates pure math expressions (equations, exponents, roots, fractions)
+ * into standard LaTeX $...$ delimiters while preserving English prose text as normal text.
+ */
+function normalizeMathInText(rawText) {
+  if (!rawText) return '';
+  let str = String(rawText);
+
+  // If text already contains KaTeX math delimiters ($...$ or \(...\)), return as is
+  if (/\$[^\$\n]+?\$|\\\([\s\S]*?\\\)/.test(str)) {
+    return str;
+  }
+
+  // Math trigger regex
+  const mathTriggerRegex = /[\^±√=]|\blog_?[0-9a-zA-Z]*|\b[a-zA-Z0-9_()]+\s*\/\s*[a-zA-Z0-9_()]+\b/i;
+  if (!mathTriggerRegex.test(str)) {
+    return str;
+  }
+
+  const formatFormulaOnly = (expr) => {
+    let s = expr.trim();
+    let punct = '';
+    const matchPunct = s.match(/([.,;:?!])$/);
+    if (matchPunct && !s.endsWith(')')) {
+      punct = matchPunct[1];
+      s = s.slice(0, -1).trim();
+    }
+
+    // Clean symbols
+    s = s.replace(/±|\+-/g, '\\pm ');
+    s = s.replace(/×/g, '\\times ').replace(/÷/g, '\\div ');
+
+    // Roots: √((...)) or √( ... ) or √...
+    s = s.replace(/√\s*\(\s*\(\s*([^)]+)\s*\)\s*\)/g, '\\sqrt{$1}');
+    s = s.replace(/√\s*\(\s*([^)]+)\s*\)/g, '\\sqrt{$1}');
+    s = s.replace(/√\s*([a-zA-Z0-9_]+)/g, '\\sqrt{$1}');
+
+    // Quadratic formula fraction: (-b \pm \sqrt{...}) / 2a
+    s = s.replace(/\(\s*-b\s*\\pm\s*\\sqrt\{([^}]+)\}\s*\)\s*\/\s*(\(?\s*\d*[a-zA-Z0-9^]+\s*\)?)/g, '\\frac{-b \\pm \\sqrt{$1}}{$2}');
+    
+    // Fractions inside \sqrt: \sqrt{(A) / B} -> \sqrt{\frac{A}{B}}
+    s = s.replace(/\\sqrt\{\s*\(?\s*([^/]+?)\s*\/\s*([^)]+?)\s*\)?\s*\}/g, '\\sqrt{\\frac{$1}{$2}}');
+
+    // Simple parenthesized fractions: (A / B) -> \frac{A}{B}
+    s = s.replace(/\(\s*([a-zA-Z0-9^+\-* ]+)\s*\/\s*([a-zA-Z0-9^+\-* ]+)\s*\)/g, '\\frac{$1}{$2}');
+    // Unparenthesized fractions: A / B -> \frac{A}{B}
+    s = s.replace(/(\b[a-zA-Z0-9^+*()]+\b)\s*\/\s*(\b[a-zA-Z0-9^+*()]+\b)/g, '\\frac{$1}{$2}');
+
+    // Logarithms with bases: log2(16) -> \log_{2}(16), log_b(x) -> \log_{b}(x), log10(x) -> \log_{10}(x)
+    s = s.replace(/\blog_?([0-9a-zA-Z]+)\s*\(([^)]+)\)/gi, '\\log_{$1}($2)');
+    s = s.replace(/\blog_?([0-9a-zA-Z]+)\s+([0-9a-zA-Z]+)/gi, '\\log_{$1}{$2}');
+    s = s.replace(/\blog\b(?!\s*\_|\s*\{)/gi, '\\log ');
+
+    // Exponents: ax^2 -> ax^{2}, b^2 -> b^{2}, 4a^2 -> 4a^{2}
+    s = s.replace(/([a-zA-Z0-9_)]+)\^([a-zA-Z0-9_]+)/g, '$1^{$2}');
+
+    s = s.replace(/\s+/g, ' ').trim();
+    return `$${s}$` + punct;
+  };
+
+  // Helper to check if a word is English prose (not a math symbol/function)
+  const isProseWord = (word) => {
+    const w = word.toLowerCase().trim();
+    if (!w || w.length < 2) return false;
+    if (/^log_?[0-9a-zA-Z]*$/i.test(w)) return false;
+    const mathKeywords = new Set([
+      'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'log', 'ln', 'lim', 'det',
+      'min', 'max', 'ax', 'bx', 'cx', 'dx', 'ex', 'fx', 'gx', 'hx', 'pm'
+    ]);
+    return !mathKeywords.has(w);
+  };
+
+  // Replace equations/formulas embedded inside prose text without touching English words
+  // Match candidate math formulas (containing variables, numbers, operators, =, ^, √, ±, parens)
+  return str.replace(/((?:\([^)]+\)|[a-zA-Z0-9_]|\s|[+\-*/=^±√()]){1,})/g, (match) => {
+    const trimmed = match.trim();
+    if (!trimmed) return match;
+
+    // Extract all words of 2+ letters
+    const words = trimmed.match(/\b[a-zA-Z]{2,}\b/g) || [];
+    const proseWords = words.filter(isProseWord);
+
+    // If candidate math block contains prose words (like "Solve", "the", "equation", "by", "factoring", "or", "is"),
+    // do NOT wrap the whole block in LaTeX!
+    if (proseWords.length > 0) {
+      return match;
+    }
+
+    // Must contain active math indicators (=, ^, √, ±, log, or math operators between terms)
+    const hasMathIndicator = /[\^±√=]|\blog_?[0-9a-zA-Z]*|\b[a-zA-Z0-9_]+\s*[+\-*/=]\s*[a-zA-Z0-9_]+\b|\([a-zA-Z0-9^+\-*/\s]+\)\s*\(/i.test(trimmed);
+    if (hasMathIndicator) {
+      return formatFormulaOnly(trimmed);
+    }
+
+    return match;
+  });
+}
+
+/**
  * Render inline text with KaTeX math, bold, inline code formatting
  */
 function InlineFormatted({ text }) {
   if (!text) return null;
 
+  const processedText = normalizeMathInText(text);
+
   // Split by KaTeX math delimiters ($...$ or \(...\))
   const mathRegex = /(\$[^\$\n]+?\$|\\\([\s\S]*?\\\))/g;
-  const parts = String(text).split(mathRegex);
+  const parts = String(processedText).split(mathRegex);
 
   return (
     <>
@@ -69,7 +169,7 @@ function InlineFormatted({ text }) {
               }
               if (chunk.startsWith('`') && chunk.endsWith('`') && chunk.length > 2) {
                 return (
-                  <code key={cIndex} className="bg-purple-50 dark:bg-zinc-800 text-purple-600 dark:text-purple-300 font-mono text-xs px-1.5 py-0.5 rounded border border-purple-100 dark:border-zinc-700">
+                  <code key={cIndex} className="bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 font-mono text-xs px-1.5 py-0.5 rounded border border-purple-100 dark:border-purple-800/40">
                     {chunk.slice(1, -1)}
                   </code>
                 );
@@ -111,22 +211,22 @@ function MarkdownTable({ tableLines }) {
   const bodyRows = isDivider ? cleanRows.slice(2) : cleanRows.slice(1);
 
   return (
-    <div className="my-3 overflow-x-auto rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-zinc-900/50">
+    <div className="my-3 overflow-x-auto rounded-xl border border-gray-200/80 dark:border-[#2d3748] bg-white dark:bg-[#1a2333] shadow-xs">
       <table className="w-full text-xs text-left border-collapse">
-        <thead className="bg-gray-100 dark:bg-zinc-800 font-bold text-gray-900 dark:text-gray-100">
+        <thead className="bg-gray-100/70 dark:bg-[#252f40] font-bold text-gray-900 dark:text-white">
           <tr>
             {headers.map((h, i) => (
-              <th key={i} className="p-2.5 border-b border-r last:border-r-0 border-gray-200 dark:border-zinc-700">
+              <th key={i} className="p-2.5 border-b border-r last:border-r-0 border-gray-200/80 dark:border-[#2d3748]">
                 <InlineFormatted text={h} />
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 dark:divide-zinc-700">
+        <tbody className="divide-y divide-gray-200/80 dark:divide-[#2d3748]">
           {bodyRows.map((row, rIdx) => (
-            <tr key={rIdx} className="hover:bg-gray-100/50 dark:hover:bg-zinc-800/50 transition-colors">
+            <tr key={rIdx} className="hover:bg-gray-50 dark:hover:bg-[#202b3d] transition-colors">
               {row.map((cell, cIdx) => (
-                <td key={cIdx} className="p-2.5 border-r last:border-r-0 border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-gray-200">
+                <td key={cIdx} className="p-2.5 border-r last:border-r-0 border-gray-200/80 dark:border-[#2d3748] text-gray-800 dark:text-gray-200">
                   <InlineFormatted text={cell} />
                 </td>
               ))}

@@ -18,6 +18,7 @@ import {
 } from 'react-icons/io5';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../services/api';
+import SignOutModal from '../components/SignOutModal';
 
 function MenuCardItem({ icon: Icon, title, description, badgeText, badgeColor = 'bg-[#f2f4f6] text-[#45474c]', iconBg = 'bg-[rgba(75,65,225,0.1)]', iconColor = 'text-[#4b41e1]', onClick }) {
   return (
@@ -51,6 +52,7 @@ function MenuCardItem({ icon: Icon, title, description, badgeText, badgeColor = 
 export default function Profile() {
   const navigate = useNavigate();
   const { user, refreshProfile, logout, saveAuth } = useAuth();
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({ name: user?.displayName || '' });
@@ -185,11 +187,21 @@ export default function Profile() {
 
           {/* Logout Button */}
           <button
-            onClick={logout}
-            className="w-full flex items-center justify-center gap-2 border border-[#ffdad6] text-[#ba1a1a] bg-white font-bold py-3.5 rounded-2xl hover:bg-red-50 transition-colors shadow-xs cursor-pointer"
+            onClick={() => setShowSignOutModal(true)}
+            className="w-full flex items-center justify-center gap-2 border border-[#ffdad6] text-[#ba1a1a] bg-white dark:bg-[#1a2333] dark:border-red-900/40 font-bold py-3.5 rounded-2xl hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors shadow-xs cursor-pointer"
           >
             <IoLogOutOutline size={20} /> Sign out of account
           </button>
+
+          {/* Sign Out Confirmation Dialogue */}
+          <SignOutModal
+            isOpen={showSignOutModal}
+            onClose={() => setShowSignOutModal(false)}
+            onConfirm={async () => {
+              await logout();
+              navigate('/');
+            }}
+          />
         </div>
 
         {/* Right Column: Profile Sub-Modules & Forms */}
@@ -241,17 +253,8 @@ export default function Profile() {
             <div className="space-y-3">
               <MenuCardItem
                 icon={IoHelpCircleOutline}
-                title="Help Center & Feedback"
-                description="Search guides, request features, and contact direct email support"
-                iconBg="bg-[rgba(255,152,0,0.1)]"
-                iconColor="text-[#ff9800]"
-                onClick={() => navigate('/profile/help')}
-              />
-
-              <MenuCardItem
-                icon={IoHelpCircleOutline}
-                title="Frequently Asked Questions"
-                description="Find instant answers regarding diagnostic scoring, topic mastery & practice"
+                title="Help & FAQs"
+                description="Instant search, categorized guides, direct email support & feedback"
                 iconBg="bg-[rgba(75,65,225,0.1)]"
                 iconColor="text-[#4b41e1]"
                 onClick={() => navigate('/profile/faq')}

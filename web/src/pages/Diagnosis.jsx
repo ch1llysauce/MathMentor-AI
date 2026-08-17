@@ -16,9 +16,12 @@ import {
   IoWarningOutline,
   IoChevronForwardOutline,
   IoSchoolOutline,
+  IoPlayOutline,
+  IoCalculatorOutline,
 } from 'react-icons/io5';
 import { questionApi, learningApi } from '../services/api';
 import MathText from '../components/MathText';
+import ScientificCalculator from '../components/ScientificCalculator';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const SUBTOPIC_DB_KEY = {
@@ -79,17 +82,13 @@ function getRecommendation(diag) {
 }
 
 // ─── Mastery Ring (SVG) ───────────────────────────────────────────────────────
-function MasteryRing({ percentage, topic, subtitle, onClick, color = '#4b41e1' }) {
-  const size = 120, stroke = 10;
+function MasteryRing({ percentage, topic, subtitle, onClick, color = '#4b41e1', size = 120, stroke = 10 }) {
   const radius = (size - stroke) / 2;
   const circ   = 2 * Math.PI * radius;
   const offset = circ - (Math.min(percentage, 100) / 100) * circ;
 
-  return (
-    <button
-      onClick={onClick}
-      className="flex flex-col items-center gap-3 p-4 rounded-2xl hover:bg-gray-50/80 transition-all duration-300 focus:outline-none group border border-transparent hover:border-gray-200 hover:shadow-sm"
-    >
+  const content = (
+    <>
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="drop-shadow-sm">
           {/* Track */}
@@ -115,7 +114,24 @@ function MasteryRing({ percentage, topic, subtitle, onClick, color = '#4b41e1' }
         <p className="text-base font-bold text-gray-900 group-hover:text-purple-700 transition-colors">{topic}</p>
         {subtitle && <p className="text-xs font-medium text-gray-500 mt-0.5">{subtitle}</p>}
       </div>
-    </button>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        onClick={onClick}
+        className="flex flex-col items-center gap-3 p-4 rounded-2xl hover:bg-gray-50/80 transition-all duration-300 focus:outline-none group border border-transparent hover:border-gray-200 hover:shadow-sm"
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-3 p-4 rounded-2xl">
+      {content}
+    </div>
   );
 }
 
@@ -200,39 +216,39 @@ function TimelineChart({ data }) {
 function IntroScreen({ onStart, loading }) {
   return (
     <div className="max-w-xl mx-auto px-4 py-8">
-      <div className="bg-white border border-gray-100 rounded-2xl p-8 shadow-sm text-center mb-6">
-        <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-4">
-          <IoAnalyticsOutline size={34} className="text-purple-600" />
+      <div className="bg-white dark:bg-[#1a2333] border border-gray-100 dark:border-[#2d3748] rounded-2xl p-8 shadow-sm text-center mb-6">
+        <div className="w-16 h-16 rounded-full bg-purple-100 dark:bg-purple-950/60 flex items-center justify-center mx-auto mb-4">
+          <IoAnalyticsOutline size={34} className="text-purple-600 dark:text-purple-400" />
         </div>
-        <h2 className="text-xl font-bold text-purple-700 mb-2">Update Your Knowledge Map</h2>
-        <p className="text-sm text-gray-500 leading-relaxed">
+        <h2 className="text-xl font-bold text-purple-700 dark:text-purple-300 mb-2">Update Your Knowledge Map</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-300 leading-relaxed">
           15 questions across Algebra, Geometry, and Trigonometry. Takes around 15–20 minutes.
           Your personalised learning path will be updated when you finish.
         </p>
       </div>
       <div className="mb-6 space-y-3">
-        <p className="text-sm font-semibold text-gray-700">What to expect</p>
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">What to expect</p>
         {[
-          { Icon: IoHelpCircleOutline, color: 'text-purple-600', bg: 'bg-purple-50', title: '15 questions', sub: 'Balanced across all three topics' },
-          { Icon: IoBulbOutline,       color: 'text-yellow-500', bg: 'bg-yellow-50', title: 'Hints available', sub: 'One hint per question if you need it' },
-          { Icon: IoAnalyticsOutline,  color: 'text-emerald-600', bg: 'bg-emerald-50', title: 'Instant results', sub: 'Your knowledge map updates immediately' },
+          { Icon: IoHelpCircleOutline, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/50', title: '15 questions', sub: 'Balanced across all three topics' },
+          { Icon: IoBulbOutline,       color: 'text-amber-500 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/50', title: 'Hints available', sub: 'One hint per question if you need it' },
+          { Icon: IoAnalyticsOutline,  color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/50', title: 'Instant results', sub: 'Your knowledge map updates immediately' },
         ].map(({ Icon, color, bg, title, sub }) => (
-          <div key={title} className="flex items-center gap-4 bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+          <div key={title} className="flex items-center gap-4 bg-white dark:bg-[#1a2333] border border-gray-100 dark:border-[#2d3748] rounded-xl p-4 shadow-sm">
             <div className={`w-11 h-11 rounded-xl ${bg} flex items-center justify-center ${color} shrink-0`}>
               <Icon size={22} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">{title}</p>
-              <p className="text-xs text-gray-500">{sub}</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{title}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-300">{sub}</p>
             </div>
           </div>
         ))}
       </div>
-      <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-xl p-4 mb-6 text-sm text-gray-700 leading-relaxed">
-        <p className="font-semibold text-gray-800 mb-1">Tips for best results</p>
-        <p>• Find a quiet spot with no distractions</p>
-        <p>• Have paper handy for calculations</p>
-        <p>• Answer honestly — the path is built around your results</p>
+      <div className="bg-amber-50 dark:bg-amber-950/40 border-l-4 border-amber-400 dark:border-amber-500 rounded-xl p-4 mb-6 text-sm leading-relaxed shadow-2xs">
+        <p className="font-bold text-amber-950 dark:text-amber-100 mb-1">Tips for best results</p>
+        <p className="text-amber-900 dark:text-amber-200">• Find a quiet spot with no distractions</p>
+        <p className="text-amber-900 dark:text-amber-200">• Have paper handy for calculations</p>
+        <p className="text-amber-900 dark:text-amber-200">• Answer honestly — the path is built around your results</p>
       </div>
       <button
         onClick={onStart}
@@ -256,6 +272,7 @@ function TestScreen({ questions, onSubmit, onCancel }) {
   const [showExplanation, setShowExplanation] = useState(false);
   const [isCorrect, setIsCorrect]             = useState(null);
   const [showHint, setShowHint]               = useState(false);
+  const [showCalc, setShowCalc]               = useState(false);
   const [showQuitModal, setShowQuitModal]     = useState(false);
   const startTimeRef = useRef(Date.now());
 
@@ -287,6 +304,9 @@ function TestScreen({ questions, onSubmit, onCancel }) {
 
   return (
     <>
+      {/* Scientific Calculator Floating Drawer */}
+      <ScientificCalculator isOpen={showCalc} onClose={() => setShowCalc(false)} />
+
       {/* Leave Warning Modal */}
       {showQuitModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
@@ -346,12 +366,31 @@ function TestScreen({ questions, onSubmit, onCancel }) {
 
         {/* Question content */}
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-3xl mx-auto w-full pb-36">
-          {q?.subtopic && (
-            <span className="inline-block bg-purple-50 text-purple-700 border border-purple-100 text-xs font-bold px-3.5 py-1 rounded-xl mb-4">
-              {q.subtopic}
-            </span>
-          )}
           <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-2xs mb-5">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              {q?.subtopic ? (
+                <span className="inline-block bg-purple-50 text-purple-700 border border-purple-100 text-xs font-bold px-3.5 py-1 rounded-xl">
+                  {q.subtopic}
+                </span>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                    <IoHelpCircleOutline size={20} />
+                  </div>
+                  <span className="text-sm font-bold text-gray-800">Question</span>
+                </div>
+              )}
+              {!showExplanation && (
+                <button
+                  type="button"
+                  onClick={() => setShowCalc(!showCalc)}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-xs font-bold hover:bg-purple-100 dark:hover:bg-purple-900/50 border border-purple-100 dark:border-purple-800/40 transition-colors shadow-2xs cursor-pointer"
+                >
+                  <IoCalculatorOutline size={16} />
+                  <span>{showCalc ? 'Hide Calculator' : 'Scientific Calculator'}</span>
+                </button>
+              )}
+            </div>
             <div className="text-gray-900 font-semibold leading-relaxed text-lg">
               <MathText text={q?.question} />
             </div>
@@ -489,13 +528,225 @@ function HistoryScreen({ onBack }) {
   );
 }
 
+// ─── Topic Detail Screen (matching mobile UI) ─────────────────────────────────
+const TOPIC_SUBTOPICS = {
+  Algebra:      ['Fractions', 'Linear Equations', 'Factoring'],
+  Geometry:     ['Angles', 'Triangles', 'Area', 'Basic Circles'],
+  Trigonometry: ['SOH-CAH-TOA', 'Basic Trig Ratios', 'Simple Applications'],
+};
+
+const SUBTOPIC_KEY_MAP = {
+  'Fractions':           'fractions',
+  'Linear Equations':    'linearEquations',
+  'Factoring':           'factoring',
+  'Angles':              'angles',
+  'Triangles':           'triangles',
+  'Area':                'area',
+  'Basic Circles':       'basicCircles',
+  'SOH-CAH-TOA':         'sohCahToa',
+  'Basic Trig Ratios':   'basicTrigRatios',
+  'Simple Applications': 'simpleApplications',
+};
+
+function getScoreColor(score) {
+  if (score >= 80) return '#00a472';
+  if (score >= 60) return '#f59e0b';
+  return '#ef4444';
+}
+
+function getScoreLabel(score) {
+  if (score >= 80) return 'Expert';
+  if (score >= 60) return 'Proficient';
+  if (score >= 40) return 'Developing';
+  return 'Needs Practice';
+}
+
+function TopicDetailScreen({ topic, latestDiag, onBack, onPractice }) {
+  const topicKey = topic.toLowerCase();
+  const score = latestDiag?.[`${topicKey}Score`] ?? 0;
+  const topicScore = latestDiag?.topicScores?.[topicKey] ?? null;
+
+  const totalQuestions = topicScore?.questionsAnswered ?? 0;
+  const totalCorrect   = topicScore?.correctAnswers    ?? 0;
+  const totalIncorrect = Math.max(0, totalQuestions - totalCorrect);
+
+  const subtopicNames = TOPIC_SUBTOPICS[topic] ?? [];
+  const subtopics = subtopicNames.map((name) => {
+    const key = SUBTOPIC_KEY_MAP[name];
+    const stScore = key != null ? (topicScore?.subtopicScores?.[key] ?? null) : null;
+    return { name, score: stScore };
+  });
+
+  const recommendation =
+    score < 50
+      ? `Your ${topic} skills need work. Focus on the red subtopics first with targeted practice.`
+      : score < 80
+      ? `Good foundation in ${topic}! Push to master the remaining subtopics.`
+      : `Excellent ${topic} mastery! Challenge yourself with harder problems.`;
+
+  const topicColor = topic === 'Algebra' ? '#3b82f6' : topic === 'Geometry' ? '#10b981' : '#f59e0b';
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {/* Top Bar Header Nav */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+        <div className="flex items-center gap-3.5">
+          <button
+            onClick={onBack}
+            className="w-10 h-10 rounded-2xl bg-white border border-gray-200 flex items-center justify-center text-gray-700 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-300 transition-all shadow-2xs group shrink-0"
+          >
+            <IoArrowBackOutline size={20} className="group-hover:-translate-x-0.5 transition-transform" />
+          </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-lg border border-purple-100">
+                Knowledge Map
+              </span>
+              <span className="text-xs text-gray-400">•</span>
+              <span className="text-xs font-semibold text-gray-500">{topic} Analysis</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight mt-0.5">
+              {topic} Mastery Overview
+            </h1>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onPractice(topic)}
+            className="bg-[#4b41e1] hover:bg-[#3d33d0] text-white font-extrabold px-5 py-3 rounded-2xl transition-all shadow-md shadow-purple-600/20 flex items-center gap-2 text-sm"
+          >
+            <IoPlayOutline size={18} /> Practice {topic}
+          </button>
+        </div>
+      </div>
+
+      {/* PC Friendly 2-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Left Column (1/3 width on PC): Overall Card, Recommendation & Quick Actions */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Overall Card */}
+          <div className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col items-center gap-6">
+            <MasteryRing
+              percentage={score}
+              topic={topic}
+              subtitle={getScoreLabel(score)}
+              color={topicColor}
+              size={130}
+              stroke={11}
+            />
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-3 gap-2.5 w-full">
+              <div className="bg-purple-50/70 border border-purple-100/80 rounded-2xl p-3.5 text-center flex flex-col items-center justify-center">
+                <span className="text-xl sm:text-2xl font-extrabold text-purple-700">{totalQuestions}</span>
+                <span className="text-[11px] font-semibold text-gray-500 mt-0.5">Questions</span>
+              </div>
+              <div className="bg-emerald-50/70 border border-emerald-100/80 rounded-2xl p-3.5 text-center flex flex-col items-center justify-center">
+                <span className="text-xl sm:text-2xl font-extrabold text-[#00a472]">{totalCorrect}</span>
+                <span className="text-[11px] font-semibold text-gray-500 mt-0.5">Correct</span>
+              </div>
+              <div className="bg-red-50/70 border border-red-100/80 rounded-2xl p-3.5 text-center flex flex-col items-center justify-center">
+                <span className="text-xl sm:text-2xl font-extrabold text-[#ef4444]">{totalIncorrect}</span>
+                <span className="text-[11px] font-semibold text-gray-500 mt-0.5">Incorrect</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Recommendation Card */}
+          <div className="bg-amber-50/80 border-l-4 border-amber-400 rounded-2xl p-5 shadow-2xs space-y-2">
+            <div className="flex items-center gap-2 text-amber-700 font-extrabold text-xs uppercase tracking-wider">
+              <IoBulbOutline size={18} className="text-amber-500" />
+              <span>AI Recommendation</span>
+            </div>
+            <p className="text-sm font-medium text-amber-950 leading-relaxed">{recommendation}</p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={() => onPractice(topic)}
+              className="w-full bg-[#4b41e1] hover:bg-[#3d33d0] text-white font-extrabold py-3.5 rounded-2xl transition-all shadow-md shadow-purple-600/20 flex items-center justify-center gap-2 text-sm"
+            >
+              <IoPlayOutline size={18} /> Practice {topic}
+            </button>
+            <button
+              onClick={onBack}
+              className="w-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-[#4b41e1] font-bold py-3.5 rounded-2xl transition-colors text-sm shadow-2xs"
+            >
+              Back to Knowledge Map
+            </button>
+          </div>
+        </div>
+
+        {/* Right Column (2/3 width on PC): Subtopics Breakdown */}
+        <div className="lg:col-span-2">
+          <div className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <div>
+                <h2 className="text-xl font-extrabold text-gray-900">Subtopics Breakdown</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Detailed accuracy and performance level per skill</p>
+              </div>
+              <span className="text-xs font-bold text-purple-700 bg-purple-50 px-3 py-1 rounded-xl border border-purple-100">
+                {subtopics.length} Subtopics
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {subtopics.map((st, i) => (
+                <div
+                  key={i}
+                  className="bg-gray-50/70 border border-gray-100 hover:border-purple-200 rounded-2xl p-5 transition-all shadow-2xs flex flex-col justify-between space-y-3 group"
+                >
+                  <div className="flex justify-between items-start">
+                    <span className="text-base font-bold text-gray-900 group-hover:text-purple-700 transition-colors">
+                      {st.name}
+                    </span>
+                    {st.score !== null ? (
+                      <span className="text-lg font-extrabold shrink-0 ml-2" style={{ color: getScoreColor(st.score) }}>
+                        {st.score}%
+                      </span>
+                    ) : (
+                      <span className="text-xs font-medium text-gray-400 italic shrink-0 ml-2">Not tested</span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="h-2.5 bg-gray-200/80 rounded-full overflow-hidden">
+                      {st.score !== null ? (
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${st.score}%`, backgroundColor: getScoreColor(st.score) }}
+                        />
+                      ) : (
+                        <div className="h-full w-0 bg-gray-300 rounded-full" />
+                      )}
+                    </div>
+                    {st.score !== null && (
+                      <div className="flex justify-between items-center text-xs text-gray-500">
+                        <span className="font-semibold">{getScoreLabel(st.score)}</span>
+                        <span className="text-[11px] text-gray-400">Mastery score</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function Diagnosis() {
   const navigate = useNavigate();
   const [view, setView]           = useState('menu');
+  const [selectedTopic, setSelectedTopic] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [result, setResult]       = useState(null);
   const [latestDiag, setLatestDiag] = useState(null);
+  const [loadingDiag, setLoadingDiag] = useState(true);
   const [timelineData, setTimelineData] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState('week');
   const [loadingQ, setLoadingQ]   = useState(false);
@@ -507,7 +758,8 @@ export default function Diagnosis() {
         const d = data?.data?.diagnostic ?? data?.diagnostic;
         if (d?._id) setLatestDiag(d);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoadingDiag(false));
   }, []);
 
   // Load timeline whenever period changes and we have a diagnostic
@@ -571,10 +823,37 @@ export default function Diagnosis() {
     }
   };
 
+  const handleTopicClick = (topicName) => {
+    setSelectedTopic(topicName);
+    setView('topicDetail');
+  };
+
+  const handleViewAllTopics = () => {
+    if (!latestDiag) return;
+    const scores = [
+      { topic: 'Algebra',      score: latestDiag.algebraScore ?? 0 },
+      { topic: 'Geometry',     score: latestDiag.geometryScore ?? 0 },
+      { topic: 'Trigonometry', score: latestDiag.trigonometryScore ?? 0 },
+    ];
+    const weakest = scores.reduce((a, b) => (a.score <= b.score ? a : b));
+    setSelectedTopic(weakest.topic);
+    setView('topicDetail');
+  };
+
   if (view === 'intro')      return <IntroScreen onStart={startTest} loading={loadingQ} />;
   if (view === 'test')       return <TestScreen questions={questions} onSubmit={handleSubmit} onCancel={() => setView('menu')} />;
   if (view === 'submitting') return <SubmittingScreen />;
   if (view === 'history')    return <HistoryScreen onBack={() => setView('menu')} />;
+  if (view === 'topicDetail' && selectedTopic) {
+    return (
+      <TopicDetailScreen
+        topic={selectedTopic}
+        latestDiag={latestDiag}
+        onBack={() => { setView('menu'); setSelectedTopic(null); }}
+        onPractice={(tName) => navigate(`/practice/topic/${encodeURIComponent(tName)}`, { state: { mastery: latestDiag?.[`${tName.toLowerCase()}Score`] ?? 0 } })}
+      />
+    );
+  }
 
   // Result screen (after submitting)
   if (view === 'result' && result) {
@@ -630,6 +909,15 @@ export default function Diagnosis() {
           className="w-full border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
           <IoRefreshOutline size={16} /> Back to Diagnosis
         </button>
+      </div>
+    );
+  }
+
+  if (loadingDiag) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <div className="w-10 h-10 border-4 border-[#4b41e1] border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm font-semibold text-[#75777d]">Loading Knowledge Map…</p>
       </div>
     );
   }
@@ -697,10 +985,10 @@ export default function Diagnosis() {
             <div className="flex items-center justify-between mb-8 border-b border-gray-100 pb-4">
               <h2 className="text-xl font-extrabold text-gray-900">Topic Mastery</h2>
               <button
-                onClick={() => navigate('/practice')}
+                onClick={handleViewAllTopics}
                 className="text-xs font-bold text-purple-600 hover:text-purple-800 tracking-wider uppercase flex items-center gap-1 transition-colors"
               >
-                View Practice Details <IoChevronForwardOutline size={14} />
+                VIEW DETAILS <IoChevronForwardOutline size={14} />
               </button>
             </div>
 
@@ -713,7 +1001,7 @@ export default function Diagnosis() {
                   topic={name}
                   color={color}
                   subtitle={getTopicSubtitle(score)}
-                  onClick={() => navigate('/practice', { state: { topicFilter: name } })}
+                  onClick={() => handleTopicClick(name)}
                 />
               ))}
             </div>

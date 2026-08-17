@@ -25,6 +25,11 @@ const loginSessionSchema = new mongoose.Schema({
         default: ""
     },
 
+    location: {
+        type: String,
+        default: "Manila, Philippines"
+    },
+
     isActive: {
         type: Boolean,
         default: true

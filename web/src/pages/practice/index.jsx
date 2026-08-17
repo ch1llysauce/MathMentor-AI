@@ -163,7 +163,7 @@ export default function PracticeIndex() {
           </div>
 
           {/* Filter chips */}
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <div className="flex flex-wrap gap-2 pb-1">
             {[
               { id: 'all',    label: 'All Topics' },
               { id: 'weak',   label: 'Need Practice', Icon: IoArrowDownOutline },
@@ -172,14 +172,14 @@ export default function PracticeIndex() {
               <button
                 key={id}
                 onClick={() => setFilter(id)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-bold whitespace-nowrap transition-all ${
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   filter === id
                     ? 'bg-purple-600 border-purple-600 text-white shadow-md shadow-purple-600/20'
-                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                    : 'bg-white dark:bg-[#1a2333] border-gray-200 dark:border-[#2d3748] text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#252f40] hover:border-gray-300'
                 }`}
               >
-                {Icon && <Icon size={14} />}
-                <span>{label}</span>
+                {Icon && <Icon size={14} className={filter === id ? 'text-white' : 'text-gray-600 dark:text-white'} />}
+                <span className={filter === id ? 'text-white' : 'text-gray-700 dark:text-white'}>{label}</span>
               </button>
             ))}
           </div>

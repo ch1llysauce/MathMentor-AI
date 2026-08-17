@@ -271,11 +271,23 @@ export default function Problems() {
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-3xl mx-auto w-full pb-36">
           {/* Question */}
           <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-2xs mb-5">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
-                <IoHelpCircleOutline size={20} />
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                  <IoHelpCircleOutline size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-800">Question</span>
               </div>
-              <span className="text-sm font-bold text-gray-800">Question</span>
+              {!showExplanation && (
+                <button
+                  type="button"
+                  onClick={() => setShowCalc(!showCalc)}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-xs font-bold hover:bg-purple-100 dark:hover:bg-purple-900/50 border border-purple-100 dark:border-purple-800/40 transition-colors shadow-2xs cursor-pointer"
+                >
+                  <IoCalculatorOutline size={16} />
+                  <span>{showCalc ? 'Hide Calculator' : 'Scientific Calculator'}</span>
+                </button>
+              )}
             </div>
             <div className="text-lg text-gray-900 font-semibold leading-relaxed">
               <MathText text={current?.question || current?.problem?.text} />
@@ -315,15 +327,6 @@ export default function Problems() {
             <div className="mb-5">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-gray-600 uppercase tracking-wide">Type your answer:</span>
-                {!showExplanation && (
-                  <button
-                    type="button"
-                    onClick={() => setShowCalc(true)}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-50 text-purple-700 text-xs font-bold hover:bg-purple-100 border border-purple-100 transition-colors shadow-2xs"
-                  >
-                    <IoCalculatorOutline size={16} /> Calculator
-                  </button>
-                )}
               </div>
               <input
                 ref={answerRef}

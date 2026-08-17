@@ -186,6 +186,30 @@ export const submitDiagnosticResults = asyncHandler(async (req, res) => {
     user.lastDiagnosticDate = new Date();
     await user.save();
 
+    // Sync diagnostic topic scores into user's Progress collection
+    if (topicScores) {
+        for (const [topicKey, topicData] of Object.entries(topicScores)) {
+            const topicName = topicKey.charAt(0).toUpperCase() + topicKey.slice(1);
+            const score = topicData.score || 0;
+            const qAns = topicData.questionsAnswered || 0;
+            const cAns = topicData.correctAnswers || 0;
+            const acc = qAns > 0 ? Math.round((cAns / qAns) * 100) : score;
+
+            await Progress.updateMany(
+                { user: req.user._id, topic: topicName },
+                {
+                    $set: {
+                        masteryLevel: score,
+                        questionsAnswered: qAns,
+                        correctAnswers: cAns,
+                        accuracy: acc,
+                        lastStudied: new Date()
+                    }
+                }
+            );
+        }
+    }
+
     res.status(201).json({
         success: true,
         message: "Diagnostic results submitted successfully",

@@ -49,6 +49,7 @@ export const authApi = {
   revokeSession:       (id)   => api.delete(`/auth/sessions/${id}`),
   revokeOtherSessions: ()     => api.delete('/auth/sessions/others/all'),
   deleteAccount:       ()     => api.delete('/auth/account'),
+  getDataExport:       ()     => api.get('/auth/data-export'),
   googleAuth:          (data) => api.post('/auth/google', data),
   googleRegister:      (data) => api.post('/auth/google/register', data),
 };

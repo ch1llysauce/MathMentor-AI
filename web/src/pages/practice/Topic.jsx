@@ -11,6 +11,7 @@ import {
   IoTimeOutline,
   IoCellularOutline,
   IoChevronForwardOutline,
+  IoChevronBackOutline,
   IoHelpCircleOutline,
   IoArrowForwardOutline,
 } from 'react-icons/io5';
@@ -47,6 +48,9 @@ export default function TopicScreen() {
   const [search, setSearch] = useState('');
   const [selectedModule, setSelectedModule] = useState(null);
   const scrollRef = useRef(null);
+  const subtopicScrollRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   const meta = TOPIC_META[topicName] ?? { color: '#4b41e1', bg: 'rgba(75,65,225,0.12)' };
 
@@ -85,6 +89,39 @@ export default function TopicScreen() {
 
   // Unique subtopic modules
   const moduleNames = [...new Set(lessons.map((l) => l.subtopic))].filter(Boolean);
+
+  const checkSubtopicScroll = () => {
+    const el = subtopicScrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 5);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 5);
+  };
+
+  useEffect(() => {
+    checkSubtopicScroll();
+    const timer = setTimeout(checkSubtopicScroll, 200);
+    window.addEventListener('resize', checkSubtopicScroll);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', checkSubtopicScroll);
+    };
+  }, [moduleNames, loading]);
+
+  const scrollSubtopics = (direction) => {
+    const el = subtopicScrollRef.current;
+    if (!el) return;
+    const amount = direction === 'left' ? -220 : 220;
+    el.scrollBy({ left: amount, behavior: 'smooth' });
+  };
+
+  const handleWheelScroll = (e) => {
+    const el = subtopicScrollRef.current;
+    if (!el) return;
+    if (e.deltaY !== 0) {
+      el.scrollLeft += e.deltaY;
+      checkSubtopicScroll();
+    }
+  };
 
   // Filtered lessons
   const filteredLessons = lessons.filter((l) => {
@@ -244,36 +281,79 @@ export default function TopicScreen() {
                 )}
               </div>
 
-              {/* Module chips */}
+              {/* Module chips with PC wrapping & Mobile scroll support */}
               {moduleNames.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-none">
-                  <button
-                    onClick={() => setSelectedModule(null)}
-                    className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${selectedModule === null
-                        ? 'bg-gray-900 text-white shadow-xs'
-                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                      }`}
+                <div className="relative flex items-center group py-1">
+                  {/* Left Scroll Arrow (Mobile only) */}
+                  {canScrollLeft && (
+                    <button
+                      onClick={() => scrollSubtopics('left')}
+                      aria-label="Scroll left"
+                      className="md:hidden absolute -left-2 z-10 w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 shadow-md text-gray-700 dark:text-zinc-200 flex items-center justify-center hover:bg-purple-50 hover:text-purple-600 dark:hover:bg-zinc-700 transition-all"
+                    >
+                      <IoChevronBackOutline size={16} />
+                    </button>
+                  )}
+
+                  {/* Chips Track: Wraps on PC (md:flex-wrap), Scrolls on Mobile */}
+                  <div
+                    ref={subtopicScrollRef}
+                    onScroll={checkSubtopicScroll}
+                    onWheel={handleWheelScroll}
+                    className="flex flex-wrap gap-2 max-md:flex-nowrap max-md:overflow-x-auto max-md:pb-1.5 scrollbar-none scroll-smooth w-full px-0.5"
                   >
-                    All Subtopics
-                  </button>
-                  {moduleNames.map((mod) => {
-                    const active = selectedModule === mod;
-                    const stats = moduleStats[mod];
-                    const done = stats?.total > 0 && stats.completed === stats.total;
-                    return (
-                      <button
-                        key={mod}
-                        onClick={() => setSelectedModule(active ? null : mod)}
-                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${active
-                            ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
-                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-                          }`}
-                      >
-                        {done && <IoCheckmarkCircle size={14} className={active ? 'text-emerald-300' : 'text-emerald-500'} />}
-                        {moduleLabel(mod)}
-                      </button>
-                    );
-                  })}
+                    <button
+                      onClick={() => setSelectedModule(null)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shadow-2xs cursor-pointer ${selectedModule === null
+                          ? 'bg-purple-600 text-white border-purple-600 dark:bg-purple-600 dark:text-white shadow-purple-600/20'
+                          : 'bg-white dark:bg-[#1a2333] border-gray-200 dark:border-[#2d3748] text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#252f40]'
+                        }`}
+                    >
+                      All Subtopics
+                    </button>
+                    {moduleNames.map((mod) => {
+                      const active = selectedModule === mod;
+                      const stats = moduleStats[mod];
+                      const done = stats?.total > 0 && stats.completed === stats.total;
+                      return (
+                        <button
+                          key={mod}
+                          onClick={() => setSelectedModule(active ? null : mod)}
+                          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shadow-2xs cursor-pointer ${active
+                              ? 'bg-purple-600 text-white border-purple-600 dark:bg-purple-600 dark:text-white shadow-purple-600/20'
+                              : 'bg-white dark:bg-[#1a2333] border-gray-200 dark:border-[#2d3748] text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#252f40]'
+                            }`}
+                        >
+                          {done && (
+                            <IoCheckmarkCircle
+                              size={15}
+                              className={active ? 'text-emerald-300' : 'text-emerald-500'}
+                            />
+                          )}
+                          <span>{moduleLabel(mod)}</span>
+                          {stats?.total > 0 && (
+                            <span className={`ml-0.5 text-[11px] px-2 py-0.5 rounded-lg font-bold transition-colors ${active
+                                ? 'bg-purple-700/80 text-white'
+                                : 'bg-gray-200/80 dark:bg-[#252f40] text-gray-800 dark:text-white border border-gray-300/40 dark:border-[#374151]'
+                              }`}>
+                              {stats.completed}/{stats.total}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Right Scroll Arrow (Mobile only) */}
+                  {canScrollRight && (
+                    <button
+                      onClick={() => scrollSubtopics('right')}
+                      aria-label="Scroll right"
+                      className="md:hidden absolute -right-2 z-10 w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 shadow-md text-gray-700 dark:text-zinc-200 flex items-center justify-center hover:bg-purple-50 hover:text-purple-600 dark:hover:bg-zinc-700 transition-all"
+                    >
+                      <IoChevronForwardOutline size={16} />
+                    </button>
+                  )}
                 </div>
               )}
 

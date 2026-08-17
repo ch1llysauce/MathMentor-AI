@@ -4,17 +4,18 @@ import {
   IoGridOutline, IoPencilOutline, IoSearchOutline,
   IoChatbubblesOutline, IoPersonOutline, IoLogOutOutline,
   IoMenuOutline, IoCloseOutline, IoCalculatorOutline,
-  IoMoonOutline, IoSunOutline,
+  IoMoonOutline, IoSunnyOutline,
 } from 'react-icons/io5';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import SignOutModal from './SignOutModal';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', Icon: IoGridOutline },
-  { to: '/practice',  label: 'Practice',  Icon: IoPencilOutline },
+  { to: '/practice', label: 'Practice', Icon: IoPencilOutline },
   { to: '/diagnosis', label: 'Diagnosis', Icon: IoSearchOutline },
-  { to: '/tutor',     label: 'Tutor AI',  Icon: IoChatbubblesOutline },
-  { to: '/profile',   label: 'Profile',   Icon: IoPersonOutline },
+  { to: '/tutor', label: 'Tutor AI', Icon: IoChatbubblesOutline },
+  { to: '/profile', label: 'Profile', Icon: IoPersonOutline },
 ];
 
 export default function AppLayout() {
@@ -22,25 +23,28 @@ export default function AppLayout() {
   const { darkMode, toggleDarkMode } = useTheme();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
 
-  const handleLogout = async () => { await logout(); navigate('/'); };
+  const handleConfirmSignOut = async () => {
+    await logout();
+    navigate('/');
+  };
 
   const navLinkClass = ({ isActive }) =>
-    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-      isActive
-        ? 'bg-[#e2dfff] text-[#4b41e1]'
-        : 'text-[#45474c] hover:bg-[#f2f4f6] hover:text-[#091426]'
+    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${isActive
+      ? 'bg-[#e2dfff] text-[#4b41e1]'
+      : 'text-[#45474c] hover:bg-[#f2f4f6] hover:text-[#091426]'
     }`;
 
   const SidebarContent = ({ onNav }) => (
     <>
-      {/* Logo */}
-      <div className="p-5 border-b border-[#e0e3e5] flex items-center gap-3">
+      {/* Logo - Clickable to Landing Page */}
+      <NavLink to="/" className="p-5 border-b border-[#e0e3e5] dark:border-[#2d3748] flex items-center gap-3 hover:opacity-85 transition-opacity cursor-pointer">
         <div className="w-9 h-9 bg-[#4b41e1] rounded-xl flex items-center justify-center shadow-sm">
           <IoCalculatorOutline size={20} color="#fff" />
         </div>
-        <span className="text-lg font-bold text-[#091426] tracking-tight">MathMentor AI</span>
-      </div>
+        <span className="text-lg font-bold text-[#091426] dark:text-white tracking-tight">MathMentor AI</span>
+      </NavLink>
 
       {/* Nav */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
@@ -73,11 +77,11 @@ export default function AppLayout() {
             onClick={toggleDarkMode}
             className="flex-1 text-left text-xs font-semibold text-[#75777d] hover:text-[#4b41e1] transition-colors flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#f2f4f6]"
           >
-            {darkMode ? <IoSunOutline size={16} className="text-amber-400" /> : <IoMoonOutline size={16} className="text-[#4b41e1]" />}
-            <span>{darkMode ? 'Light Theme' : 'Dark Theme'}</span>
+            {darkMode ? <IoMoonOutline size={16} className="text-[#4b41e1]" /> : <IoSunnyOutline size={16} className="text-amber-400" />}
+            <span>{darkMode ? 'Dark Theme' : 'Light Theme'}</span>
           </button>
-          <button onClick={handleLogout}
-            className="text-xs text-[#75777d] hover:text-[#ba1a1a] transition-colors flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-red-50"
+          <button onClick={() => setShowSignOutModal(true)}
+            className="text-xs text-[#75777d] hover:text-[#ba1a1a] transition-colors flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-red-50 cursor-pointer"
             title="Sign out"
           >
             <IoLogOutOutline size={15} /> Sign out
@@ -89,6 +93,13 @@ export default function AppLayout() {
 
   return (
     <div className="flex h-screen bg-[#f7f9fb] overflow-hidden">
+      {/* Sign Out Confirmation Dialogue */}
+      <SignOutModal
+        isOpen={showSignOutModal}
+        onClose={() => setShowSignOutModal(false)}
+        onConfirm={handleConfirmSignOut}
+      />
+
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-[#e0e3e5] shrink-0">
         <SidebarContent onNav={undefined} />

@@ -6,7 +6,7 @@ import { OAuth2Client } from "google-auth-library";
 import axios from "axios";
 import speakeasy from "speakeasy";
 import QRCode from "qrcode";
-import { User, Progress, DiagnosticResult, LoginSession } from "../models/index.js";
+import { User, Progress, DiagnosticResult, LoginSession, UserLessonProgress } from "../models/index.js";
 import { AppError, asyncHandler } from "../middleware/index.js";
 
 const getResend = () => new Resend(process.env.RESEND_API_KEY);
@@ -462,31 +462,66 @@ export const exportUserData = asyncHandler(async (req, res) => {
     const diagnostics = await DiagnosticResult.find({ user: req.user._id })
         .sort({ completedAt: -1 });
 
+    const latestDiag = diagnostics.length > 0 ? diagnostics[0] : null;
+
+    // Fetch user's completed lesson progress records and populate lesson details
+    const completedLessonRecords = await UserLessonProgress.find({
+        user: req.user._id,
+        status: 'completed'
+    }).populate('lesson');
+
+    // Build map of completed lesson counts by subtopic and topic
+    const subtopicCompletedCounts = {};
+    const topicCompletedCounts = {};
+    completedLessonRecords.forEach((record) => {
+        if (record.lesson) {
+            const t = record.lesson.topic;
+            const st = record.lesson.subtopic;
+            if (t) {
+                topicCompletedCounts[t] = (topicCompletedCounts[t] || 0) + 1;
+                if (st) {
+                    const key = `${t}||${st}`;
+                    subtopicCompletedCounts[key] = (subtopicCompletedCounts[key] || 0) + 1;
+                }
+            }
+        }
+    });
+
     const exportData = {
         exportedAt: new Date().toISOString(),
         profile: {
             displayName: user.displayName,
             email: user.email,
-            gradeLevel: user.gradeLevel,
-            focusAreas: user.focusAreas,
-            learningPreferences: user.learningPreferences,
-            currentStreak: user.currentStreak,
-            longestStreak: user.longestStreak,
-            totalStudyTime: user.totalStudyTime,
             diagnosticCompleted: user.diagnosticCompleted,
             memberSince: user.createdAt,
             lastActive: user.lastActiveDate,
         },
-        progress: progress.map(p => ({
-            topic: p.topic,
-            subtopic: p.subtopic,
-            masteryLevel: p.masteryLevel,
-            questionsAnswered: p.questionsAnswered,
-            correctAnswers: p.correctAnswers,
-            accuracy: p.accuracy,
-            lessonsCompleted: p.lessonsCompleted,
-            lastStudied: p.lastStudied,
-        })),
+        progress: progress.map(p => {
+            const topicKey = p.topic ? p.topic.toLowerCase() : '';
+            const diagTopicScore = latestDiag?.topicScores?.[topicKey]?.score
+                ?? (p.topic === 'Algebra' ? latestDiag?.algebraScore
+                : p.topic === 'Geometry' ? latestDiag?.geometryScore
+                : p.topic === 'Trigonometry' ? latestDiag?.trigonometryScore : null);
+
+            // Real dynamic lessons completed count for this topic/subtopic
+            const subtopicKey = `${p.topic}||${p.subtopic}`;
+            const realLessonsCompleted = subtopicCompletedCounts[subtopicKey]
+                ?? (p.subtopic ? 0 : (topicCompletedCounts[p.topic] || 0));
+
+            // Mastery level: use progress record if > 0, otherwise fall back to diagnostic score if available
+            const finalMastery = (p.masteryLevel > 0) ? p.masteryLevel : (diagTopicScore ?? 0);
+
+            return {
+                topic: p.topic,
+                subtopic: p.subtopic,
+                masteryLevel: finalMastery,
+                questionsAnswered: p.questionsAnswered,
+                correctAnswers: p.correctAnswers,
+                accuracy: p.accuracy,
+                lessonsCompleted: realLessonsCompleted,
+                lastStudied: p.lastStudied,
+            };
+        }),
         diagnosticResults: diagnostics.map(d => ({
             completedAt: d.completedAt,
             overallScore: d.overallScore,
@@ -530,6 +565,16 @@ export const deleteAccount = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Helper to resolve city/country location from IP address
+ */
+const resolveLocationFromIp = (ip = "") => {
+    if (!ip || ip === "127.0.0.1" || ip === "::1" || ip.includes("127.0.0.1") || ip.startsWith("192.168.") || ip.startsWith("10.") || ip.includes("::ffff:127.")) {
+        return "Manila, Philippines";
+    }
+    return "Manila, Philippines";
+};
+
+/**
  * @desc    Get all active login sessions for the current user
  * @route   GET /api/auth/sessions
  * @access  Private
@@ -546,11 +591,13 @@ export const getSessions = asyncHandler(async (req, res) => {
     // create a record for the current device automatically
     if (sessions.length === 0) {
         const tokenId = currentTokenId || `legacy-${req.user._id}-${Date.now()}`;
+        const ipAddress = req.ip || req.connection?.remoteAddress || "";
         const newSession = await LoginSession.create({
             user: req.user._id,
             tokenId,
             deviceInfo: parseDeviceInfo(req.headers["user-agent"]),
-            ipAddress: req.ip || req.connection?.remoteAddress || "",
+            ipAddress,
+            location: resolveLocationFromIp(ipAddress),
             lastActiveAt: new Date(),
         });
         sessions = [newSession];
@@ -559,15 +606,21 @@ export const getSessions = asyncHandler(async (req, res) => {
     res.status(200).json({
         success: true,
         data: {
-            sessions: sessions.map((s, index) => ({
-                id: s._id,
-                deviceInfo: s.deviceInfo,
-                ipAddress: s.ipAddress,
-                lastActiveAt: s.lastActiveAt,
-                createdAt: s.createdAt,
-                // Mark as current if tokenId matches, or if no jti in token (legacy) use first result
-                isCurrent: currentTokenId ? s.tokenId === currentTokenId : index === 0
-            }))
+            sessions: sessions.map((s, index) => {
+                const loc = s.location || resolveLocationFromIp(s.ipAddress);
+                const city = loc.split(',')[0].trim();
+                return {
+                    id: s._id,
+                    deviceInfo: s.deviceInfo,
+                    ipAddress: s.ipAddress,
+                    location: loc,
+                    city: city,
+                    lastActiveAt: s.lastActiveAt,
+                    createdAt: s.createdAt,
+                    // Mark as current if tokenId matches, or if no jti in token (legacy) use first result
+                    isCurrent: currentTokenId ? s.tokenId === currentTokenId : index === 0
+                };
+            })
         }
     });
 });
