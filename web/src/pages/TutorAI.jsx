@@ -24,12 +24,15 @@ function Message({ msg }) {
       </div>
       <div
         className={`max-w-[88%] sm:max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed overflow-hidden ${
-          isUser
-            ? 'bg-purple-600 text-white rounded-tr-sm'
-            : 'bg-white border border-gray-100 text-gray-800 shadow-sm rounded-tl-sm'
+          isUser ? 'bg-purple-600 text-white rounded-tr-sm' : 'bg-white border border-gray-100 shadow-sm text-gray-800 rounded-tl-sm'
         }`}
       >
         <MathText text={msg.content} />
+        {msg.timestamp && (
+          <p className={`text-[10px] mt-1.5 ${isUser ? 'text-purple-200' : 'text-gray-400'}`}>
+            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -40,23 +43,21 @@ export default function TutorAI() {
   const [messages, setMessages]           = useState([]);
   const [input, setInput]                 = useState('');
   const [loading, setLoading]             = useState(false);
-  const [conversationId, setConversationId] = useState(undefined);
+  const [conversationId, setConversationId] = useState(null);
   const [error, setError]                 = useState('');
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
 
-  const firstName = (user?.displayName ?? user?.name ?? 'there').split(' ')[0];
-
-  // Add welcome message on mount
   useEffect(() => {
+    const welcomeName = user?.displayName ? `, ${user.displayName}` : '';
     const welcome = {
       id: 'welcome',
       role: 'assistant',
-      content: `Hi ${firstName}! I'm your AI math tutor. I'm here to help you understand math concepts, solve problems, and answer any questions you have about Algebra, Geometry, or Trigonometry.\n\nHow can I help you today?`,
+      content: `Hello${welcomeName}! 👋 I'm **MathMentor AI**, your personal mathematics tutor. Ask me anything about **Algebra**, **Geometry**, or **Trigonometry**!`,
       timestamp: new Date().toISOString(),
     };
     setMessages([welcome]);
-  }, [firstName]);
+  }, [user]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });

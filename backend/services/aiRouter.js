@@ -18,7 +18,7 @@ const callGroqAPI = async (prompt, context = {}) => {
         const response = await axios.post(
             "https://api.groq.com/openai/v1/chat/completions",
             {
-                model: "llama-3.3-70b-versatile",
+                model: "openai/gpt-oss-120b",
                 messages: [
                     {
                         role: "system",
@@ -49,7 +49,7 @@ Be supportive and positive.`
             success: true,
             response: response.data.choices[0].message.content,
             source: "Groq",
-            model: "llama-3.3-70b-versatile"
+            model: "openai/gpt-oss-120b"
         };
 
     } catch (error) {

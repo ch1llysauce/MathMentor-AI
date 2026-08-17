@@ -4,7 +4,6 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   IoArrowBack,
   IoMoonOutline,
-  IoLanguageOutline,
   IoTextOutline,
   IoVolumeHighOutline,
   IoPhonePortraitOutline,
@@ -24,7 +23,7 @@ import {
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { darkMode, toggleDarkMode } = useTheme();
+  const { darkMode, toggleDarkMode, fontSize, setFontSize } = useTheme();
 
   // Settings state
   const [soundEffects, setSoundEffects] = useState(true);
@@ -35,10 +34,6 @@ export default function Settings() {
   const [devMode, setDevMode] = useState(false);
 
   // Modals & Selectors
-  const [language, setLanguage] = useState('English');
-  const [showLangModal, setShowLangModal] = useState(false);
-
-  const [fontSize, setFontSize] = useState('Medium');
   const [showFontModal, setShowFontModal] = useState(false);
 
   const [sessionDuration, setSessionDuration] = useState('30 minutes');
@@ -73,7 +68,7 @@ export default function Settings() {
     setDataSync(true);
     setOfflineMode(false);
     setDevMode(false);
-    setLanguage('English');
+
     setFontSize('Medium');
     setSessionDuration('30 minutes');
     setShowResetModal(false);
@@ -143,21 +138,6 @@ export default function Settings() {
       <div className="mb-6">
         <h2 className="text-sm font-semibold text-[#45474c] uppercase tracking-wider mb-2 ml-1">Interface</h2>
         <div className="bg-white rounded-2xl shadow-sm border border-[#e0e3e5] overflow-hidden divide-y divide-[#f2f4f6]">
-          <button
-            onClick={() => setShowLangModal(true)}
-            className="w-full flex items-center justify-between p-4 hover:bg-[#f7f9fb] transition-colors text-left"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[rgba(33,150,243,0.1)] flex items-center justify-center text-[#2196f3]">
-                <IoLanguageOutline size={20} />
-              </div>
-              <span className="text-sm font-semibold text-[#091426]">Language</span>
-            </div>
-            <div className="flex items-center gap-2 text-[#75777d] text-sm">
-              <span>{language}</span>
-              <IoChevronForwardOutline size={18} />
-            </div>
-          </button>
 
           <button
             onClick={() => setShowFontModal(true)}
@@ -416,37 +396,6 @@ export default function Settings() {
           </div>
         </div>
       </div>
-
-      {/* Language Modal */}
-      {showLangModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-[#091426]">Select Language</h3>
-              <button onClick={() => setShowLangModal(false)} className="text-[#75777d] hover:text-[#091426]">
-                <IoCloseOutline size={22} />
-              </button>
-            </div>
-            <div className="space-y-2">
-              {['English', 'Spanish', 'French', 'German', 'Filipino'].map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => {
-                    setLanguage(lang);
-                    setShowLangModal(false);
-                    showToast(`Language set to ${lang}`);
-                  }}
-                  className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                    language === lang ? 'bg-[#4b41e1] text-white' : 'hover:bg-[#f7f9fb] text-[#091426]'
-                  }`}
-                >
-                  {lang}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Font Size Modal */}
       {showFontModal && (
