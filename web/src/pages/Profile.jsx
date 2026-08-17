@@ -162,24 +162,6 @@ export default function Profile() {
 
               <h2 className="text-2xl font-bold tracking-tight">{displayName}</h2>
               <p className="text-xs text-white/80 mt-1 font-medium">{user?.email ?? ''}</p>
-
-              <div className="mt-4 pt-4 border-t border-white/15 w-full flex items-center justify-around text-center">
-                <div>
-                  <div className="flex items-center justify-center gap-1 text-amber-300">
-                    <IoFlame size={16} />
-                    <span className="text-base font-extrabold">{user?.currentStreak ?? 1}</span>
-                  </div>
-                  <p className="text-[11px] text-white/70 uppercase tracking-wider mt-0.5">Day Streak</p>
-                </div>
-                <div className="w-px h-8 bg-white/15" />
-                <div>
-                  <div className="flex items-center justify-center gap-1 text-emerald-300">
-                    <IoSchoolOutline size={16} />
-                    <span className="text-base font-extrabold">{user?.learningPreferences?.difficulty ? user.learningPreferences.difficulty.toUpperCase() : 'MEDIUM'}</span>
-                  </div>
-                  <p className="text-[11px] text-white/70 uppercase tracking-wider mt-0.5">Difficulty</p>
-                </div>
-              </div>
             </div>
           </div>
 

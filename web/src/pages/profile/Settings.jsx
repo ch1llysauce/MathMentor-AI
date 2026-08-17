@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../../context/ThemeContext';
 import {
   IoArrowBack,
   IoMoonOutline,
@@ -23,9 +24,9 @@ import {
 
 export default function Settings() {
   const navigate = useNavigate();
+  const { darkMode, toggleDarkMode } = useTheme();
 
   // Settings state
-  const [darkMode, setDarkMode] = useState(false);
   const [soundEffects, setSoundEffects] = useState(true);
   const [hapticFeedback, setHapticFeedback] = useState(true);
   const [autoPlay, setAutoPlay] = useState(false);
@@ -65,7 +66,7 @@ export default function Settings() {
   };
 
   const handleResetSettings = () => {
-    setDarkMode(false);
+    if (darkMode) toggleDarkMode();
     setSoundEffects(true);
     setHapticFeedback(true);
     setAutoPlay(false);
@@ -94,7 +95,7 @@ export default function Settings() {
     <div className="p-4 sm:p-6 max-w-2xl mx-auto pb-16">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed top-5 right-5 z-50 bg-[#091426] text-white text-sm px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-bounce">
+        <div className="fixed top-5 right-5 z-50 toast-banner text-sm px-4 py-3 rounded-xl shadow-lg border border-transparent flex items-center gap-2 animate-slide-down">
           <IoCheckmarkCircleOutline className="text-[#00a472] text-xl" />
           <span>{toast}</span>
         </div>
@@ -129,7 +130,7 @@ export default function Settings() {
               <input
                 type="checkbox"
                 checked={darkMode}
-                onChange={(e) => setDarkMode(e.target.checked)}
+                onChange={toggleDarkMode}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-[#e0e3e5] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4b41e1]"></div>

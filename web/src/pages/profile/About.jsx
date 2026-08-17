@@ -49,15 +49,15 @@ export default function About() {
       </div>
 
       {/* Hero Card */}
-      <div className="bg-gradient-to-b from-[rgba(75,65,225,0.08)] to-white rounded-3xl p-8 border border-[#e0e3e5] shadow-xs text-center flex flex-col items-center mb-6">
+      <div className="bg-gradient-to-b from-[rgba(75,65,225,0.12)] to-white dark:from-[rgba(75,65,225,0.25)] dark:to-[#18181b] rounded-3xl p-8 border border-[#e0e3e5] dark:border-zinc-800 shadow-xs text-center flex flex-col items-center mb-6">
         <div className="w-16 h-16 rounded-2xl bg-[#4b41e1] text-white flex items-center justify-center shadow-md mb-3">
           <IoCalculatorOutline size={36} />
         </div>
-        <h2 className="text-2xl font-extrabold text-[#091426] tracking-tight">MathMentor AI</h2>
-        <span className="text-xs font-semibold text-[#4b41e1] bg-[rgba(75,65,225,0.1)] px-3 py-1 rounded-full mt-1">
+        <h2 className="text-2xl font-extrabold text-[#091426] dark:text-white tracking-tight">MathMentor AI</h2>
+        <span className="text-xs font-semibold text-[#4b41e1] dark:text-indigo-300 bg-[rgba(75,65,225,0.1)] dark:bg-[rgba(99,102,241,0.25)] px-3 py-1 rounded-full mt-1">
           Version 1.0.0
         </span>
-        <p className="text-sm text-[#45474c] mt-3 max-w-md leading-relaxed">
+        <p className="text-sm text-[#45474c] dark:text-zinc-300 mt-3 max-w-md leading-relaxed">
           Your personalised AI-powered mathematics tutor designed for high school students to build genuine math mastery.
         </p>
       </div>

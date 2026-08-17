@@ -4,8 +4,10 @@ import {
   IoGridOutline, IoPencilOutline, IoSearchOutline,
   IoChatbubblesOutline, IoPersonOutline, IoLogOutOutline,
   IoMenuOutline, IoCloseOutline, IoCalculatorOutline,
+  IoMoonOutline, IoSunOutline,
 } from 'react-icons/io5';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', Icon: IoGridOutline },
@@ -17,6 +19,7 @@ const navItems = [
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
+  const { darkMode, toggleDarkMode } = useTheme();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -65,10 +68,21 @@ export default function AppLayout() {
             <p className="text-xs text-[#75777d] truncate">{user?.email ?? ''}</p>
           </div>
         </div>
-        <button onClick={handleLogout}
-          className="w-full text-left text-sm text-[#75777d] hover:text-[#ba1a1a] transition-colors flex items-center gap-2 px-1 py-1 rounded-lg hover:bg-red-50">
-          <IoLogOutOutline size={15} /> Sign out
-        </button>
+        <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#f2f4f6]">
+          <button
+            onClick={toggleDarkMode}
+            className="flex-1 text-left text-xs font-semibold text-[#75777d] hover:text-[#4b41e1] transition-colors flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#f2f4f6]"
+          >
+            {darkMode ? <IoSunOutline size={16} className="text-amber-400" /> : <IoMoonOutline size={16} className="text-[#4b41e1]" />}
+            <span>{darkMode ? 'Light Theme' : 'Dark Theme'}</span>
+          </button>
+          <button onClick={handleLogout}
+            className="text-xs text-[#75777d] hover:text-[#ba1a1a] transition-colors flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-red-50"
+            title="Sign out"
+          >
+            <IoLogOutOutline size={15} /> Sign out
+          </button>
+        </div>
       </div>
     </>
   );

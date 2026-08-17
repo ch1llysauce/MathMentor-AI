@@ -163,6 +163,27 @@ body {
   background-color: #18181b !important;
 }
 
+/* Gradient Stops in Dark Mode */
+.dark .to-white {
+  --tw-gradient-to: #18181b !important;
+  --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-from), #18181b) !important;
+}
+
+.dark .from-white {
+  --tw-gradient-from: #18181b !important;
+  --tw-gradient-stops: #18181b, var(--tw-gradient-to) !important;
+}
+
+.dark .from-\[\#e2dfff\],
+.dark .from-\[\#eeeaff\] {
+  --tw-gradient-from: #27272a !important;
+}
+
+.dark .to-\[\#eeeaff\] {
+  --tw-gradient-to: #18181b !important;
+  --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-from), #18181b) !important;
+}
+
 /* Text Colors */
 .dark .text-\[\#091426\] {
   color: #ffffff !important;
@@ -328,4 +349,31 @@ body {
 .dark .bg-primary,
 .dark .bg-purple-600 {
   background-color: #4b41e1 !important;
+}
+
+@keyframes slideDownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slideDownFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Toast Banner */
+.toast-banner {
+  background-color: #091426 !important;
+  color: #ffffff !important;
+}
+
+.dark .toast-banner {
+  background-color: #27272a !important;
+  color: #ffffff !important;
+  border-color: #3f3f46 !important;
 }

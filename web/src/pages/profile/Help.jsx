@@ -70,7 +70,7 @@ export default function Help() {
     <div className="p-4 sm:p-6 max-w-2xl mx-auto pb-16">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed top-5 right-5 z-50 bg-[#091426] text-white text-sm px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-bounce">
+        <div className="fixed top-5 right-5 z-50 toast-banner text-sm px-4 py-3 rounded-xl shadow-lg border border-transparent flex items-center gap-2 animate-slide-down">
           <IoCheckmarkCircleOutline className="text-[#00a472] text-xl" />
           <span>{toast}</span>
         </div>
