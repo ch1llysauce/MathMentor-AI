@@ -34,14 +34,14 @@ Be supportive and positive.`
                     }
                 ],
                 temperature: 0.7,
-                max_tokens: 1024
+                max_tokens: 4096
             },
             {
                 headers: {
                     "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
                     "Content-Type": "application/json"
                 },
-                timeout: 10000 // 10 second timeout
+                timeout: 15000 // 15 second timeout
             }
         );
 
@@ -84,7 +84,7 @@ Student Question: ${prompt}`
                 ],
                 generationConfig: {
                     temperature: 0.7,
-                    maxOutputTokens: 1024
+                    maxOutputTokens: 4096
                 }
             },
             {

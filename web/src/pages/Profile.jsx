@@ -218,104 +218,12 @@ export default function Profile() {
             <div className="space-y-3">
               <MenuCardItem
                 icon={IoPersonOutline}
-                title="Edit Display Name"
-                description="Update your public profile display name"
+                title="Edit Profile & Password"
+                description="Update display name, avatar, and security credentials"
                 iconBg="bg-[rgba(75,65,225,0.1)]"
                 iconColor="text-[#4b41e1]"
-                onClick={() => {
-                  setEditMode((p) => !p);
-                  setEditSuccess('');
-                  setPwOpen(false);
-                }}
+                onClick={() => navigate('/profile/edit')}
               />
-
-              {editMode && (
-                <div className="bg-white rounded-2xl p-5 border border-[#4b41e1]/40 shadow-sm animate-fadeIn">
-                  <form onSubmit={handleEditSubmit} className="space-y-4">
-                    {editError && <p className="text-xs text-[#ba1a1a] font-semibold">{editError}</p>}
-                    <div>
-                      <label className="block text-xs font-semibold text-[#45474c] uppercase tracking-wide mb-1.5 ml-1">
-                        Display name
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={editForm.name}
-                        onChange={(e) => setEditForm({ name: e.target.value })}
-                        className={inputClass}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="submit"
-                        disabled={editLoading}
-                        className="flex-1 bg-[#4b41e1] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#3323cc] disabled:opacity-60 transition-colors"
-                      >
-                        {editLoading ? 'Saving…' : 'Save changes'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditMode(false)}
-                        className="flex-1 border border-[#e0e3e5] text-sm text-[#45474c] py-2.5 rounded-xl hover:bg-[#f2f4f6] transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
-
-              <MenuCardItem
-                icon={IoLockClosedOutline}
-                title="Change Password"
-                description="Update your account password & authentication credentials"
-                iconBg="bg-[rgba(216,227,251,1)]"
-                iconColor="text-[#091426]"
-                onClick={() => {
-                  setPwOpen((p) => !p);
-                  setPwSuccess('');
-                  setEditMode(false);
-                }}
-              />
-
-              {pwOpen && (
-                <div className="bg-white rounded-2xl p-5 border border-[#4b41e1]/40 shadow-sm animate-fadeIn">
-                  <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                    {pwError && <p className="text-xs text-[#ba1a1a] font-semibold">{pwError}</p>}
-                    {['currentPassword', 'newPassword', 'confirmPassword'].map((field, i) => (
-                      <div key={field}>
-                        <label className="block text-xs font-semibold text-[#45474c] uppercase tracking-wide mb-1.5 ml-1">
-                          {['Current password', 'New password', 'Confirm new password'][i]}
-                        </label>
-                        <input
-                          type="password"
-                          required
-                          value={pwForm[field]}
-                          onChange={(e) => setPwForm((p) => ({ ...p, [field]: e.target.value }))}
-                          placeholder={['••••••••', 'Minimum 8 characters', 'Re-enter new password'][i]}
-                          className={inputClass}
-                        />
-                      </div>
-                    ))}
-                    <div className="flex gap-2">
-                      <button
-                        type="submit"
-                        disabled={pwLoading}
-                        className="flex-1 bg-[#4b41e1] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#3323cc] disabled:opacity-60 transition-colors"
-                      >
-                        {pwLoading ? 'Updating…' : 'Update password'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPwOpen(false)}
-                        className="flex-1 border border-[#e0e3e5] text-sm text-[#45474c] py-2.5 rounded-xl hover:bg-[#f2f4f6] transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
 
               <MenuCardItem
                 icon={IoShieldCheckmarkOutline}

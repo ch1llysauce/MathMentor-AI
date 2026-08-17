@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppLayout from './components/AppLayout';
 
@@ -12,6 +13,7 @@ import Dashboard    from './pages/Dashboard';
 import Diagnosis    from './pages/Diagnosis';
 import TutorAI      from './pages/TutorAI';
 import Profile      from './pages/Profile';
+import EditProfile  from './pages/profile/EditProfile';
 import Settings     from './pages/profile/Settings';
 import Help         from './pages/profile/Help';
 import FAQ          from './pages/profile/FAQ';
@@ -29,47 +31,50 @@ import ProblemsScreen from './pages/practice/Problems';
 export default function App() {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ''}>
-      <BrowserRouter>
+      <ThemeProvider>
         <AuthProvider>
-          <Routes>
-            {/* Public */}
-            <Route path="/"                element={<Landing />} />
-            <Route path="/login"           element={<Login />} />
-            <Route path="/register"        element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
+          <BrowserRouter>
+            <Routes>
+              {/* Public */}
+              <Route path="/"                element={<Landing />} />
+              <Route path="/login"           element={<Login />} />
+              <Route path="/register"        element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
 
-            {/* Protected — all share the sidebar layout */}
-            <Route
-              element={
-                <ProtectedRoute>
-                  <AppLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/dashboard"  element={<Dashboard />} />
-              <Route path="/diagnosis"  element={<Diagnosis />} />
-              <Route path="/tutor"      element={<TutorAI />} />
-              <Route path="/profile"          element={<Profile />} />
-              <Route path="/profile/settings" element={<Settings />} />
-              <Route path="/profile/help"     element={<Help />} />
-              <Route path="/profile/faq"      element={<FAQ />} />
-              <Route path="/profile/about"    element={<About />} />
-              <Route path="/profile/privacy"  element={<Privacy />} />
-              <Route path="/profile/terms"    element={<Terms />} />
+              {/* Protected — all share the sidebar layout */}
+              <Route
+                element={
+                  <ProtectedRoute>
+                    <AppLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/dashboard"  element={<Dashboard />} />
+                <Route path="/diagnosis"  element={<Diagnosis />} />
+                <Route path="/tutor"      element={<TutorAI />} />
+                <Route path="/profile"          element={<Profile />} />
+                <Route path="/profile/edit"     element={<EditProfile />} />
+                <Route path="/profile/settings" element={<Settings />} />
+                <Route path="/profile/help"     element={<Help />} />
+                <Route path="/profile/faq"      element={<FAQ />} />
+                <Route path="/profile/about"    element={<About />} />
+                <Route path="/profile/privacy"  element={<Privacy />} />
+                <Route path="/profile/terms"    element={<Terms />} />
 
-              {/* Practice hierarchy */}
-              <Route path="/practice"                          element={<PracticeIndex />} />
-              <Route path="/practice/topic/:topicName"        element={<TopicScreen />} />
-              <Route path="/practice/lesson/:lessonId"        element={<LessonScreen />} />
-              <Route path="/practice/lesson-chat/:lessonId"   element={<LessonChat />} />
-              <Route path="/practice/problems"                element={<ProblemsScreen />} />
-            </Route>
+                {/* Practice hierarchy */}
+                <Route path="/practice"                          element={<PracticeIndex />} />
+                <Route path="/practice/topic/:topicName"        element={<TopicScreen />} />
+                <Route path="/practice/lesson/:lessonId"        element={<LessonScreen />} />
+                <Route path="/practice/lesson-chat/:lessonId"   element={<LessonChat />} />
+                <Route path="/practice/problems"                element={<ProblemsScreen />} />
+              </Route>
 
-            {/* Catch-all */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+              {/* Catch-all */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
         </AuthProvider>
-      </BrowserRouter>
+      </ThemeProvider>
     </GoogleOAuthProvider>
   );
 }

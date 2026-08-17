@@ -23,7 +23,7 @@ function Message({ msg }) {
         {isUser ? <IoPersonOutline size={16} /> : <IoSparklesOutline size={16} />}
       </div>
       <div
-        className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+        className={`max-w-[88%] sm:max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed overflow-hidden ${
           isUser
             ? 'bg-purple-600 text-white rounded-tr-sm'
             : 'bg-white border border-gray-100 text-gray-800 shadow-sm rounded-tl-sm'

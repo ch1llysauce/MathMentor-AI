@@ -272,7 +272,7 @@ function ChatMessage({ msg }) {
       <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${isUser ? 'bg-purple-600' : 'bg-purple-600'}`}>
         {isUser ? <IoPersonOutline size={15} className="text-white" /> : <IoSparklesOutline size={15} className="text-white" />}
       </div>
-      <div className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+      <div className={`max-w-[88%] sm:max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed overflow-hidden ${
         isUser
           ? 'bg-purple-600 text-white rounded-tr-sm'
           : 'bg-white border border-gray-100 shadow-sm text-gray-800 rounded-tl-sm'
