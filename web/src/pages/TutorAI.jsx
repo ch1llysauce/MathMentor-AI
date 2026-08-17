@@ -84,7 +84,7 @@ export default function TutorAI() {
         { id: (Date.now() + 1).toString(), role: 'assistant', content: reply, timestamp: data?.timestamp ?? new Date().toISOString() },
       ]);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to get a response. Please try again.');
+      setError(err.response?.data?.error || err.response?.data?.message || 'Failed to get a response. Please try again.');
       setMessages((prev) => prev.filter((m) => m.id !== userMsg.id));
     } finally {
       setLoading(false);
