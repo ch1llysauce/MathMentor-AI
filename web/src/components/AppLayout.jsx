@@ -40,9 +40,7 @@ export default function AppLayout() {
     <>
       {/* Logo - Clickable to Landing Page */}
       <NavLink to="/" className="p-5 border-b border-[#e0e3e5] dark:border-[#2d3748] flex items-center gap-3 hover:opacity-85 transition-opacity cursor-pointer">
-        <div className="w-9 h-9 bg-[#4b41e1] rounded-xl flex items-center justify-center shadow-sm">
-          <IoCalculatorOutline size={20} color="#fff" />
-        </div>
+        <img src="/logo.png" alt="MathMentor AI Logo" className="w-9 h-9 rounded-xl object-contain shadow-xs" />
         <span className="text-lg font-bold text-[#091426] dark:text-white tracking-tight">MathMentor AI</span>
       </NavLink>
 
@@ -128,9 +126,7 @@ export default function AppLayout() {
             <IoMenuOutline size={24} />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-[#4b41e1] rounded-lg flex items-center justify-center">
-              <IoCalculatorOutline size={15} color="#fff" />
-            </div>
+            <img src="/logo.png" alt="MathMentor AI Logo" className="w-7 h-7 rounded-lg object-contain" />
             <span className="text-base font-bold text-[#091426]">MathMentor AI</span>
           </div>
         </header>

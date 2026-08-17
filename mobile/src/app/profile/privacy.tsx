@@ -406,7 +406,7 @@ export default function PrivacySecurityScreen() {
                 </View>
                 <View style={styles.menuTextContainer}>
                   <Text style={[styles.menuTitle, { color: PV.text }]}>Data Usage Policy</Text>
-                  <Text style={[styles.menuDescription, { color: PV.textLight }]}>How we use your information</Text>
+                  <Text style={[styles.menuDescription, { color: PV.textLight }]}>Overview of data collection, usage, AI privacy & user rights</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -751,25 +751,38 @@ export default function PrivacySecurityScreen() {
               showsVerticalScrollIndicator={true}
               contentContainerStyle={{ paddingBottom: 8 }}
             >
-              <PolicySection title="What data we collect">
-                {`• Account info: your name, email address, and grade level\n• Learning data: quiz answers, mastery levels, and progress per topic\n• Diagnostic results: scores and recommended learning paths\n• Usage data: session times and streak activity`}
+              <PolicySection title="1. What data we collect">
+                {`• Account info: Display name, email address, password hash, grade level & focus areas\n• Learning data: Quiz/practice answers, topic mastery %, diagnostic results & learning path progress\n• Usage data: Session timestamps, study time & streak data, device/browser information, and IP address (used strictly for session security auditing)`}
               </PolicySection>
-              <PolicySection title="How we use it">
-                {`• To personalise your learning path and topic recommendations\n• To track your progress and show your statistics\n• To improve the accuracy of the AI tutor responses\n• We do not sell your data to third parties`}
+              <PolicySection title="2. How we use your data">
+                {`• To personalise problem difficulty, diagnostic tests & adaptive study recommendations\n• To calculate topic mastery levels and track study streaks over time\n• To power the AI Tutor (math questions are processed via Groq/Gemini — no personal identifiers like name, email, or IP are sent to AI providers)\n• Zero Data Sale Guarantee: We do NOT sell, rent, or trade your data to third parties`}
               </PolicySection>
-              <PolicySection title="Data storage">
-                {`• Your data is stored securely on our servers hosted on Render\n• Passwords are hashed using bcrypt and never stored in plain text\n• Two-factor authentication secrets are encrypted at rest`}
+              <PolicySection title="3. Data storage & security">
+                {`• Stored securely on cloud database infrastructure (MongoDB Atlas) hosted on Render\n• Passwords hashed using bcrypt (one-way encryption) & all API traffic encrypted via HTTPS/TLS\n• 2FA secrets encrypted at rest & session tokens managed with strict expiry limits`}
               </PolicySection>
-              <PolicySection title="Your rights">
-                {`• You can download a copy of your data at any time\n• You can request permanent deletion using "Delete My Data"\n• You can update your profile information in Edit Profile`}
+              <PolicySection title="4. Your rights & control">
+                {`• Data Export: Download a full JSON copy of your progress and diagnostic history anytime using "Download My Data"\n• Data Deletion: Permanently delete your account and all associated study data using "Delete My Data"\n• Correction: Update your profile information and preferences in Edit Profile`}
               </PolicySection>
               <Text style={[styles.policyFooter, { color: PV.textLight }]}>
-                Last updated: August 2026 · MathMentor AI
+                Effective: August 2026 · MathMentor AI
               </Text>
             </ScrollView>
-            <TouchableOpacity style={[styles.primaryButton, { marginTop: 16, width: '100%' }]} onPress={closeModal}>
-              <Text style={styles.primaryButtonText}>Got it</Text>
-            </TouchableOpacity>
+            <View style={{ width: '100%', marginTop: 14 }}>
+              <TouchableOpacity style={styles.primaryButton} onPress={closeModal}>
+                <Text style={styles.primaryButtonText}>Got it</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ alignItems: 'center', paddingVertical: 8, marginTop: 4 }}
+                onPress={() => {
+                  closeModal();
+                  router.push('/legal/privacy-policy');
+                }}
+              >
+                <Text style={{ fontSize: 13, color: '#4b41e1', fontWeight: '600' }}>
+                  View Full Policy Document
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>

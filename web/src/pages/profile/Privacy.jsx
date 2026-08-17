@@ -356,7 +356,7 @@ export default function Privacy() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-[#091426]">Data Usage Policy</p>
-                    <p className="text-xs text-[#75777d]">How we store & process your learning metrics</p>
+                    <p className="text-xs text-[#75777d]">Overview of data collection, usage, AI privacy & user rights</p>
                   </div>
                 </div>
               </button>
@@ -711,33 +711,80 @@ export default function Privacy() {
       {/* Data Policy Modal */}
       {modalType === 'policy' && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-xl max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-bold text-[#091426]">Data Usage Policy</h3>
-              <button onClick={() => setModalType(null)} className="text-[#75777d] hover:text-[#091426]">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between mb-3 border-b border-[#f2f4f6] pb-3">
+              <div>
+                <h3 className="text-lg font-bold text-[#091426]">Data Usage Policy</h3>
+                <p className="text-[11px] text-[#75777d]">Effective: August 2026 · MathMentor AI</p>
+              </div>
+              <button onClick={() => setModalType(null)} className="text-[#75777d] hover:text-[#091426] p-1 rounded-lg hover:bg-[#f2f4f6] transition-colors">
                 <IoCloseOutline size={22} />
               </button>
             </div>
-            <div className="overflow-y-auto space-y-4 pr-1 text-sm text-[#45474c] leading-relaxed flex-1">
+            <div className="overflow-y-auto space-y-4 pr-1 text-xs text-[#45474c] leading-relaxed flex-1">
               <div>
-                <h4 className="font-bold text-[#091426] mb-1">What Data We Collect</h4>
-                <p className="text-xs">Account details (display name, email), practice accuracy, diagnostic domain scores, and active study session times.</p>
+                <h4 className="font-bold text-sm text-[#091426] mb-1.5 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#4b41e1]"></span>
+                  1. Information We Collect
+                </h4>
+                <div className="space-y-1.5 pl-3 border-l-2 border-[#e0e3e5]">
+                  <p><strong className="text-[#091426]">Account Info:</strong> Display name, email address, password (stored as secure bcrypt hash), grade level, and focus areas.</p>
+                  <p><strong className="text-[#091426]">Learning Data:</strong> Quiz/practice answers, topic mastery percentages, diagnostic assessment scores, and learning path progress.</p>
+                  <p><strong className="text-[#091426]">Usage Data:</strong> Session activity timestamps, study time & streak data, login history, device/browser information, and IP address (used strictly for session management and security auditing).</p>
+                </div>
               </div>
+
               <div>
-                <h4 className="font-bold text-[#091426] mb-1">How We Use It</h4>
-                <p className="text-xs">To personalize practice problem difficulty, calculate topic mastery percentages, and generate AI Tutor responses.</p>
+                <h4 className="font-bold text-sm text-[#091426] mb-1.5 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#00a472]"></span>
+                  2. How We Use Your Data
+                </h4>
+                <div className="space-y-1.5 pl-3 border-l-2 border-[#e0e3e5]">
+                  <p>• To personalize problem difficulty, diagnostic tests, and adaptive study recommendations.</p>
+                  <p>• To calculate topic mastery levels and track study streaks over time.</p>
+                  <p>• To power the AI Tutor (math question text is processed via Groq/Gemini — <strong>no personal identifiers like name, email, or IP are ever sent to AI providers</strong>).</p>
+                  <p>• <strong>Third-Party Protection:</strong> We do <strong>NOT</strong> sell, rent, or trade your personal data to third parties.</p>
+                </div>
               </div>
+
               <div>
-                <h4 className="font-bold text-[#091426] mb-1">Data Storage & Security</h4>
-                <p className="text-xs">All user passwords are hashed using bcrypt. Sensitive session tokens are encrypted and transmitted securely via TLS.</p>
+                <h4 className="font-bold text-sm text-[#091426] mb-1.5 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#2196f3]"></span>
+                  3. Data Storage & Security
+                </h4>
+                <p className="pl-3 border-l-2 border-[#e0e3e5]">
+                  Your data is stored securely on cloud database infrastructure (MongoDB Atlas) and hosted via Render. Network communication is encrypted via HTTPS/TLS. Passwords use bcrypt hashing and 2FA secrets are encrypted at rest.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-sm text-[#091426] mb-1.5 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#ff9800]"></span>
+                  4. Your Control & Rights
+                </h4>
+                <div className="space-y-1.5 pl-3 border-l-2 border-[#e0e3e5]">
+                  <p><strong className="text-[#091426]">Data Export:</strong> Download a full JSON export of your progress and diagnostic history at any time using "Download My Data".</p>
+                  <p><strong className="text-[#091426]">Data Deletion:</strong> Permanently erase your account, diagnostic records, and study history at any time using "Delete My Account & Data".</p>
+                </div>
               </div>
             </div>
-            <button
-              onClick={() => setModalType(null)}
-              className="w-full bg-[#4b41e1] text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-[#3323cc] transition-colors mt-4"
-            >
-              Got It
-            </button>
+            <div className="flex items-center gap-2 mt-4 pt-3 border-t border-[#f2f4f6]">
+              <button
+                onClick={() => {
+                  setModalType(null);
+                  navigate('/profile/terms');
+                }}
+                className="flex-1 bg-[#f2f4f6] text-[#45474c] py-2.5 rounded-xl font-semibold text-xs hover:bg-[#e0e3e5] transition-colors"
+              >
+                View Full Policy
+              </button>
+              <button
+                onClick={() => setModalType(null)}
+                className="flex-1 bg-[#4b41e1] text-white py-2.5 rounded-xl font-semibold text-xs hover:bg-[#3323cc] transition-colors"
+              >
+                Got It
+              </button>
+            </div>
           </div>
         </div>
       )}
