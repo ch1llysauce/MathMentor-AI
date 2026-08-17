@@ -14,8 +14,8 @@ export const chat = async (req, res) => {
 
     // Check if Groq API key is configured
     if (!process.env.GROQ_API_KEY) {
-      return res.status(500).json({ 
-        error: 'Groq API key not configured. Add GROQ_API_KEY to environment variables.' 
+      return res.status(500).json({
+        error: 'Groq API key not configured. Add GROQ_API_KEY to environment variables.'
       });
     }
 
@@ -58,7 +58,7 @@ Topics you cover: Algebra, Geometry, and Trigonometry.`,
     const groqResponse = await axios.post(
       'https://api.groq.com/openai/v1/chat/completions',
       {
-        model: 'openai/gpt-oss-20b', // fallback model that works with current API key
+        model: 'openai/gpt-oss-20b',
         messages: messages,
         max_tokens: 800,
         temperature: 0.7,
@@ -96,22 +96,22 @@ Topics you cover: Algebra, Geometry, and Trigonometry.`,
   } catch (error) {
     console.error('Tutor chat error:', error.response?.data || error.message);
     console.error('Full error:', error);
-    
+
     if (error.response?.status === 401) {
-      return res.status(500).json({ 
-        error: 'Groq API key not configured properly. Get a FREE key from https://console.groq.com/keys' 
+      return res.status(500).json({
+        error: 'Groq API key not configured properly. Get a FREE key from https://console.groq.com/keys'
       });
     }
 
     if (error.response?.status === 429) {
-      return res.status(429).json({ 
-        error: 'Rate limit exceeded. Please wait a moment and try again.' 
+      return res.status(429).json({
+        error: 'Rate limit exceeded. Please wait a moment and try again.'
       });
     }
 
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to get response from AI tutor',
-      details: error.response?.data?.error?.message || error.message 
+      details: error.response?.data?.error?.message || error.message
     });
   }
 };
@@ -119,7 +119,7 @@ Topics you cover: Algebra, Geometry, and Trigonometry.`,
 export const clearConversation = async (req, res) => {
   try {
     const { conversationId } = req.body;
-    
+
     if (conversationId) {
       conversationHistory.delete(conversationId);
     }
@@ -134,13 +134,13 @@ export const clearConversation = async (req, res) => {
 export const getConversationHistory = async (req, res) => {
   try {
     const { conversationId } = req.params;
-    
+
     const history = conversationHistory.get(conversationId) || [];
 
-    res.json({ 
+    res.json({
       conversationId,
       messages: history,
-      count: history.length 
+      count: history.length
     });
   } catch (error) {
     console.error('Get conversation error:', error);
