@@ -5,6 +5,7 @@ import {
   IoChatbubblesOutline, IoPersonOutline, IoLogOutOutline,
   IoMenuOutline, IoCloseOutline, IoCalculatorOutline,
   IoMoonOutline, IoSunnyOutline, IoWarningOutline,
+  IoLogoAndroid, IoDownloadOutline,
 } from 'react-icons/io5';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -105,6 +106,28 @@ export default function AppLayout() {
           </NavLink>
         ))}
       </nav>
+
+      {/* Mobile App Download Card */}
+      <div className="mx-3 mb-3 p-3.5 rounded-2xl bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-700 text-white shadow-md relative overflow-hidden group">
+        <div className="absolute -right-3 -bottom-3 w-16 h-16 bg-white/10 rounded-full blur-xs pointer-events-none" />
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-6 h-6 rounded-lg bg-white/20 backdrop-blur-xs flex items-center justify-center text-white shrink-0">
+            <IoLogoAndroid size={14} />
+          </div>
+          <span className="text-[11px] font-black tracking-wide uppercase text-purple-100">Mobile App</span>
+        </div>
+        <p className="text-xs font-semibold leading-snug mb-2.5 text-purple-50">
+          Take MathMentor AI on the go! Practice anytime, anywhere.
+        </p>
+        <a
+          href="/mathmentor-ai.apk"
+          download="MathMentor-AI.apk"
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-white text-purple-700 text-xs font-bold hover:bg-purple-50 transition-all shadow-xs active:scale-98 cursor-pointer"
+        >
+          <IoDownloadOutline size={14} />
+          <span>Download Android APK</span>
+        </a>
+      </div>
 
       {/* User footer */}
       <div className="p-4 border-t border-[#e0e3e5]">

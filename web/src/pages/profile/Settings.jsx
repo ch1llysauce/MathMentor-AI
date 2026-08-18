@@ -8,6 +8,8 @@ import {
   IoRefreshOutline,
   IoChevronForwardOutline,
   IoCheckmarkCircleOutline,
+  IoLogoAndroid,
+  IoDownloadOutline,
 } from 'react-icons/io5';
 
 const ACCENT_THEMES = [
@@ -135,8 +137,35 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Right Column: System Preferences */}
+        {/* Right Column: System Preferences & Mobile App */}
         <div className="space-y-6">
+          {/* Mobile App */}
+          <div>
+            <h2 className="text-sm font-semibold text-[#45474c] uppercase tracking-wider mb-2 ml-1">Mobile Application</h2>
+            <div className="bg-white rounded-2xl shadow-sm border border-[#e0e3e5] p-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <IoLogoAndroid size={22} />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-[#091426]">MathMentor AI for Android</p>
+                  <p className="text-xs text-[#75777d]">Native mobile app version (.apk)</p>
+                </div>
+              </div>
+              <p className="text-xs text-[#75777d] leading-relaxed">
+                Take MathMentor AI on the go! Practice anytime, anywhere with offline support and fluid touch interactions.
+              </p>
+              <a
+                href="/mathmentor-ai.apk"
+                download="MathMentor-AI.apk"
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#4b41e1] hover:bg-[#3d33d0] text-white text-xs font-bold transition-all shadow-md shadow-purple-600/20 active:scale-98 cursor-pointer"
+              >
+                <IoDownloadOutline size={16} />
+                <span>Download Android APK</span>
+              </a>
+            </div>
+          </div>
+
           {/* System Preferences */}
           <div>
             <h2 className="text-sm font-semibold text-[#45474c] uppercase tracking-wider mb-2 ml-1">System Preferences</h2>
