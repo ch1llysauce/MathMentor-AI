@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { lessonService } from '@/services/lessonService';
 import { Lesson } from '@/types/lesson';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 import MessageRenderer from '@/components/MessageRenderer';
 
 export default function LessonScreen() {

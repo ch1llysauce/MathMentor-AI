@@ -19,7 +19,10 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: inactiveColor,
         tabBarStyle: {
           backgroundColor: tabBarBg,
-          borderTopColor: tabBarBorder,
+          borderTopWidth: 0,
+          borderTopColor: 'transparent',
+          elevation: 0,
+          shadowOpacity: 0,
         },
       }}
     >

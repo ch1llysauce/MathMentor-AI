@@ -127,7 +127,14 @@ export default function TopicDetailScreen() {
 
         {/* Overall card */}
         <View style={[styles.overallCard, { backgroundColor: TD.card }]}>
-          <MasteryRing percentage={score} size={120} strokeWidth={10} topic={topic} subtitle={getScoreLabel(score)} />
+          <MasteryRing
+            percentage={score}
+            size={120}
+            strokeWidth={10}
+            topic={topic}
+            subtitle={getScoreLabel(score)}
+            color={topic === 'Algebra' ? '#2563eb' : topic === 'Geometry' ? '#00a472' : topic === 'Trigonometry' ? '#f59e0b' : getScoreColor(score)}
+          />
           <View style={styles.statsRow}>
             <View style={[styles.statBox, { backgroundColor: darkMode ? '#1e1b4b' : '#f3e8ff' }]}>
               <Text style={[styles.statValue, { color: darkMode ? '#c084fc' : '#7e22ce' }]}>{totalQuestions}</Text>

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
+  View, StyleSheet, TouchableOpacity, ScrollView,
   Switch, Alert, TextInput, ActivityIndicator, Share, Modal,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import { authService } from '@/services/authService';
 import api from '@/services/api';

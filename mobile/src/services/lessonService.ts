@@ -1,21 +1,51 @@
 import api from './api';
 import { Lesson, PracticeProblem, SubmitAnswerResponse } from '@/types/lesson';
 import { generateProblems } from './clientProblemGenerator';
+import { offlineCacheService } from './offlineCache';
 
 export const lessonService = {
   // Get all lessons for a topic/subtopic
   async getLessons(topic?: string, subtopic?: string): Promise<{ lessons: Lesson[] }> {
-    const params = new URLSearchParams();
-    if (topic) params.append('topic', topic);
-    if (subtopic) params.append('subtopic', subtopic);
-    const response = await api.get(`/learning/lessons?${params.toString()}`);
-    return response.data.data;
+    const isOffline = await offlineCacheService.isOfflineCacheEnabled();
+    if (isOffline) {
+      const cached = await offlineCacheService.getOfflineLessons(topic, subtopic);
+      return { lessons: cached };
+    }
+
+    try {
+      const params = new URLSearchParams();
+      if (topic) params.append('topic', topic);
+      if (subtopic) params.append('subtopic', subtopic);
+      const response = await api.get(`/learning/lessons?${params.toString()}`);
+      return response.data.data;
+    } catch (e) {
+      console.warn('Network error fetching lessons, using offline cache fallback');
+      const cached = await offlineCacheService.getOfflineLessons(topic, subtopic);
+      return { lessons: cached };
+    }
   },
 
   // Get a single lesson by ID
   async getLesson(lessonId: string): Promise<{ lesson: Lesson; progress: any }> {
-    const response = await api.get(`/learning/lessons/${lessonId}`);
-    return response.data.data;
+    const isOffline = await offlineCacheService.isOfflineCacheEnabled();
+    if (isOffline) {
+      const cached = await offlineCacheService.getOfflineLesson(lessonId);
+      if (cached) {
+        return { lesson: cached, progress: { completed: false, timeSpent: 0 } };
+      }
+    }
+
+    try {
+      const response = await api.get(`/learning/lessons/${lessonId}`);
+      return response.data.data;
+    } catch (e) {
+      console.warn('Network error fetching lesson, using offline cache fallback');
+      const cached = await offlineCacheService.getOfflineLesson(lessonId);
+      if (cached) {
+        return { lesson: cached, progress: { completed: false, timeSpent: 0 } };
+      }
+      throw e;
+    }
   },
 
   // Mark lesson as completed

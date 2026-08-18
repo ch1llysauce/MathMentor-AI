@@ -8,6 +8,7 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +19,7 @@ import { authService } from '@/services/authService';
 import { TopicScores } from '@/types/diagnostic';
 import { useTheme } from '@/context/ThemeContext';
 import MessageRenderer from '@/components/MessageRenderer';
+import ScientificCalculator from '@/components/ScientificCalculator';
 import { useAuth } from '@/hooks/useAuth';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -158,6 +160,8 @@ export default function RetakeDiagnosticScreen() {
   const [showExplanation, setShowExplanation] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showHint, setShowHint] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [showQuitModal, setShowQuitModal] = useState(false);
   const startTimeRef = useRef<number>(Date.now());
 
   const currentQuestion = questions[currentIndex] ?? null;
@@ -273,12 +277,7 @@ export default function RetakeDiagnosticScreen() {
 
         {/* Header */}
         <View style={[styles.header, { backgroundColor: RK.header, borderBottomColor: RK.border }]}>
-          <TouchableOpacity style={styles.backButton} onPress={() =>
-            Alert.alert('Quit Test?', 'Progress will be lost.', [
-              { text: 'Continue Test', style: 'cancel' },
-              { text: 'Quit', style: 'destructive', onPress: () => router.back() },
-            ])
-          }>
+          <TouchableOpacity style={styles.backButton} onPress={() => setShowQuitModal(true)}>
             <Ionicons name="close" size={24} color={RK.text} />
           </TouchableOpacity>
 
@@ -301,9 +300,29 @@ export default function RetakeDiagnosticScreen() {
 
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-          {/* Subtopic chip */}
-          <View style={[styles.subtopicChip, { backgroundColor: RK.chipBg }]}>
-            <Text style={[styles.subtopicChipText, { color: RK.chipText }]}>{currentQuestion.subtopic}</Text>
+          {/* Subtopic chip & Calculator button */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <View style={[styles.subtopicChip, { backgroundColor: RK.chipBg, marginBottom: 0 }]}>
+              <Text style={[styles.subtopicChipText, { color: RK.chipText }]}>{currentQuestion.subtopic}</Text>
+            </View>
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                paddingHorizontal: 12,
+                paddingVertical: 7,
+                borderRadius: 12,
+                backgroundColor: RK.card,
+                borderWidth: 1,
+                borderColor: RK.border,
+              }}
+              onPress={() => setShowCalculator(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="calculator-outline" size={16} color={RK.primary} />
+              <Text style={{ fontSize: 13, fontWeight: '700', color: RK.primary }}>Calculator</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Question */}
@@ -423,6 +442,67 @@ export default function RetakeDiagnosticScreen() {
           )}
           <View style={{ height: 50 }} />
         </View>
+
+        {/* Scientific Calculator Modal */}
+        <ScientificCalculator
+          visible={showCalculator}
+          onClose={() => setShowCalculator(false)}
+          onUseResult={(val) => {
+            if (currentQuestion.choices && Array.isArray(currentQuestion.choices)) {
+              const match = currentQuestion.choices.find(
+                c => c.trim().toLowerCase() === val.trim().toLowerCase() || c.includes(val)
+              );
+              handleSelectAnswer(match ?? val);
+            } else {
+              handleSelectAnswer(val);
+            }
+            setShowCalculator(false);
+          }}
+          darkMode={darkMode}
+        />
+
+        {/* Quit Confirmation Modal */}
+        <Modal
+          visible={showQuitModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowQuitModal(false)}
+        >
+          <View style={styles.quitOverlay}>
+            <View style={[styles.quitContent, { backgroundColor: darkMode ? '#1a1a1a' : '#ffffff' }]}>
+              <View style={[styles.quitIconBox, { backgroundColor: darkMode ? '#2d2605' : '#fef3c7' }]}>
+                <Ionicons name="warning-outline" size={32} color="#f59e0b" />
+              </View>
+              <Text style={[styles.quitTitle, { color: darkMode ? '#ffffff' : '#111827' }]}>
+                Leave Diagnostic Test?
+              </Text>
+              <Text style={[styles.quitMessage, { color: darkMode ? '#9ca3af' : '#6b7280' }]}>
+                Are you sure you want to leave? Your progress in this diagnostic test will not be saved.
+              </Text>
+              <View style={styles.quitButtonRow}>
+                <TouchableOpacity
+                  style={[styles.quitCancelBtn, { backgroundColor: darkMode ? '#2e2e2e' : '#f3f4f6' }]}
+                  onPress={() => setShowQuitModal(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.quitCancelBtnText, { color: darkMode ? '#e5e7eb' : '#374151' }]}>
+                    Continue Test
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.quitLeaveBtn}
+                  onPress={() => {
+                    setShowQuitModal(false);
+                    router.back();
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.quitLeaveBtnText}>Leave Test</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -478,7 +558,7 @@ export default function RetakeDiagnosticScreen() {
           </Text>
         </View>
 
-        <TouchableOpacity style={[styles.startButton, { backgroundColor: RK.primary }]} onPress={startTest}
+        <TouchableOpacity style={[styles.startButton, { backgroundColor: '#4b41e1' }]} onPress={startTest}
           disabled={loadingQuestions} activeOpacity={0.9}>
           {loadingQuestions
             ? <ActivityIndicator color="#fff" />
@@ -614,4 +694,73 @@ const styles = StyleSheet.create({
     shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
   },
   startButtonText: { fontSize: 17, fontWeight: '700', color: '#fff' },
+
+  quitOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  quitContent: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+  },
+  quitIconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  quitTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  quitMessage: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  quitButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  quitCancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quitCancelBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  quitLeaveBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quitLeaveBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
 });

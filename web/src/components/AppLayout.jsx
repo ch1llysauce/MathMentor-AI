@@ -49,15 +49,29 @@ export default function AppLayout() {
 
   const SidebarContent = ({ onNav }) => (
     <>
-      {/* Logo - Clickable to Landing Page */}
-      <NavLink
-        to="/"
-        onClick={(e) => handleNavClick(e, '/', onNav)}
-        className="p-5 border-b border-[#e0e3e5] dark:border-[#2d3748] flex items-center gap-3 hover:opacity-85 transition-opacity cursor-pointer"
-      >
-        <img src="/logo.png" alt="MathMentor AI Logo" className="w-9 h-9 rounded-xl object-contain shadow-xs" />
-        <span className="text-lg font-bold text-[#091426] dark:text-white tracking-tight">MathMentor AI</span>
-      </NavLink>
+      {/* Logo - Clickable to Dashboard */}
+      <div className="p-5 border-b border-[#e0e3e5] dark:border-[#2d3748] flex items-center justify-between">
+        <NavLink
+          to="/dashboard"
+          onClick={(e) => handleNavClick(e, '/dashboard', onNav)}
+          className="flex items-center gap-3 hover:opacity-85 transition-opacity cursor-pointer min-w-0"
+        >
+          <img src="/logo.png" alt="MathMentor AI Logo" className="w-9 h-9 rounded-xl object-contain shadow-xs shrink-0" />
+          <span className="text-lg font-bold text-[#091426] dark:text-white tracking-tight truncate">MathMentor AI</span>
+        </NavLink>
+        {onNav && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onNav();
+            }}
+            className="text-[#75777d] hover:text-[#091426] dark:hover:text-white p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#252f40] transition-colors cursor-pointer"
+            aria-label="Close menu"
+          >
+            <IoCloseOutline size={22} />
+          </button>
+        )}
+      </div>
 
       {/* Nav */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
@@ -180,11 +194,6 @@ export default function AppLayout() {
 
       {/* Mobile sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-[#e0e3e5] flex flex-col transform transition-transform lg:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="absolute top-4 right-4">
-          <button onClick={() => setMobileOpen(false)} className="text-[#75777d] hover:text-[#091426] p-1">
-            <IoCloseOutline size={22} />
-          </button>
-        </div>
         <SidebarContent onNav={() => setMobileOpen(false)} />
       </aside>
 

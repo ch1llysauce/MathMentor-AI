@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import { useColorScheme, Appearance } from 'react-native';
+import { useColorScheme, Appearance, Text as RNText, type TextProps } from 'react-native';
 import { storage } from '@/utils/storage';
 
 interface ThemeContextType {
@@ -20,9 +20,9 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   useEffect(() => {
     const loadTheme = async () => {
       try {
-        const stored = await storage.getItem('darkMode');
-        if (stored !== null) {
-          const isDark = stored === 'true';
+        const storedDark = await storage.getItem('darkMode');
+        if (storedDark !== null) {
+          const isDark = storedDark === 'true';
           setDarkMode(isDark);
           Appearance.setColorScheme(isDark ? 'dark' : 'light');
           setHasStoredPreference(true);
@@ -58,3 +58,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 };
 
 export const useTheme = () => useContext(ThemeContext);
+
+export function ScaledText(props: TextProps) {
+  return <RNText {...props} />;
+}

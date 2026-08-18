@@ -236,6 +236,7 @@ export default function MessageRenderer({
   fontSize = 15,
 }: Props) {
   const { darkMode } = useTheme();
+  const effectiveFontSize = fontSize;
 
   const resolvedColor = textColor ?? (isUser ? '#ffffff' : (darkMode ? '#f0f0f0' : '#091426'));
   const mathBg  = isUser
@@ -257,10 +258,10 @@ export default function MessageRenderer({
               <Text
                 style={{
                   fontFamily: 'monospace',
-                  fontSize: fontSize + 1,
+                  fontSize: effectiveFontSize + 1,
                   color: displayColor,
                   textAlign: 'center',
-                  lineHeight: (fontSize + 1) * 1.6,
+                  lineHeight: (effectiveFontSize + 1) * 1.6,
                 }}
               >
                 {block.text}
@@ -272,9 +273,9 @@ export default function MessageRenderer({
         if (block.type === 'bullet') {
           return (
             <View key={i} style={styles.listRow}>
-              <Text style={[styles.bullet, { color: resolvedColor, fontSize }]}>•</Text>
+              <Text style={[styles.bullet, { color: resolvedColor, fontSize: effectiveFontSize }]}>•</Text>
               <View style={styles.listContent}>
-                <InlineText text={block.text} color={resolvedColor} fontSize={fontSize} mathBg={mathBg} />
+                <InlineText text={block.text} color={resolvedColor} fontSize={effectiveFontSize} mathBg={mathBg} />
               </View>
             </View>
           );
@@ -283,9 +284,9 @@ export default function MessageRenderer({
         if (block.type === 'numbered') {
           return (
             <View key={i} style={styles.listRow}>
-              <Text style={[styles.bullet, { color: resolvedColor, fontSize }]}>{block.n}.</Text>
+              <Text style={[styles.bullet, { color: resolvedColor, fontSize: effectiveFontSize }]}>{block.n}.</Text>
               <View style={styles.listContent}>
-                <InlineText text={block.text} color={resolvedColor} fontSize={fontSize} mathBg={mathBg} />
+                <InlineText text={block.text} color={resolvedColor} fontSize={effectiveFontSize} mathBg={mathBg} />
               </View>
             </View>
           );
@@ -294,7 +295,7 @@ export default function MessageRenderer({
         // paragraph
         return (
           <View key={i} style={i > 0 ? styles.paraGap : undefined}>
-            <InlineText text={block.text} color={resolvedColor} fontSize={fontSize} mathBg={mathBg} />
+            <InlineText text={block.text} color={resolvedColor} fontSize={effectiveFontSize} mathBg={mathBg} />
           </View>
         );
       })}

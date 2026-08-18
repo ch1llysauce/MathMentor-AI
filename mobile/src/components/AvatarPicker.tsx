@@ -21,6 +21,8 @@ interface AvatarPickerProps {
   /** Size of the avatar circle in px. Defaults to 100. */
   size?: number;
   disabled?: boolean;
+  /** Label text color. Defaults to #4b41e1. */
+  textColor?: string;
 }
 
 export default function AvatarPicker({
@@ -29,6 +31,7 @@ export default function AvatarPicker({
   onChange,
   size = 100,
   disabled = false,
+  textColor,
 }: AvatarPickerProps) {
   const handlePick = async () => {
     if (!ImagePicker) {
@@ -110,14 +113,6 @@ export default function AvatarPicker({
           </View>
         )}
       </View>
-
-      {!disabled && (
-        <TouchableOpacity onPress={handlePick} style={styles.labelButton}>
-          <Text style={styles.labelText}>
-            {imageUri ? 'Change Photo' : 'Add Photo'}
-          </Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
@@ -144,6 +139,4 @@ const styles = StyleSheet.create({
     borderWidth: 2.5,
     borderColor: '#ffffff',
   },
-  labelButton: { paddingVertical: 2 },
-  labelText: { fontSize: 14, fontWeight: '600', color: '#4b41e1' },
 });

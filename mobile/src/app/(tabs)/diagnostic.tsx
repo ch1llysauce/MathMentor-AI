@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -11,14 +10,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { MasteryRing } from '@/components/MasteryRing';
 import { WeakAreaCard } from '@/components/WeakAreaCard';
 import { TimelineChart } from '@/components/TimelineChart';
 import diagnosticService from '@/services/diagnosticService';
 import { DiagnosticResult, WeakTopic } from '@/types/diagnostic';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 import { diagCache } from '@/utils/tabCache';
 
 type TimelinePeriod = 'week' | 'month' | '6months';
@@ -197,8 +196,9 @@ export default function DiagnosticScreen() {
             Complete a diagnostic test to unlock personalized learning paths and track your progress
           </Text>
           <TouchableOpacity
-            style={[styles.startButton, { backgroundColor: DX.secondary }]}
+            style={[styles.startButton, { backgroundColor: '#4b41e1' }]}
             onPress={handleStartDiagnostic}
+            activeOpacity={0.8}
           >
             <Text style={styles.startButtonText}>START DIAGNOSTIC</Text>
           </TouchableOpacity>
@@ -239,30 +239,35 @@ export default function DiagnosticScreen() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.masteryRings}
-          >
+          <View style={styles.masteryRingsContainer}>
             <MasteryRing
               percentage={diagnostic.algebraScore}
               topic="Algebra"
               subtitle={getTopicSubtitle('Algebra', diagnostic.algebraScore)}
+              color="#2563eb"
+              size={85}
+              strokeWidth={7}
               onPress={() => handleTopicPress('Algebra', diagnostic.algebraScore)}
             />
             <MasteryRing
               percentage={diagnostic.geometryScore}
               topic="Geometry"
               subtitle={getTopicSubtitle('Geometry', diagnostic.geometryScore)}
+              color="#00a472"
+              size={85}
+              strokeWidth={7}
               onPress={() => handleTopicPress('Geometry', diagnostic.geometryScore)}
             />
             <MasteryRing
               percentage={diagnostic.trigonometryScore}
               topic="Trigonometry"
               subtitle={getTopicSubtitle('Trigonometry', diagnostic.trigonometryScore)}
+              color="#f59e0b"
+              size={85}
+              strokeWidth={7}
               onPress={() => handleTopicPress('Trigonometry', diagnostic.trigonometryScore)}
             />
-          </ScrollView>
+          </View>
 
           {/* AI Recommendation */}
           <View style={[styles.recommendationCard, { backgroundColor: DX.recBg, borderLeftColor: DX.recBorder }]}>
@@ -273,56 +278,6 @@ export default function DiagnosticScreen() {
                 {getRecommendation()}
               </Text>
             </View>
-          </View>
-        </View>
-
-        {/* Weak Areas Section */}
-        <View style={[styles.section, { backgroundColor: DX.card }]}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.weakAreasHeader}>
-              <MaterialIcons name="warning" size={20} color={Colors.error} />
-              <Text style={[styles.sectionTitle, { color: DX.text }]}>Weak Areas</Text>
-            </View>
-          </View>
-
-          {diagnostic.weakTopics && diagnostic.weakTopics.length > 0 ? (
-            Array.from(
-              new Map(diagnostic.weakTopics.map(w => [w.topic, w])).values()
-            ).slice(0, 3).map((weak, index) => (
-              <WeakAreaCard
-                key={index}
-                subtopic={weak.topic}
-                masteryPercentage={weak.score}
-                onPress={() =>
-                  router.push({
-                    pathname: '/practice/topic',
-                    params: {
-                      topicName: weak.topic,
-                      mastery: weak.score.toString(),
-                      subtopicFilter: weak.subtopic ?? '',
-                    },
-                  })
-                }
-              />
-            ))
-          ) : (
-            <Text style={[styles.noWeakAreas, { color: DX.textLight }]}>
-              Great work! No weak areas identified.
-            </Text>
-          )}
-
-          {/* CTA Card */}
-          <View style={[styles.ctaCard, { backgroundColor: DX.ctaBg }]}>
-            <Text style={styles.ctaTitle}>Ready for a challenge?</Text>
-            <Text style={styles.ctaSubtitle}>
-              Retake the diagnostic to update your personalized learning path
-            </Text>
-            <TouchableOpacity
-              style={[styles.ctaButton, { backgroundColor: DX.ctaBtn }]}
-              onPress={handleStartDiagnostic}
-            >
-              <Text style={styles.ctaButtonText}>RETAKE DIAGNOSTIC</Text>
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -363,6 +318,80 @@ export default function DiagnosticScreen() {
 
           <TimelineChart data={timelineData} />
         </View>
+
+        {/* Weak Areas Section */}
+        <View style={[styles.section, { backgroundColor: DX.card }]}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.weakAreasHeader}>
+              <Ionicons name="warning-outline" size={20} color={Colors.error} />
+              <Text style={[styles.sectionTitle, { color: DX.text }]}>Weak Areas</Text>
+            </View>
+          </View>
+
+          {diagnostic.weakTopics && diagnostic.weakTopics.length > 0 ? (
+            Array.from(
+              new Map(diagnostic.weakTopics.map(w => [w.topic, w])).values()
+            ).slice(0, 3).map((weak, index) => (
+              <WeakAreaCard
+                key={index}
+                subtopic={weak.topic}
+                masteryPercentage={weak.score}
+                onPress={() =>
+                  router.push({
+                    pathname: '/practice/topic',
+                    params: {
+                      topicName: weak.topic,
+                      mastery: weak.score.toString(),
+                      subtopicFilter: weak.subtopic ?? '',
+                    },
+                  })
+                }
+              />
+            ))
+          ) : (
+            <View style={[
+              styles.noWeakAreasCard,
+              {
+                backgroundColor: darkMode ? 'rgba(0, 164, 114, 0.12)' : '#ecfdf5',
+                borderColor: darkMode ? 'rgba(0, 164, 114, 0.3)' : '#a7f3d0'
+              }
+            ]}>
+              <Ionicons name="checkmark-circle-outline" size={36} color="#00a472" style={{ marginBottom: 8 }} />
+              <Text style={styles.noWeakAreasTitle}>Great work!</Text>
+              <Text style={[styles.noWeakAreasSubtitle, { color: darkMode ? '#34d399' : '#047857' }]}>
+                No major weak areas identified right now.
+              </Text>
+            </View>
+          )}
+
+          {/* CTA Card (Ready for a challenge?) */}
+          <View style={[styles.ctaCard, { backgroundColor: darkMode ? '#2e1065' : '#4c1d95' }]}>
+            <View style={styles.ctaIconBadge}>
+              <Ionicons name="school-outline" size={24} color="#ffffff" />
+            </View>
+            <Text style={styles.ctaTitle}>Ready for a challenge?</Text>
+            <Text style={styles.ctaSubtitle}>
+              Retake the diagnostic to update your personalised learning path
+            </Text>
+            <TouchableOpacity
+              style={[styles.ctaButton, { backgroundColor: '#ffffff' }]}
+              onPress={handleStartDiagnostic}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.ctaButtonText, { color: darkMode ? '#2e1065' : '#4c1d95' }]}>RETAKE DIAGNOSTIC</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* View Diagnostic History Button */}
+        <TouchableOpacity
+          style={[styles.historyButton, { backgroundColor: DX.card, borderColor: DX.border }]}
+          onPress={() => router.push('/diagnostic/history')}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="time-outline" size={20} color={DX.text} />
+          <Text style={[styles.historyButtonText, { color: DX.text }]}>View Diagnostic History</Text>
+        </TouchableOpacity>
 
         <View style={{ height: 20 }} />
       </ScrollView>
@@ -489,9 +518,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  masteryRings: {
-    gap: 32,
-    paddingHorizontal: 8,
+  masteryRingsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'flex-start',
+    width: '100%',
+    paddingHorizontal: 4,
   },
   recommendationCard: {
     flexDirection: 'row',
@@ -517,41 +549,91 @@ const styles = StyleSheet.create({
     color: Colors.text,
     lineHeight: 20,
   },
-  noWeakAreas: {
-    fontSize: 16,
-    color: Colors.textLight,
-    textAlign: 'center',
+  noWeakAreasCard: {
     padding: 24,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  noWeakAreasTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#00a472',
+    marginBottom: 4,
+  },
+  noWeakAreasSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   ctaCard: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
+    borderRadius: 20,
     padding: 24,
     marginTop: 16,
-    gap: 12,
+    alignItems: 'center',
+    gap: 6,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  ctaIconBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
   },
   ctaTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: Colors.white,
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#ffffff',
+    textAlign: 'center',
   },
   ctaSubtitle: {
-    fontSize: 14,
-    color: Colors.white,
-    opacity: 0.8,
-    lineHeight: 20,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.85)',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 12,
   },
   ctaButton: {
-    backgroundColor: Colors.secondary,
-    paddingVertical: 12,
-    borderRadius: 8,
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 14,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   ctaButtonText: {
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  historyButton: {
+    marginHorizontal: 24,
+    marginBottom: 24,
+    paddingVertical: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  historyButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
   },
   periodSelector: {
     flexDirection: 'row',

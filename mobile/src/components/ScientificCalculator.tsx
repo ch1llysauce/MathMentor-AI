@@ -56,6 +56,7 @@ function safeEval(expr: string, mode: AngleMode): string {
       .replace(/\^/g, '**')
       .replace(/×/g, '*')
       .replace(/÷/g, '/')
+      .replace(/%/g, '/100')
       .replace(/\basin\(/g, '_asin(')
       .replace(/\bacos\(/g, '_acos(')
       .replace(/\batan\(/g, '_atan(')
@@ -65,7 +66,22 @@ function safeEval(expr: string, mode: AngleMode): string {
       .replace(/\blog\(/g,  '_log(')
       .replace(/\bln\(/g,   '_ln(')
       .replace(/√\(/g,     '_sqrt(')
-      .replace(/∛\(/g,     '_cbrt(');
+      .replace(/∛\(/g,     '_cbrt(')
+      .replace(/√/g,      '_sqrt(')
+      .replace(/∛/g,      '_cbrt(');
+
+    // Implicit multiplication: e.g. 2( -> 2*(, )( -> )*(, )2 -> )*2, 2_sin -> 2*_sin
+    e = e
+      .replace(/(\d|\))\s*(\()/g, '$1*$2')
+      .replace(/(\d|\))\s*(_sin|_cos|_tan|_asin|_acos|_atan|_log|_ln|_sqrt|_cbrt)/g, '$1*$2')
+      .replace(/(\))\s*(\d)/g, '$1*$2');
+
+    // Auto-close missing parentheses
+    const openParens = (e.match(/\(/g) || []).length;
+    const closeParens = (e.match(/\)/g) || []).length;
+    if (openParens > closeParens) {
+      e += ')'.repeat(openParens - closeParens);
+    }
 
     // Only allow safe characters
     if (/[^0-9+\-*/().Math\s,_a-zA-Z]/.test(e)) {
@@ -175,11 +191,18 @@ export default function ScientificCalculator({ visible, onClose, onUseResult, da
     label, onPress, bg, fg, flex = 1,
   }: { label: string; onPress: () => void; bg: string; fg: string; flex?: number }) => (
     <TouchableOpacity
-      style={[styles.btn, { backgroundColor: bg, flex }]}
+      style={[styles.btn, { backgroundColor: bg, flex, paddingHorizontal: 2 }]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <Text style={[styles.btnText, { color: fg }]}>{label}</Text>
+      <Text
+        style={[styles.btnText, { color: fg }, label.length >= 4 && { fontSize: 12 }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 
@@ -233,6 +256,7 @@ export default function ScientificCalculator({ visible, onClose, onUseResult, da
             <View style={styles.row}>
               {Fn('√')}{Fn('∛')}
               <Btn label="x²" onPress={() => append('²')} bg={C.fnBg} fg={C.fnText} />
+              <Btn label="x³" onPress={() => append('³')} bg={C.fnBg} fg={C.fnText} />
               <Btn label="xʸ" onPress={() => append('^')} bg={C.fnBg} fg={C.fnText} />
               {Fn('log')}{Fn('ln')}
             </View>

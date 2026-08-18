@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, RefreshControl, ActivityIndicator, Image } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, StatusBar, RefreshControl, ActivityIndicator, Image } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -7,7 +7,7 @@ import Loading from '@/components/common/Loading';
 import { dashboardService, DashboardStats } from '@/services/dashboardService';
 import api from '@/services/api';
 import { PROGRESS_ENDPOINTS } from '@/constants/api';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 import { dashCache } from '@/utils/tabCache';
 
 interface TopicProgress {
@@ -26,19 +26,25 @@ interface NextStep {
   totalLessonsInSubtopic?: number;
 }
 
-// Per-topic icon and description fallbacks
-const TOPIC_META: Record<string, { icon: string; description: string }> = {
+// Per-topic icon, color, and subtopics definition
+const TOPIC_META: Record<string, { icon: string; color: string; description: string; subtopics: number }> = {
   Algebra: {
-    icon: 'calculator',
+    icon: 'calculator-outline',
+    color: '#2563eb',
     description: 'Build your foundation with equations, expressions, and algebraic reasoning.',
+    subtopics: 10,
   },
   Geometry: {
-    icon: 'shapes',
+    icon: 'shapes-outline',
+    color: '#00a472',
     description: 'Explore angles, shapes, areas, and spatial relationships.',
+    subtopics: 9,
   },
   Trigonometry: {
-    icon: 'compass',
+    icon: 'compass-outline',
+    color: '#f59e0b',
     description: 'Master ratios, triangles, and the unit circle with confidence.',
+    subtopics: 9,
   },
 };
 
@@ -458,6 +464,78 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           )}
 
+          {/* Topic Breakdown & Mastery */}
+          <View style={[styles.pulseCard, { backgroundColor: D.card }]}>
+            <View style={styles.topicHeaderRow}>
+              <View style={{ flex: 1 }}>
+                <View style={styles.topicHeaderTitleGroup}>
+                  <Ionicons name="bar-chart-outline" size={20} color={D.primary} />
+                  <Text style={[styles.pulseTitle, { color: D.text, marginBottom: 0 }]}>Topic Breakdown & Mastery</Text>
+                </View>
+                <Text style={[styles.pulseSub, { color: D.textLight }]}>Your progress across main domain areas</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/practice')} activeOpacity={0.7}>
+                <View style={styles.viewAllBtn}>
+                  <Text style={[styles.viewAllText, { color: D.primary }]}>View All</Text>
+                  <Ionicons name="arrow-forward" size={12} color={D.primary} />
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.pulseList}>
+              {(['Algebra', 'Geometry', 'Trigonometry'] as const).map((topicName) => {
+                const meta = TOPIC_META[topicName] || { icon: 'calculator-outline', color: '#4b41e1', subtopics: 0 };
+                const foundMastery = topicMastery.find(t => t.topic.toLowerCase() === topicName.toLowerCase())?.mastery ?? 0;
+                const progressTopic = topics.find(t => t.name.toLowerCase() === topicName.toLowerCase());
+                const mastery = Math.round(Math.max(foundMastery, progressTopic?.progress ?? 0));
+
+                return (
+                  <TouchableOpacity
+                    key={topicName}
+                    style={[styles.pulseItem, { backgroundColor: D.itemBg, borderColor: D.itemBorder }]}
+                    activeOpacity={0.8}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/practice/topic',
+                        params: { topicName, mastery: mastery.toString() },
+                      })
+                    }
+                  >
+                    <View style={{ flex: 1 }}>
+                      <View style={styles.masteryHeader}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                          <View style={[styles.topicBadgeIcon, { backgroundColor: meta.color }]}>
+                            <Ionicons name={meta.icon as any} size={18} color="#ffffff" />
+                          </View>
+                          <View>
+                            <Text style={[styles.pulseTopicName, { color: D.text }]}>{topicName}</Text>
+                            <Text style={[styles.pulseTopicStats, { color: D.textLight }]}>{meta.subtopics} subtopics</Text>
+                          </View>
+                        </View>
+                        <View style={[styles.masteryPill, { backgroundColor: D.card }]}>
+                          <Text style={[styles.masteryPct, { color: D.text }]}>{mastery}% Mastery</Text>
+                        </View>
+                      </View>
+
+                      {/* Mastery Progress Bar */}
+                      <View style={[styles.masteryBarBg, { backgroundColor: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
+                        <View
+                          style={[
+                            styles.masteryBarFill,
+                            {
+                              width: `${Math.min(mastery, 100)}%`,
+                              backgroundColor: meta.color,
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
           {/* Stats Row */}
           <View style={styles.statsRow}>
             <View style={[styles.statCard, { backgroundColor: D.card }]}>
@@ -788,11 +866,51 @@ const styles = StyleSheet.create({
     color: '#45474c',
     marginTop: 2,
   },
+  topicHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  topicHeaderTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  pulseSub: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  viewAllText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  topicBadgeIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  masteryPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(150,150,150,0.15)',
+  },
   masteryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   masteryPct: {
     fontSize: 12,

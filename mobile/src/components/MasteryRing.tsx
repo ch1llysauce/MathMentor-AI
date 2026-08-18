@@ -10,6 +10,7 @@ interface MasteryRingProps {
   strokeWidth?: number;
   topic: string;
   subtitle?: string;
+  color?: string;
   onPress?: () => void;
 }
 
@@ -21,6 +22,7 @@ export const MasteryRing: React.FC<MasteryRingProps> = ({
   strokeWidth = 8,
   topic,
   subtitle,
+  color,
   onPress
 }) => {
   const { darkMode } = useTheme();
@@ -41,14 +43,28 @@ export const MasteryRing: React.FC<MasteryRingProps> = ({
     outputRange: [circumference, 0],
   });
 
-  const trackColor = darkMode ? '#2e2e2e' : Colors.surfaceContainerHigh;
-  const percentageColor = darkMode ? '#f0f0f0' : Colors.primary;
+  const defaultColor =
+    topic === 'Algebra' ? '#2563eb' :
+    topic === 'Geometry' ? '#00a472' :
+    topic === 'Trigonometry' ? '#f59e0b' :
+    (percentage >= 80 ? '#00a472' : percentage >= 60 ? '#f59e0b' : '#ef4444');
+
+  const ringColor = color || defaultColor;
+
+  const trackColor = darkMode ? '#2e2e2e' : '#f3f4f6';
+  const percentageColor = ringColor;
   const topicColor = darkMode ? '#f0f0f0' : Colors.text;
   const subtitleColor = darkMode ? '#a0a0a0' : Colors.textLight;
 
+  const isSmall = size < 100;
+  const percentageFontSize = isSmall ? 15 : 20;
+  const topicFontSize = isSmall ? 13 : 18;
+  const subtitleFontSize = isSmall ? 11 : 13;
+  const ringMarginBottom = isSmall ? 8 : 16;
+
   const content = (
     <View style={styles.container}>
-      <View style={[styles.ringContainer, { width: size, height: size }]}>
+      <View style={[styles.ringContainer, { width: size, height: size, marginBottom: ringMarginBottom }]}>
         <Svg width={size} height={size} style={styles.svg}>
           {/* Background circle */}
           <Circle
@@ -65,7 +81,7 @@ export const MasteryRing: React.FC<MasteryRingProps> = ({
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke={Colors.secondary}
+            stroke={ringColor}
             strokeWidth={strokeWidth}
             fill="transparent"
             strokeDasharray={circumference}
@@ -77,12 +93,20 @@ export const MasteryRing: React.FC<MasteryRingProps> = ({
         </Svg>
         
         <View style={styles.percentageContainer}>
-          <Text style={[styles.percentage, { color: percentageColor }]}>{Math.round(percentage)}%</Text>
+          <Text style={[styles.percentage, { color: percentageColor, fontSize: percentageFontSize }]}>
+            {Math.round(percentage)}%
+          </Text>
         </View>
       </View>
       
-      <Text style={[styles.topic, { color: topicColor }]}>{topic}</Text>
-      {subtitle && <Text style={[styles.subtitle, { color: subtitleColor }]}>{subtitle}</Text>}
+      <Text style={[styles.topic, { color: topicColor, fontSize: topicFontSize }]} numberOfLines={1}>
+        {topic}
+      </Text>
+      {subtitle && (
+        <Text style={[styles.subtitle, { color: subtitleColor, fontSize: subtitleFontSize }]} numberOfLines={1}>
+          {subtitle}
+        </Text>
+      )}
     </View>
   );
 

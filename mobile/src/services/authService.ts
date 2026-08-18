@@ -93,6 +93,16 @@ export const authService = {
     await storage.removeItem('user');
   },
 
+  async deleteAccount(): Promise<void> {
+    try {
+      await api.delete(AUTH_ENDPOINTS.DELETE_ACCOUNT);
+    } catch (error) {
+      console.warn('Delete account API call failed:', error);
+    }
+    await storage.removeItem('token');
+    await storage.removeItem('user');
+  },
+
   async isLoggedIn(): Promise<boolean> {
     try {
       const token = await storage.getItem('token');

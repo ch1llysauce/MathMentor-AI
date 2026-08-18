@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -13,7 +12,7 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { lessonService } from '@/services/lessonService';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 
 type TabType = 'lessons' | 'practice';
 

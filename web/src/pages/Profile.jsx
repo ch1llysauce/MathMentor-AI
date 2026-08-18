@@ -15,6 +15,7 @@ import {
   IoRibbonOutline,
   IoSparklesOutline,
   IoSchoolOutline,
+  IoGlobeOutline,
 } from 'react-icons/io5';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../services/api';
@@ -56,6 +57,9 @@ const BANNER_GRADIENTS = {
   ocean: 'from-[#0284c7] via-[#2563eb] to-[#4f46e5]',
   midnight: 'from-[#1e293b] via-[#0f172a] to-[#020617]',
   amethyst: 'from-[#9333ea] via-[#7c3aed] to-[#4c1d95]',
+  rose: 'from-[#f43f5e] via-[#e11d48] to-[#9f1239]',
+  aurora: 'from-[#06b6d4] via-[#0d9488] to-[#115e59]',
+  unicorn: 'from-[#ec4899] via-[#8b5cf6] to-[#3b82f6]',
 };
 
 export default function Profile() {
@@ -193,24 +197,6 @@ export default function Profile() {
               <span className="font-bold text-[#091426]">Web Version 1.0.0</span>
             </div>
           </div>
-
-          {/* Logout Button */}
-          <button
-            onClick={() => setShowSignOutModal(true)}
-            className="w-full flex items-center justify-center gap-2 border border-[#ffdad6] text-[#ba1a1a] bg-white dark:bg-[#1a2333] dark:border-red-900/40 font-bold py-3.5 rounded-2xl hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors shadow-xs cursor-pointer"
-          >
-            <IoLogOutOutline size={20} /> Sign out of account
-          </button>
-
-          {/* Sign Out Confirmation Dialogue */}
-          <SignOutModal
-            isOpen={showSignOutModal}
-            onClose={() => setShowSignOutModal(false)}
-            onConfirm={async () => {
-              await logout();
-              navigate('/');
-            }}
-          />
         </div>
 
         {/* Right Column: Profile Sub-Modules & Forms */}
@@ -243,12 +229,12 @@ export default function Profile() {
 
           {/* Application Preferences Section */}
           <div>
-            <h3 className="text-xs font-bold text-[#45474c] uppercase tracking-wider mb-3 ml-1">Preferences & Interface</h3>
+            <h3 className="text-xs font-bold text-[#45474c] uppercase tracking-wider mb-3 ml-1">Preferences</h3>
             <div className="space-y-3">
               <MenuCardItem
                 icon={IoSettingsOutline}
                 title="App Settings"
-                description="Configure dark mode, audio cues, font sizes, target session lengths & app cache"
+                description="Configure dark mode, offline cache mode, and app preferences"
                 iconBg="bg-[rgba(33,150,243,0.1)]"
                 iconColor="text-[#2196f3]"
                 onClick={() => navigate('/profile/settings')}
@@ -277,10 +263,42 @@ export default function Profile() {
                 iconColor="text-[#00a472]"
                 onClick={() => navigate('/profile/about')}
               />
+
+              <MenuCardItem
+                icon={IoGlobeOutline}
+                title="Visit Home Page"
+                description="View the MathMentor AI public landing page & product overview"
+                iconBg="bg-[rgba(75,65,225,0.08)]"
+                iconColor="text-[#4b41e1]"
+                onClick={() => navigate('/')}
+              />
             </div>
           </div>
         </div>
       </div>
+
+      {/* Sign Out Button & Version at bottom of screen */}
+      <div className="mt-8">
+        <button
+          onClick={() => setShowSignOutModal(true)}
+          className="w-full flex items-center justify-center gap-2 border border-[#ffdad6] text-[#ba1a1a] bg-white dark:bg-[#1a2333] dark:border-red-900/40 font-bold py-3.5 rounded-2xl hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors shadow-xs cursor-pointer"
+        >
+          <IoLogOutOutline size={20} /> Sign Out
+        </button>
+        <p className="text-center text-xs text-[#75777d] dark:text-[#64748b] mt-3">
+          Version 1.0.0
+        </p>
+      </div>
+
+      {/* Sign Out Confirmation Dialogue */}
+      <SignOutModal
+        isOpen={showSignOutModal}
+        onClose={() => setShowSignOutModal(false)}
+        onConfirm={async () => {
+          await logout();
+          navigate('/');
+        }}
+      />
     </div>
   );
 }

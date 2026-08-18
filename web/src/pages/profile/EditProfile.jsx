@@ -12,6 +12,9 @@ import {
   IoCloseOutline,
   IoAddOutline,
   IoRemoveOutline,
+  IoWarningOutline,
+  IoTrashOutline,
+  IoAlertCircleOutline,
 } from 'react-icons/io5';
 import { useAuth } from '../../context/AuthContext';
 import { authApi } from '../../services/api';
@@ -23,11 +26,14 @@ const BANNER_THEMES = [
   { id: 'ocean', name: 'Ocean', gradient: 'from-[#0284c7] via-[#2563eb] to-[#4f46e5]', bg: 'bg-[#2563eb]' },
   { id: 'midnight', name: 'Obsidian', gradient: 'from-[#1e293b] via-[#0f172a] to-[#020617]', bg: 'bg-[#0f172a]' },
   { id: 'amethyst', name: 'Amethyst', gradient: 'from-[#9333ea] via-[#7c3aed] to-[#4c1d95]', bg: 'bg-[#7c3aed]' },
+  { id: 'rose', name: 'Rose', gradient: 'from-[#f43f5e] via-[#e11d48] to-[#9f1239]', bg: 'bg-[#e11d48]' },
+  { id: 'aurora', name: 'Aurora', gradient: 'from-[#06b6d4] via-[#0d9488] to-[#115e59]', bg: 'bg-[#0d9488]' },
+  { id: 'unicorn', name: 'Unicorn', gradient: 'from-[#ec4899] via-[#8b5cf6] to-[#3b82f6]', bg: 'bg-[#ec4899]' },
 ];
 
 export default function EditProfile() {
   const navigate = useNavigate();
-  const { user, refreshProfile, saveAuth } = useAuth();
+  const { user, refreshProfile, saveAuth, logout } = useAuth();
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [profileImage, setProfileImage] = useState(user?.profileImage || '');
   const [bannerTheme, setBannerTheme] = useState(user?.bannerTheme || 'indigo');
@@ -38,6 +44,7 @@ export default function EditProfile() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');
   const [successToast, setSuccessToast] = useState('');
   const fileInputRef = useRef(null);
@@ -50,8 +57,10 @@ export default function EditProfile() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-  // Discard Confirmation Modal State
+  // Confirmation Modals State
+  const [showSaveModal, setShowSaveModal] = useState(false);
   const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const hasChanges = useMemo(() => {
     const nameChanged = displayName.trim() !== (user?.displayName || '');
@@ -135,7 +144,7 @@ export default function EditProfile() {
     setCropModalSrc(null);
   };
 
-  const handleSave = async (e) => {
+  const handleSaveClick = (e) => {
     e.preventDefault();
     if (!displayName.trim()) {
       setError('Display name cannot be empty');
@@ -153,6 +162,12 @@ export default function EditProfile() {
       setError('Please enter your current password to set a new one');
       return;
     }
+    setError('');
+    setShowSaveModal(true);
+  };
+
+  const executeSave = async () => {
+    setShowSaveModal(false);
     setIsSaving(true);
     setError('');
     try {
@@ -179,6 +194,20 @@ export default function EditProfile() {
       setError(err.response?.data?.message || 'Failed to update profile. Please try again.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const executeDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      await authApi.deleteAccount();
+      await logout();
+      navigate('/');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete account. Please try again.');
+      setShowDeleteModal(false);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -284,12 +313,107 @@ export default function EditProfile() {
         </div>
       )}
 
+      {/* Save Changes Confirmation Modal */}
+      {showSaveModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#1a2333] border border-[#e0e3e5] dark:border-[#2d3748] rounded-3xl p-6 max-w-md w-full shadow-2xl relative animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-[rgba(75,65,225,0.1)] text-[#4b41e1] flex items-center justify-center">
+                  <IoCheckmarkCircleOutline size={22} />
+                </div>
+                <h3 className="text-lg font-bold text-[#091426] dark:text-white">Save Changes?</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSaveModal(false)}
+                className="text-[#75777d] hover:text-[#091426] dark:hover:text-white p-1 rounded-lg cursor-pointer"
+              >
+                <IoCloseOutline size={22} />
+              </button>
+            </div>
+
+            <p className="text-sm text-[#45474c] dark:text-gray-300 mb-6 leading-relaxed">
+              Are you sure you want to save your updated profile details and preferences?
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowSaveModal(false)}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-semibold text-xs bg-[#f2f4f6] dark:bg-[#252f40] text-[#45474c] dark:text-white hover:bg-[#e0e3e5] dark:hover:bg-[#323f54] transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={executeSave}
+                disabled={isSaving}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs bg-[#4b41e1] text-white hover:bg-[#3323cc] transition-colors shadow-sm cursor-pointer"
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#1a2333] border border-[#e0e3e5] dark:border-[#2d3748] rounded-3xl p-6 max-w-md w-full shadow-2xl relative animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-950/60 text-[#ba1a1a] dark:text-red-400 flex items-center justify-center">
+                  <IoTrashOutline size={22} />
+                </div>
+                <h3 className="text-lg font-bold text-[#ba1a1a] dark:text-red-400">Delete Account?</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="text-[#75777d] hover:text-[#091426] dark:hover:text-white p-1 rounded-lg cursor-pointer"
+              >
+                <IoCloseOutline size={22} />
+              </button>
+            </div>
+
+            <p className="text-sm text-[#45474c] dark:text-gray-300 mb-6 leading-relaxed">
+              This action is permanent and cannot be undone. All your progress, diagnostics, learning history, and account credentials will be erased.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-semibold text-xs bg-[#f2f4f6] dark:bg-[#252f40] text-[#45474c] dark:text-white hover:bg-[#e0e3e5] dark:hover:bg-[#323f54] transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={executeDeleteAccount}
+                disabled={isDeleting}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs bg-[#ba1a1a] text-white hover:bg-red-700 transition-colors shadow-sm cursor-pointer"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Unsaved Changes Confirmation Modal */}
       {showDiscardModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1a2333] border border-[#e0e3e5] dark:border-[#2d3748] rounded-3xl p-6 max-w-md w-full shadow-2xl relative animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-bold text-[#091426] dark:text-white">Unsaved Changes</h3>
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-[#ff9800] flex items-center justify-center">
+                  <IoWarningOutline size={22} />
+                </div>
+                <h3 className="text-lg font-bold text-[#091426] dark:text-white">Unsaved Changes</h3>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowDiscardModal(false)}
@@ -300,7 +424,7 @@ export default function EditProfile() {
             </div>
 
             <p className="text-sm text-[#45474c] dark:text-gray-300 mb-6 leading-relaxed">
-              You have unsaved profile changes. Are you sure you want to discard your changes and leave?
+              You have unsaved profile changes. Are you sure you want to leave without saving?
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5">
@@ -339,7 +463,7 @@ export default function EditProfile() {
       </div>
 
       {/* PC Responsive 2-Column Layout */}
-      <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <form onSubmit={handleSaveClick} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Avatar & Banner Theme Card (4 Columns on PC) */}
         <div className="lg:col-span-4 bg-white dark:bg-[#1a2333] border border-[#e0e3e5] dark:border-[#2d3748] rounded-3xl p-5 shadow-sm text-center flex flex-col items-center">
           {/* Live Hero Banner Preview Card */}
@@ -550,6 +674,28 @@ export default function EditProfile() {
                 </div>
               </div>
               <p className="text-[11px] text-[#75777d] ml-1">Leave blank to keep current password.</p>
+            </div>
+          </div>
+
+          {/* Danger Zone: Delete Account */}
+          <div className="bg-red-50/50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/30 rounded-3xl p-6 shadow-sm">
+            <h3 className="text-xs font-bold text-[#ba1a1a] dark:text-red-400 uppercase tracking-wider mb-2">
+              Danger Zone
+            </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-[#091426] dark:text-white">Delete Account</p>
+                <p className="text-xs text-[#75777d] dark:text-gray-400">
+                  Permanently delete your account, learning data, and progress.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(true)}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-white dark:bg-[#1a2333] border border-red-300 dark:border-red-800 text-[#ba1a1a] dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/40 transition-colors shadow-xs shrink-0 cursor-pointer"
+              >
+                Delete Account
+              </button>
             </div>
           </div>
 

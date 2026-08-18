@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { tutorService } from '@/services/tutorService';
 import { Message, QuickAction } from '@/types/tutor';
 import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 import MessageRenderer from '@/components/MessageRenderer';
 
 export default function TutorScreen() {

@@ -225,7 +225,7 @@ export default function Dashboard() {
                 );
                 const statsScore = stats?.averageMastery ?? stats?.accuracy ?? 0;
                 const mastery = Math.round(Math.max(diagScore, statsScore));
-                const totalQuestions = stats?.totalQuestions ?? (diagnostic?.topicScores?.[diagKey]?.questionsAnswered ?? 0);
+                const solvedCount = stats?.totalQuestions ?? 0;
                 const subtopicCount = stats?.subtopics?.length ?? (diagnostic?.topicScores?.[diagKey]?.subtopicScores ? Object.keys(diagnostic.topicScores[diagKey].subtopicScores).length : 0);
 
                 return (
@@ -248,7 +248,6 @@ export default function Dashboard() {
                           </h3>
                           <p className="text-xs text-gray-500">
                             {subtopicCount > 0 ? `${subtopicCount} subtopics` : '0 subtopics'}
-                            {totalQuestions > 0 ? ` · ${totalQuestions} questions` : ''}
                           </p>
                         </div>
                       </div>

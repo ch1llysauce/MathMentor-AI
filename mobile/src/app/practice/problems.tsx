@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
   TextInput,
+  Modal,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +15,7 @@ import { Colors } from '@/constants/colors';
 import { lessonService } from '@/services/lessonService';
 import { generateProblems } from '@/services/clientProblemGenerator';
 import { PracticeProblem } from '@/types/lesson';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 import MessageRenderer from '@/components/MessageRenderer';
 import MathToolbar from '@/components/MathToolbar';
 import ScientificCalculator from '@/components/ScientificCalculator';
@@ -44,6 +44,9 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
     textLight: darkMode ? '#a0a0a0' : Colors.textLight,
     card: darkMode ? '#1a1a1a' : Colors.white,
     surface: darkMode ? '#2e2e2e' : Colors.surfaceContainer,
+    chipBg: darkMode ? '#312e81' : Colors.secondary + '20',
+    chipText: darkMode ? '#a5b4fc' : Colors.secondary,
+    primary: darkMode ? '#818cf8' : '#4b41e1',
     footer: darkMode ? '#0a0a0a' : Colors.white,
     backIconBg: darkMode ? '#2a2a2a' : Colors.surface,
     backIconColor: darkMode ? '#f0f0f0' : '#091426',
@@ -84,6 +87,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
   const [showExplanation, setShowExplanation] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showCalculator, setShowCalculator] = useState(false);
+  const [showQuitModal, setShowQuitModal] = useState(false);
   // Scoring — use a ref so the count is always synchronously current
   // when handleNextProblem reads it immediately after handleSubmitAnswer.
   const correctCountRef = useRef(0);
@@ -357,7 +361,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
     <View style={[styles.container, { backgroundColor: PR.bg }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: PR.header, borderBottomColor: PR.border }]}>
-        <TouchableOpacity style={[styles.backIcon, { backgroundColor: PR.backIconBg }]} onPress={() => router.back()}>
+        <TouchableOpacity style={[styles.backIcon, { backgroundColor: PR.backIconBg }]} onPress={() => setShowQuitModal(true)}>
           <Ionicons name="arrow-back" size={24} color={PR.backIconColor} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
@@ -381,6 +385,28 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Calculator button */}
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 12 }}>
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingHorizontal: 12,
+              paddingVertical: 7,
+              borderRadius: 12,
+              backgroundColor: PR.card,
+              borderWidth: 1,
+              borderColor: PR.border,
+            }}
+            onPress={() => setShowCalculator(true)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="calculator-outline" size={16} color={PR.primary} />
+            <Text style={{ fontSize: 13, fontWeight: '700', color: PR.primary }}>Calculator</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Problem Card */}
         <View style={[styles.problemCard, { backgroundColor: PR.card }]}>
           <View style={styles.problemHeader}>
@@ -440,18 +466,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
         {/* Free Response */}
         {currentProblem.type === 'free-response' && (
           <View style={styles.freeResponseContainer}>
-            <View style={styles.freeResponseLabelRow}>
-              <Text style={[styles.freeResponseLabel, { color: PR.textLight }]}>Type your answer:</Text>
-              {!showExplanation && (
-                <TouchableOpacity
-                  style={[styles.calcButton, { backgroundColor: PR.surface }]}
-                  onPress={() => setShowCalculator(true)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.calcButtonText, { color: darkMode ? '#a5b4fc' : '#4b41e1' }]}>🧮 Calculator</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            <Text style={[styles.freeResponseLabel, { color: PR.textLight, marginBottom: 8 }]}>Type your answer:</Text>
             <TextInput
               style={[styles.freeResponseInput, { backgroundColor: PR.inputBg, borderColor: PR.inputBorder, color: PR.text },
                 showExplanation && isCorrect  && { backgroundColor: PR.inputCorrectBg, borderColor: PR.inputCorrectBorder },
@@ -613,6 +628,49 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
         onUseResult={(val) => setSelectedAnswer(val)}
         darkMode={darkMode}
       />
+
+      {/* Quit Confirmation Modal */}
+      <Modal
+        visible={showQuitModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowQuitModal(false)}
+      >
+        <View style={styles.quitOverlay}>
+          <View style={[styles.quitContent, { backgroundColor: darkMode ? '#1a1a1a' : '#ffffff' }]}>
+            <View style={[styles.quitIconBox, { backgroundColor: darkMode ? '#2d2605' : '#fef3c7' }]}>
+              <Ionicons name="warning-outline" size={32} color="#f59e0b" />
+            </View>
+            <Text style={[styles.quitTitle, { color: darkMode ? '#ffffff' : '#111827' }]}>
+              Leave Practice Session?
+            </Text>
+            <Text style={[styles.quitMessage, { color: darkMode ? '#9ca3af' : '#6b7280' }]}>
+              Are you sure you want to leave? Your current progress in this practice set will not be saved.
+            </Text>
+            <View style={styles.quitButtonRow}>
+              <TouchableOpacity
+                style={[styles.quitCancelBtn, { backgroundColor: darkMode ? '#2e2e2e' : '#f3f4f6' }]}
+                onPress={() => setShowQuitModal(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.quitCancelBtnText, { color: darkMode ? '#e5e7eb' : '#374151' }]}>
+                  Keep Practicing
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quitLeaveBtn}
+                onPress={() => {
+                  setShowQuitModal(false);
+                  router.back();
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.quitLeaveBtnText}>Leave Session</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1121,6 +1179,87 @@ const styles = StyleSheet.create({
   },
   resultsDoneButtonText: {
     fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  subtopicChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.secondary + '20',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginBottom: 16,
+  },
+  subtopicChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.secondary,
+  },
+  quitOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  quitContent: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+  },
+  quitIconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  quitTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  quitMessage: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  quitButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  quitCancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quitCancelBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  quitLeaveBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quitLeaveBtnText: {
+    fontSize: 14,
     fontWeight: '700',
     color: '#ffffff',
   },

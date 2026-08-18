@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -14,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import diagnosticService from '@/services/diagnosticService';
 import { lessonService } from '@/services/lessonService';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 import api from '@/services/api';
 import { PRACTICE_ENDPOINTS } from '@/constants/api';
 import { practiceCache } from '@/utils/tabCache';

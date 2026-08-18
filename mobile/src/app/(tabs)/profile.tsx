@@ -1,123 +1,123 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, Alert, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  StatusBar,
+  Alert,
+  Image,
+  Linking,
+  Modal,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/hooks/useAuth';
 import Loading from '@/components/common/Loading';
-import { dashboardService } from '@/services/dashboardService';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
+import { getBannerGradientColors } from '@/constants/bannerThemes';
 
-const lightColors = {
-  background: '#f7f9fb',
-  card: '#ffffff',
-  text: '#091426',
-  textLight: '#45474c',
-  textDark: '#091426',
-  primary: '#4b41e1',
-  primaryBg: 'rgba(75, 65, 225, 0.1)',
-  success: '#00a472',
-  successBg: 'rgba(0, 164, 114, 0.1)',
-  purpleBg: 'rgba(216, 227, 251, 1)',
-  greenBg: 'rgba(78, 222, 163, 0.2)',
-  border: '#e0e3e5',
-  borderLight: '#f2f4f6',
-  outline: '#75777d',
-  logoutBg: '#ffffff',
-  logoutBorder: '#ffdad6',
-  logoutText: '#ba1a1a',
-  versionText: '#75777d',
-  headerBg: '#ffffff',
-  headerTitle: '#091426',
-  statIconPurple: '#4b41e1',
-  statIconGreen: '#00a472',
-  statIconDark: '#091426',
-  toggleBg: '#e0e3e5',
-  toggleActiveBg: '#4b41e1',
-  toggleThumb: '#ffffff',
-  avatarBg: '#4b41e1',
-  avatarBorder: '#e2dfff',
-  avatarBadge: '#ffffff',
-  modalOverlay: 'rgba(0, 0, 0, 0.5)',
-  modalContent: '#ffffff',
-  focusChipBg: '#e2dfff',
-  goalChipBg: '#e2dfff',
-  goalChipBorder: '#4b41e1',
-  goalChipInactiveBg: '#f2f4f6',
-  goalChipInactiveBorder: '#e0e3e5',
-  difficultyBg: '#e2dfff',
-  difficultyText: '#4b41e1',
-  modalButtonBg: '#4b41e1',
-  modalButtonText: '#ffffff',
-  statBoxBg: '#ffffff',
-  statValue: '#091426',
-  statLabel: '#45474c',
-  menuItemText: '#091426',
-  chevronColor: '#75777d',
-  menuIconBg: 'rgba(75, 65, 225, 0.1)',
-  menuIconPurpleBg: 'rgba(216, 227, 251, 1)',
-  menuIconGreenBg: 'rgba(0, 164, 114, 0.1)',
-  menuIconDarkBg: 'rgba(216, 227, 251, 1)',
-};
+interface MenuCardItemProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  description?: string;
+  badgeText?: string;
+  badgeColor?: string;
+  badgeTextColor?: string;
+  iconBg?: string;
+  iconColor?: string;
+  onPress?: () => void;
+  rightElement?: React.ReactNode;
+}
 
-const darkColors = {
-  background: '#0a0a0a',
-  card: '#1a1a1a',
-  text: '#f0f0f0',
-  textLight: '#a0a0a0',
-  textDark: '#f0f0f0',
-  primary: '#a5b4fc',
-  primaryBg: 'rgba(165, 180, 252, 0.15)',
-  success: '#34d399',
-  successBg: 'rgba(52, 211, 153, 0.15)',
-  purpleBg: 'rgba(165, 180, 252, 0.2)',
-  greenBg: 'rgba(52, 211, 153, 0.15)',
-  border: '#2e2e2e',
-  borderLight: '#1a1a1a',
-  outline: '#555555',
-  logoutBg: '#1a1a1a',
-  logoutBorder: '#7f1d1d',
-  logoutText: '#f87171',
-  versionText: '#666666',
-  headerBg: '#0a0a0a',
-  headerTitle: '#f0f0f0',
-  statIconPurple: '#a5b4fc',
-  statIconGreen: '#34d399',
-  statIconDark: '#f0f0f0',
-  toggleBg: '#3a3a3a',
-  toggleActiveBg: '#a5b4fc',
-  toggleThumb: '#f0f0f0',
-  avatarBg: '#4b41e1',
-  avatarBorder: '#312e81',
-  avatarBadge: '#1a1a1a',
-  modalOverlay: 'rgba(0, 0, 0, 0.7)',
-  modalContent: '#1a1a1a',
-  focusChipBg: '#312e81',
-  goalChipBg: '#312e81',
-  goalChipBorder: '#a5b4fc',
-  goalChipInactiveBg: '#242424',
-  goalChipInactiveBorder: '#3a3a3a',
-  difficultyBg: '#312e81',
-  difficultyText: '#a5b4fc',
-  modalButtonBg: '#4b41e1',
-  modalButtonText: '#ffffff',
-  statBoxBg: '#1a1a1a',
-  statValue: '#f0f0f0',
-  statLabel: '#a0a0a0',
-  menuItemText: '#f0f0f0',
-  chevronColor: '#888888',
-  menuIconBg: 'rgba(165, 180, 252, 0.15)',
-  menuIconPurpleBg: 'rgba(165, 180, 252, 0.2)',
-  menuIconGreenBg: 'rgba(52, 211, 153, 0.15)',
-  menuIconDarkBg: 'rgba(165, 180, 252, 0.2)',
-};
+function MenuCardItem({
+  icon,
+  title,
+  description,
+  badgeText,
+  badgeColor,
+  badgeTextColor,
+  iconBg = 'rgba(75, 65, 225, 0.1)',
+  iconColor = '#4b41e1',
+  onPress,
+  rightElement,
+}: MenuCardItemProps) {
+  const { darkMode } = useTheme();
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={[
+        styles.menuCardItem,
+        {
+          backgroundColor: darkMode ? '#1a1a1a' : '#ffffff',
+          borderColor: darkMode ? '#2e2e2e' : '#e0e3e5',
+        },
+      ]}
+    >
+      <View style={styles.menuCardLeft}>
+        <View style={[styles.menuCardIconBox, { backgroundColor: iconBg }]}>
+          <Ionicons name={icon} size={22} color={iconColor} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <View style={styles.menuCardTitleRow}>
+            <Text style={[styles.menuCardTitle, { color: darkMode ? '#ffffff' : '#091426' }]}>
+              {title}
+            </Text>
+            {badgeText && (
+              <View
+                style={[
+                  styles.menuBadge,
+                  {
+                    backgroundColor: badgeColor || (darkMode ? 'rgba(75,65,225,0.2)' : '#f2f4f6'),
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.menuBadgeText,
+                    {
+                      color: badgeTextColor || (darkMode ? '#a5b4fc' : '#45474c'),
+                    },
+                  ]}
+                >
+                  {badgeText}
+                </Text>
+              </View>
+            )}
+          </View>
+          {description && (
+            <Text
+              style={[styles.menuCardDescription, { color: darkMode ? '#94a3b8' : '#75777d' }]}
+              numberOfLines={2}
+            >
+              {description}
+            </Text>
+          )}
+        </View>
+      </View>
+
+      {rightElement ?? (
+        <View style={[styles.chevronCircle, { backgroundColor: darkMode ? '#242e42' : '#f7f9fb' }]}>
+          <Ionicons name="chevron-forward" size={16} color={darkMode ? '#94a3b8' : '#75777d'} />
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
 
 export default function ProfileScreen() {
   const { user, logout, loading } = useAuth();
   const router = useRouter();
   const { darkMode, toggleDarkMode } = useTheme();
-  const C = darkMode ? darkColors : lightColors;
 
   const [isReady, setIsReady] = useState(false);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
 
   useEffect(() => {
     if (!loading) {
@@ -129,172 +129,327 @@ export default function ProfileScreen() {
     }
   }, [user, loading, router]);
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            router.replace('/auth/login');
-          },
-        },
-      ]
-    );
+  const confirmLogout = async () => {
+    setLogoutLoading(true);
+    try {
+      await logout();
+      setShowSignOutModal(false);
+      router.replace('/auth/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setLogoutLoading(false);
+    }
   };
 
-  const handleEditProfile = () => {
-    router.push('/profile/edit-profile');
-  };
-
-  const handlePrivacySecurity = () => {
-    router.push('/profile/privacy');
-  };
-
-  const handleFaq = () => {
-    router.push('/profile/faq');
-  };
-
-  const handleAbout = () => {
-    router.push('/profile/about');
-  };
-
-  const handleDarkModeToggle = () => {
-    toggleDarkMode();
+  const handleVisitWebsite = () => {
+    const websiteUrl = process.env.EXPO_PUBLIC_WEB_URL || 'https://math-mentor-ai-nine.vercel.app';
+    Linking.openURL(websiteUrl).catch(() => {
+      Alert.alert('Error', 'Unable to open website in external browser.');
+    });
   };
 
   if (loading || !isReady || !user) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: C.background }]}>
+      <View style={[styles.loadingContainer, { backgroundColor: darkMode ? '#0a0a0a' : '#f7f9fb' }]}>
         <Loading />
       </View>
     );
   }
 
-  return (
-    <View style={[styles.container, { backgroundColor: C.background }]}>
-      <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={C.background} />
+  const displayName = user?.displayName || 'Student';
+  const initial = displayName[0]?.toUpperCase() || 'S';
+  const memberSince = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    : 'Active Student';
 
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: C.headerBg, borderBottomColor: C.border }]}>
-        <Text style={[styles.headerTitle, { color: C.headerTitle }]}>Profile</Text>
-      </View>
+  const is2FAActive = user?.twoFactorEnabled;
+
+  return (
+    <SafeAreaView
+      edges={['top', 'left', 'right']}
+      style={[styles.container, { backgroundColor: darkMode ? '#0a0a0a' : '#f7f9fb' }]}
+    >
+      <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} />
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Profile Card */}
-        <View style={[styles.profileCard, { backgroundColor: C.card }]}>
-          <View style={styles.avatarContainer}>
-            <View style={[styles.avatar, { backgroundColor: C.avatarBg, borderColor: C.avatarBorder }]}>
-              {user.profileImage ? (
-                <Image
-                  source={{ uri: user.profileImage }}
-                  style={styles.avatarImage}
-                  resizeMode="cover"
-                />
-              ) : (
-                <Text style={styles.avatarText}>
-                  {user.displayName.charAt(0).toUpperCase()}
-                </Text>
-              )}
-            </View>
-            <View style={[styles.avatarBadge, { backgroundColor: C.avatarBadge }]}>
-              <Ionicons name="checkmark-circle" size={24} color={C.success} />
-            </View>
+        {/* Header Title & Verified Badge */}
+        <View style={styles.headerSection}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.headerTitle, { color: darkMode ? '#ffffff' : '#091426' }]}>
+              Profile & Preferences
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: darkMode ? '#94a3b8' : '#75777d' }]}>
+              Manage your account settings, security options, and study preferences.
+            </Text>
           </View>
-
-          <Text style={[styles.displayName, { color: C.textDark }]}>{user.displayName}</Text>
-          <Text style={[styles.email, { color: C.textLight }]}>{user.email}</Text>
+          <View
+            style={[
+              styles.verifiedBadge,
+              {
+                backgroundColor: darkMode ? 'rgba(0, 164, 114, 0.15)' : 'rgba(0, 164, 114, 0.1)',
+                borderColor: darkMode ? 'rgba(0, 164, 114, 0.3)' : 'rgba(0, 164, 114, 0.2)',
+              },
+            ]}
+          >
+            <Ionicons name="checkmark-circle-outline" size={15} color="#00a472" />
+            <Text style={styles.verifiedText}>Verified Account</Text>
+          </View>
         </View>
 
-        {/* Account Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: C.textDark }]}>Account</Text>
-          <View style={[styles.menuList, { backgroundColor: C.card }]}>
-            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: darkMode ? 0 : 1, borderBottomColor: C.borderLight }]} onPress={handleEditProfile}>
-              <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: C.primaryBg }]}>
-                  <Ionicons name="person-outline" size={20} color={C.primary} />
-                </View>
-                <Text style={[styles.menuItemText, { color: C.menuItemText }]}>Edit Profile</Text>
+        {/* Hero Identity Banner Card */}
+        <LinearGradient
+          colors={getBannerGradientColors(user?.bannerTheme)}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroBanner}
+        >
+          <View style={styles.heroAvatarContainer}>
+            {user?.profileImage ? (
+              <Image source={{ uri: user.profileImage }} style={styles.heroAvatarImage} resizeMode="cover" />
+            ) : (
+              <View style={styles.heroAvatarInitial}>
+                <Text style={styles.heroInitialText}>{initial}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={C.chevronColor} />
-            </TouchableOpacity>
+            )}
+            <View style={styles.heroCheckBadge}>
+              <Ionicons name="checkmark-circle" size={20} color="#00a472" />
+            </View>
+          </View>
+          <Text style={styles.heroDisplayName}>{displayName}</Text>
+          <Text style={styles.heroEmail}>{user?.email || ''}</Text>
+        </LinearGradient>
 
-            <TouchableOpacity style={styles.menuItem} onPress={handlePrivacySecurity}>
-              <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: C.purpleBg }]}>
-                  <Ionicons name="lock-closed-outline" size={20} color={C.textDark} />
-                </View>
-                <Text style={[styles.menuItemText, { color: C.menuItemText }]}>Privacy & Security</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={C.chevronColor} />
-            </TouchableOpacity>
+        {/* Quick Details Card */}
+        <View
+          style={[
+            styles.quickDetailsCard,
+            {
+              backgroundColor: darkMode ? '#1a1a1a' : '#ffffff',
+              borderColor: darkMode ? '#2e2e2e' : '#e0e3e5',
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.detailRow,
+              { borderBottomColor: darkMode ? '#242e42' : '#f2f4f6', borderBottomWidth: 1 },
+            ]}
+          >
+            <Text style={[styles.detailLabel, { color: darkMode ? '#94a3b8' : '#75777d' }]}>
+              Member Since
+            </Text>
+            <Text style={[styles.detailValue, { color: darkMode ? '#ffffff' : '#091426' }]}>
+              {memberSince}
+            </Text>
+          </View>
+
+          <View
+            style={[
+              styles.detailRow,
+              { borderBottomColor: darkMode ? '#242e42' : '#f2f4f6', borderBottomWidth: 1 },
+            ]}
+          >
+            <Text style={[styles.detailLabel, { color: darkMode ? '#94a3b8' : '#75777d' }]}>
+              Two-Factor Auth
+            </Text>
+            <Text style={[styles.detailValue, { color: is2FAActive ? '#00a472' : darkMode ? '#94a3b8' : '#75777d' }]}>
+              {is2FAActive ? 'Enabled' : 'Disabled'}
+            </Text>
+          </View>
+
+          <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, { color: darkMode ? '#94a3b8' : '#75777d' }]}>
+              App Platform
+            </Text>
+            <Text style={[styles.detailValue, { color: darkMode ? '#ffffff' : '#091426' }]}>
+              Mobile Version 1.0.0
+            </Text>
+          </View>
+        </View>
+
+        {/* Account & Security Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionHeaderTitle, { color: darkMode ? '#94a3b8' : '#45474c' }]}>
+            ACCOUNT & SECURITY
+          </Text>
+          <View style={styles.sectionCardsList}>
+            <MenuCardItem
+              icon="person-outline"
+              title="Edit Profile & Password"
+              description="Update display name, avatar, and security credentials"
+              iconBg={darkMode ? 'rgba(165, 180, 252, 0.15)' : 'rgba(75, 65, 225, 0.1)'}
+              iconColor={darkMode ? '#a5b4fc' : '#4b41e1'}
+              onPress={() => router.push('/profile/edit-profile')}
+            />
+
+            <MenuCardItem
+              icon="shield-checkmark-outline"
+              title="Privacy & Security"
+              description="Manage 2FA verification, active login sessions, and data exports"
+              badgeText={is2FAActive ? '2FA Active' : '2FA Recommended'}
+              badgeColor={
+                is2FAActive
+                  ? darkMode
+                    ? 'rgba(0, 164, 114, 0.25)'
+                    : 'rgba(0, 164, 114, 0.15)'
+                  : darkMode
+                    ? 'rgba(245, 158, 11, 0.25)'
+                    : 'rgba(245, 158, 11, 0.15)'
+              }
+              badgeTextColor={is2FAActive ? '#00a472' : '#f59e0b'}
+              iconBg={darkMode ? 'rgba(52, 211, 153, 0.15)' : 'rgba(0, 164, 114, 0.1)'}
+              iconColor={darkMode ? '#34d399' : '#00a472'}
+              onPress={() => router.push('/profile/privacy')}
+            />
           </View>
         </View>
 
         {/* Preferences Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: C.textDark }]}>Preferences</Text>
-          <View style={[styles.menuList, { backgroundColor: C.card }]}>
-            <TouchableOpacity style={styles.menuItem} onPress={handleDarkModeToggle}>
-              <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: C.primaryBg }]}>
-                  <Ionicons name={darkMode ? 'moon' : 'sunny'} size={20} color={C.primary} />
-                </View>
-                <Text style={[styles.menuItemText, { color: C.menuItemText }]}>{darkMode ? 'Dark Mode' : 'Light Mode'}</Text>
-              </View>
-              <View style={[styles.toggle, { backgroundColor: C.toggleBg }, darkMode && styles.toggleActive]}>
-                <View style={[styles.toggleThumb, { backgroundColor: C.toggleThumb, marginLeft: darkMode ? 20 : 0 }]} />
-              </View>
-            </TouchableOpacity>
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionHeaderTitle, { color: darkMode ? '#94a3b8' : '#45474c' }]}>
+            PREFERENCES
+          </Text>
+          <View style={styles.sectionCardsList}>
+            <MenuCardItem
+              icon="settings-outline"
+              title="App Settings"
+              description="Configure dark mode, offline cache mode, and app preferences"
+              iconBg={darkMode ? 'rgba(96, 165, 250, 0.15)' : 'rgba(33, 150, 243, 0.1)'}
+              iconColor={darkMode ? '#60a5fa' : '#2196f3'}
+              onPress={() => router.push('/profile/settings')}
+            />
           </View>
         </View>
 
-        {/* Support Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: C.textDark }]}>Support</Text>
-          <View style={[styles.menuList, { backgroundColor: C.card }]}>
-            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: darkMode ? 0 : 1, borderBottomColor: C.borderLight }]} onPress={handleFaq}>
-              <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: C.primaryBg }]}>
-                  <Ionicons name="help-circle-outline" size={20} color={C.primary} />
-                </View>
-                <Text style={[styles.menuItemText, { color: C.menuItemText }]}>FAQs</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={C.chevronColor} />
-            </TouchableOpacity>
+        {/* Support & Knowledge Base Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionHeaderTitle, { color: darkMode ? '#94a3b8' : '#45474c' }]}>
+            SUPPORT & KNOWLEDGE BASE
+          </Text>
+          <View style={styles.sectionCardsList}>
+            <MenuCardItem
+              icon="help-circle-outline"
+              title="Help & FAQs"
+              description="Instant search, categorized guides, direct email support & feedback"
+              iconBg={darkMode ? 'rgba(165, 180, 252, 0.15)' : 'rgba(75, 65, 225, 0.1)'}
+              iconColor={darkMode ? '#a5b4fc' : '#4b41e1'}
+              onPress={() => router.push('/profile/faq')}
+            />
 
-            <TouchableOpacity style={styles.menuItem} onPress={handleAbout}>
-              <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: C.purpleBg }]}>
-                  <Ionicons name="information-circle-outline" size={20} color={C.textDark} />
-                </View>
-                <Text style={[styles.menuItemText, { color: C.menuItemText }]}>About</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={C.chevronColor} />
-            </TouchableOpacity>
+            <MenuCardItem
+              icon="information-circle-outline"
+              title="About MathMentor AI"
+              description="App mission, curriculum details, core features & legal terms of service"
+              iconBg={darkMode ? 'rgba(52, 211, 153, 0.15)' : 'rgba(0, 164, 114, 0.1)'}
+              iconColor={darkMode ? '#34d399' : '#00a472'}
+              onPress={() => router.push('/profile/about')}
+            />
+
+            <MenuCardItem
+              icon="globe-outline"
+              title="Visit Home Page"
+              description="View the MathMentor AI public landing page & product overview"
+              iconBg={darkMode ? 'rgba(165, 180, 252, 0.12)' : 'rgba(75, 65, 225, 0.08)'}
+              iconColor={darkMode ? '#a5b4fc' : '#4b41e1'}
+              onPress={handleVisitWebsite}
+            />
           </View>
         </View>
 
-        {/* Logout Button */}
-        <TouchableOpacity style={[styles.logoutButton, { backgroundColor: C.logoutBg, borderColor: C.logoutBorder }]} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color={C.logoutText} />
-          <Text style={[styles.logoutText, { color: C.logoutText }]}>Logout</Text>
+        {/* Sign Out Account Button */}
+        <TouchableOpacity
+          onPress={() => setShowSignOutModal(true)}
+          style={[
+            styles.signOutBtn,
+            {
+              backgroundColor: darkMode ? '#1a1a1a' : '#ffffff',
+              borderColor: darkMode ? 'rgba(239, 68, 68, 0.3)' : '#ffdad6',
+            },
+          ]}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="log-out-outline" size={20} color={darkMode ? '#f87171' : '#ba1a1a'} />
+          <Text style={[styles.signOutBtnText, { color: darkMode ? '#f87171' : '#ba1a1a' }]}>
+            Sign Out
+          </Text>
         </TouchableOpacity>
 
-        {/* Version */}
-        <Text style={[styles.versionText, { color: C.versionText }]}>Version 1.0.0</Text>
+        {/* App Version */}
+        <Text style={[styles.appVersionText, { color: darkMode ? '#64748b' : '#75777d' }]}>
+          Version 1.0.0
+        </Text>
       </ScrollView>
 
-    </View>
+      {/* Sign Out Confirmation Modal */}
+      <Modal
+        visible={showSignOutModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!logoutLoading) setShowSignOutModal(false);
+        }}
+      >
+        <View style={styles.signOutOverlay}>
+          <View style={[styles.signOutContent, { backgroundColor: darkMode ? '#161616' : '#ffffff' }]}>
+            {/* Warning Icon Box */}
+            <View
+              style={[
+                styles.signOutIconBox,
+                {
+                  backgroundColor: darkMode ? '#3b1212' : '#fef2f2',
+                  borderColor: darkMode ? '#7f1d1d' : '#fee2e2',
+                },
+              ]}
+            >
+              <Ionicons name="log-out-outline" size={32} color={darkMode ? '#f87171' : '#ef4444'} />
+            </View>
+
+            {/* Title & Message */}
+            <Text style={[styles.signOutTitle, { color: darkMode ? '#ffffff' : '#111827' }]}>
+              Sign Out of Account?
+            </Text>
+            <Text style={[styles.signOutMessage, { color: darkMode ? '#9ca3af' : '#6b7280' }]}>
+              Are you sure you want to log out? You will need to sign back in to resume your practice sessions and AI tutoring.
+            </Text>
+
+            {/* Action Buttons */}
+            <View style={styles.signOutButtonRow}>
+              <TouchableOpacity
+                disabled={logoutLoading}
+                onPress={() => setShowSignOutModal(false)}
+                style={[styles.signOutCancelBtn, { backgroundColor: darkMode ? '#2d3748' : '#f3f4f6' }]}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.signOutCancelBtnText, { color: darkMode ? '#ffffff' : '#374151' }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                disabled={logoutLoading}
+                onPress={confirmLogout}
+                style={styles.signOutConfirmBtn}
+                activeOpacity={0.8}
+              >
+                {logoutLoading ? (
+                  <ActivityIndicator color="#ffffff" size="small" />
+                ) : (
+                  <View style={styles.signOutConfirmContent}>
+                    <Ionicons name="warning-outline" size={18} color="#ffffff" style={{ marginRight: 6 }} />
+                    <Text style={styles.signOutConfirmBtnText}>Sign Out</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
   );
 }
 
@@ -307,294 +462,309 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 48,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 20,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
-  profileCard: {
+  headerSection: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    gap: 12,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  verifiedText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#00a472',
+  },
+
+  /* Hero Identity Banner */
+  heroBanner: {
+    backgroundColor: '#4b41e1',
     borderRadius: 24,
     padding: 24,
     alignItems: 'center',
     marginBottom: 16,
+    elevation: 4,
+    shadowColor: '#4b41e1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
-  avatarContainer: {
+  heroAvatarContainer: {
     position: 'relative',
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  heroAvatarImage: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    borderWidth: 3,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  heroAvatarInitial: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    overflow: 'hidden',
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
-  avatarImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  avatarText: {
-    fontSize: 32,
-    fontWeight: '700',
+  heroInitialText: {
+    fontSize: 36,
+    fontWeight: '800',
     color: '#ffffff',
   },
-  avatarBadge: {
+  heroCheckBadge: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
+    bottom: 2,
+    right: 2,
+    backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: 2,
+    padding: 1,
   },
-  displayName: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 4,
+  heroDisplayName: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#ffffff',
   },
-  email: {
-    fontSize: 14,
-    marginBottom: 16,
+  heroEmail: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.85)',
+    marginTop: 2,
   },
-  focusAreasContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    justifyContent: 'center',
-  },
-  focusChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  focusChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  loadingStatsContainer: {
-    paddingVertical: 40,
-  },
-  statsSection: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-    paddingHorizontal: 4,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  statBox: {
-    flex: 1,
-    minWidth: '47%',
+
+  /* Quick Details Card */
+  quickDetailsCard: {
     borderRadius: 20,
-    padding: 16,
-    alignItems: 'center',
-  },
-  statIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-  },
-  section: {
-    marginBottom: 16,
-  },
-  menuList: {
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-  },
-  menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12,
-  },
-  menuIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  menuItemText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  difficultyBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  difficultyBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 16,
-    borderRadius: 16,
-    marginTop: 8,
-    marginBottom: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     borderWidth: 1,
-  },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  versionText: {
-    textAlign: 'center',
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    marginBottom: 100
-  },
-  modalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  modalDescription: {
-    fontSize: 14,
-    marginBottom: 20,
-  },
-  goalsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
     marginBottom: 24,
   },
-  goalChip: {
+  detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 999,
-    borderWidth: 2,
+    justifyContent: 'space-between',
+    paddingVertical: 10,
   },
-  goalChipInactive: {
-    borderColor: '#e0e3e5',
+  detailLabel: {
+    fontSize: 13,
+    fontWeight: '500',
   },
-  goalChipText: {
-    fontSize: 14,
-    fontWeight: '600',
+  detailValue: {
+    fontSize: 13,
+    fontWeight: '700',
   },
-  goalChipTextInactive: {
+
+  /* Section Containers */
+  sectionContainer: {
+    marginBottom: 24,
   },
-  modalButton: {
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: 'center',
+  sectionHeaderTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginBottom: 10,
+    marginLeft: 4,
   },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
+  sectionCardsList: {
+    gap: 10,
   },
-  difficultyOption: {
+
+  /* MenuCardItem Styles */
+  menuCardItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    borderRadius: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    borderRadius: 20,
+    borderWidth: 1,
   },
-  difficultyOptionSelected: {
-    borderColor: '#4b41e1',
-  },
-  difficultyOptionLeft: {
+  menuCardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
+    flex: 1,
+    marginRight: 10,
   },
-  difficultyIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  menuCardIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  difficultyOptionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 2,
+  menuCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  difficultyOptionDesc: {
+  menuCardTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  menuBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  menuBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  menuCardDescription: {
     fontSize: 12,
+    marginTop: 2,
+    lineHeight: 16,
   },
-  toggle: {
-    width: 52,
+  chevronCircle: {
+    width: 32,
     height: 32,
     borderRadius: 16,
+    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
   },
-  toggleActive: {
-    backgroundColor: '#4b41e1',
-  },
-  toggleThumb: {
-    width: 24,
+
+  /* Toggle Switch */
+  toggleTrack: {
+    width: 42,
     height: 24,
     borderRadius: 12,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  toggleThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
+
+  /* Sign Out Button */
+  signOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  signOutBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  appVersionText: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+
+  /* Sign Out Modal */
+  signOutOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  signOutContent: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+  },
+  signOutIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  signOutTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  signOutMessage: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  signOutButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  signOutCancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signOutCancelBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  signOutConfirmBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#ef4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  signOutConfirmContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signOutConfirmBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ffffff',
   },
 });
