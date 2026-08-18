@@ -1,4 +1,4 @@
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
@@ -6,6 +6,7 @@ import { Modal, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider, ScaledText as Text, useTheme } from '@/context/ThemeContext';
+import { CalculatorProvider } from '@/context/CalculatorContext';
 import { useAuth } from '@/hooks/useAuth';
 
 SplashScreen.preventAutoHideAsync();
@@ -13,7 +14,6 @@ SplashScreen.preventAutoHideAsync();
 function SessionRevokedModal() {
   const { sessionRevoked, dismissSessionRevoked } = useAuth();
   const { darkMode } = useTheme();
-  const router = useRouter();
 
   if (!sessionRevoked) return null;
 
@@ -38,7 +38,6 @@ function SessionRevokedModal() {
             activeOpacity={0.8}
             onPress={() => {
               dismissSessionRevoked();
-              router.replace('/auth/login');
             }}
           >
             <Text style={modalStyles.buttonText}>Sign In Again</Text>
@@ -112,20 +111,23 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="auth/login" />
-          <Stack.Screen name="auth/register" />
-          <Stack.Screen name="auth/forgot-password" />
-          <Stack.Screen name="legal/terms" />
-          <Stack.Screen name="legal/privacy-policy" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="profile/faq" />
-          <Stack.Screen name="profile/about" />
-          <Stack.Screen name="practice/lesson-chat" />
-        </Stack>
-        <SessionRevokedModal />
-        <StatusBar style="auto" />
+        <CalculatorProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="auth/login" />
+            <Stack.Screen name="auth/register" />
+            <Stack.Screen name="auth/forgot-password" />
+            <Stack.Screen name="legal/terms" />
+            <Stack.Screen name="legal/privacy-policy" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="profile/faq" />
+            <Stack.Screen name="profile/help" />
+            <Stack.Screen name="profile/about" />
+            <Stack.Screen name="practice/lesson-chat" />
+          </Stack>
+          <SessionRevokedModal />
+          <StatusBar style="auto" />
+        </CalculatorProvider>
       </AuthProvider>
     </ThemeProvider>
   );

@@ -1,20 +1,19 @@
 /**
  * MessageRenderer
  *
- * Renders math-heavy text with zero WebView usage — pure React Native Text.
- *
+ * Full LaTeX + Markdown renderer matching web's MathText.
  * Handles:
- * - $$...$$ display blocks  → cleaned, styled in a distinct block
- * - $...$ inline math       → cleaned, styled monospace inline
- * - Bare \command tokens    → converted to Unicode (π, θ, √, ×, etc.)
- * - **bold** markdown
- * - Numbered and bullet lists
- * - Plain paragraphs
+ * - $$...$$ display math blocks via KaTeX MathRenderer WebView
+ * - $...$ inline math via KaTeX MathRenderer or formatted math
+ * - Automatic LaTeX normalization for un-delimited math expressions (e.g. x^2, \frac{a}{b})
+ * - Markdown bold (**text**), lists (bullets & numbered), headings (#, ##, ###)
+ * - Markdown tables (| col1 | col2 |)
  */
 
 import { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
+import MathRenderer from './MathRenderer';
 
 interface Props {
   content: string;
@@ -23,130 +22,252 @@ interface Props {
   fontSize?: number;
 }
 
-// ─── Subscript digit helper ───────────────────────────────────────────────────
+// ─── Subscript / Superscript helpers ─────────────────────────────────────────
 const SUB_DIGITS: Record<string, string> = {
   '0':'₀','1':'₁','2':'₂','3':'₃','4':'₄',
   '5':'₅','6':'₆','7':'₇','8':'₈','9':'₉',
 };
 function toSubscript(s: string): string {
-  // Convert digit strings to Unicode subscripts; leave letters as-is with underscore
   const allDigits = /^\d+$/.test(s);
   if (allDigits) return s.split('').map(c => SUB_DIGITS[c] ?? c).join('');
   return `_${s}`;
 }
 
-// ─── Bare LaTeX → readable Unicode/text ──────────────────────────────────────
+const SUP_DIGITS: Record<string, string> = {
+  '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴',
+  '5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹',
+  '+':'⁺','-':'⁻','=':'⁼','(':'⁽',')':'⁾',
+  'n':'ⁿ','i':'ⁱ','x':'ˣ',
+};
+function toSuperscript(s: string): string {
+  const chars = s.split('');
+  if (chars.length > 0 && chars.every(c => SUP_DIGITS[c] !== undefined)) {
+    return chars.map(c => SUP_DIGITS[c]).join('');
+  }
+  return `^${s}`;
+}
+
+// ─── Bare LaTeX → readable Unicode/text fallback ─────────────────────────────
 const BARE_LATEX_MAP: [RegExp, string | ((...args: string[]) => string)][] = [
-  // Multi-arg commands first
+  // Degrees: \^{circ}, ^\circ, \^{\degree}, ^\degree, ^degree, ^deg, \degree, ° -> ° (no carets!)
+  [/\^\{\\?(circ|degree|degrees|deg)\}/gi, '°'],
+  [/\^\\?(circ|degree|degrees|deg)\b/gi,  '°'],
+  [/\\(circ|degree|degrees)\b/gi,          '°'],
+  [/\^°/g,                                 '°'],
+
+  // Fractions & Roots
   [/\\frac\{([^}]+)\}\{([^}]+)\}/g, (_, num, den) => {
-    // Render as "num/den" — wrap in parens only if either part is compound
     const needsParens = (s: string) => /[+\-]/.test(s);
     const n = needsParens(num) ? `(${num})` : num;
     const d = needsParens(den) ? `(${den})` : den;
     return `${n}/${d}`;
   }],
+  [/\\sqrt\[([^\]]+)\]\{([^}]+)\}/g, (_, root, body) => `${toSuperscript(root)}√(${body})`],
   [/\\sqrt\{([^}]+)\}/g,            '√($1)'],
   [/\\text\{([^}]+)\}/g,            '$1'],
-  // log with base: \log_{5}(x) → log₅(x)
+  [/\\mathrm\{([^}]+)\}/g,          '$1'],
+  [/\\mathbf\{([^}]+)\}/g,          '$1'],
+
+  // Logarithms & Subscripts
   [/\\log_\{([^}]+)\}/g, (_: string, base: string) => `log${toSubscript(base)}`],
   [/\\log_([0-9a-zA-Z])/g, (_: string, base: string) => `log${toSubscript(base)}`],
-  // subscript: _{n} → Unicode subscript digits where possible
   [/_\{([^}]+)\}/g, (_: string, sub: string) => toSubscript(sub)],
-  [/_([0-9])/g,     (_: string, d: string)   => toSubscript(d)],
-  // superscript: ^{n}
-  [/\^\{([^}]+)\}/g, (_: string, sup: string) => `^${sup}`],
-  [/\^([0-9])/g,    (_: string, d: string)   => `^${d}`],
-  // Brackets
+  [/_([0-9a-zA-Z])/g, (_: string, d: string)   => toSubscript(d)],
+
+  // Inverse functions & negative powers: f^(-1), f^-1, f^{-1}, f^{( - 1)} -> f⁻¹
+  [/([a-zA-Z0-9_])\^?\s*\(\s*-\s*([0-9a-zA-Z]+)\s*\)/g, (_, fn, exp) => `${fn}${toSuperscript('-' + exp)}`],
+  [/([a-zA-Z0-9_])\^?\s*\{\s*\(?\s*-\s*([0-9a-zA-Z]+)\s*\)?\s*\}/g, (_, fn, exp) => `${fn}${toSuperscript('-' + exp)}`],
+  [/([a-zA-Z0-9_])\^\s*-\s*([0-9a-zA-Z]+)/g, (_, fn, exp) => `${fn}${toSuperscript('-' + exp)}`],
+
+  // Superscripts & Exponents
+  [/\^\{([^}]+)\}/g, (_: string, sup: string) => toSuperscript(sup)],
+  [/\^([0-9nix])/g,   (_: string, d: string)   => toSuperscript(d)],
+
+  // Left/Right Brackets
   [/\\left\(/g,   '('],  [/\\right\)/g,  ')'],
   [/\\left\[/g,   '['],  [/\\right\]/g,  ']'],
   [/\\left\\{/g,  '{'],  [/\\right\\}/g, '}'],
-  // Operators
+
+  // Trig & Functions
+  [/\\sin/g,      'sin'],[/\\cos/g,      'cos'],[/\\tan/g,      'tan'],
+  [/\\csc/g,      'csc'],[/\\sec/g,      'sec'],[/\\cot/g,      'cot'],
+  [/\\arcsin/g,   'arcsin'], [/\\arccos/g, 'arccos'], [/\\arctan/g, 'arctan'],
+  [/\\sinh/g,     'sinh'],[/\\cosh/g,    'cosh'],[/\\tanh/g,    'tanh'],
+  [/\\ln/g,       'ln'], [/\\log/g,     'log'], [/\\lim/g,     'lim'],
+  [/\\deg/g,      'deg'],[/\\min/g,     'min'], [/\\max/g,     'max'],
+
+  // Math Operators & Relations
   [/\\times/g,    '×'],  [/\\cdot/g,     '·'],
   [/\\div/g,      '÷'],  [/\\pm/g,       '±'],
-  [/\\mp/g,       '∓'],
-  // Relations
-  [/\\neq/g,      '≠'],  [/\\leq/g,      '≤'],
-  [/\\geq/g,      '≥'],  [/\\approx/g,   '≈'],
-  [/\\equiv/g,    '≡'],  [/\\sim/g,      '~'],
-  // Arrows
-  [/\\Rightarrow/g, '⇒'], [/\\Leftarrow/g,  '⇐'],
-  [/\\rightarrow/g, '→'], [/\\leftarrow/g,  '←'],
-  [/\\Leftrightarrow/g, '⟺'],
-  // Greek letters
+  [/\\mp/g,       '∓'],  [/\\neq/g,      '≠'],
+  [/\\leq/g,      '≤'],  [/\\geq/g,      '≥'],
+  [/\\approx/g,   '≈'],  [/\\equiv/g,    '≡'],
+
+  // Greek Letters
   [/\\pi/g,       'π'],  [/\\theta/g,    'θ'],
   [/\\alpha/g,    'α'],  [/\\beta/g,     'β'],
   [/\\gamma/g,    'γ'],  [/\\delta/g,    'δ'],
-  [/\\epsilon/g,  'ε'],  [/\\zeta/g,     'ζ'],
-  [/\\eta/g,      'η'],  [/\\lambda/g,   'λ'],
-  [/\\mu/g,       'μ'],  [/\\nu/g,       'ν'],
-  [/\\xi/g,       'ξ'],  [/\\rho/g,      'ρ'],
-  [/\\sigma/g,    'σ'],  [/\\tau/g,      'τ'],
-  [/\\phi/g,      'φ'],  [/\\chi/g,      'χ'],
-  [/\\psi/g,      'ψ'],  [/\\omega/g,    'ω'],
-  [/\\Gamma/g,    'Γ'],  [/\\Delta/g,    'Δ'],
-  [/\\Theta/g,    'Θ'],  [/\\Lambda/g,   'Λ'],
-  [/\\Pi/g,       'Π'],  [/\\Sigma/g,    'Σ'],
-  [/\\Omega/g,    'Ω'],
-  // Trig functions
-  [/\\arctan/g,   'arctan'], [/\\arcsin/g, 'arcsin'],
-  [/\\arccos/g,   'arccos'], [/\\sin/g,    'sin'],
-  [/\\cos/g,      'cos'],    [/\\tan/g,    'tan'],
-  [/\\cot/g,      'cot'],    [/\\sec/g,    'sec'],
-  [/\\csc/g,      'csc'],
-  // Log/misc
-  // Plain-text log with attached base: log2(x) → log₂(x), log10(x) → log₁₀(x)
-  [/\blog(\d+)\b/g, (_: string, base: string) => `log${toSubscript(base)}`],
-  [/\\log/g,      'log'],   [/\\ln/g,     'ln'],
-  [/\\exp/g,      'exp'],   [/\\lim/g,    'lim'],
-  [/\\infty/g,    '∞'],     [/\\emptyset/g, '∅'],
-  [/\\sqrt/g,     '√'],
-  // Superscript shorthands (^2, ^3)
-  [/\^2/g, '²'], [/\^3/g, '³'],
-  // Spacing commands
-  [/\\!/g,  ''],  [/\\,/g,  ' '],
-  [/\\;/g,  ' '], [/\\:/g,  ' '],
-  [/\\ /g,  ' '],
-  // Strip remaining bare braces
+  [/\\lambda/g,   'λ'],  [/\\mu/g,       'μ'],
+  [/\\sigma/g,    'σ'],  [/\\omega/g,    'ω'],
+  [/\\Delta/g,    'Δ'],  [/\\Sigma/g,    'Σ'],
+  [/\\Omega/g,    'Ω'],  [/\\infty/g,    '∞'],
+
+  // Braces & Stray Slashes Cleanup
   [/\{([^}]*)\}/g, '$1'],
-  // Any remaining lone backslash-word
   [/\\[a-zA-Z]+/g, ''],
 ];
 
-function cleanLatex(raw: string): string {
+function cleanLatexFallback(raw: string): string {
   let s = raw;
   for (const [re, rep] of BARE_LATEX_MAP) {
     s = s.replace(re, rep as string);
   }
-  let openCount = (s.match(/\(/g) || []).length;
-  let closeCount = (s.match(/\)/g) || []).length;
-  while (closeCount > openCount && s.endsWith(')')) {
-    s = s.slice(0, -1).trim();
-    closeCount--;
-  }
+  s = s.replace(/\\+/g, '');
   return s.trim();
+}
+
+/**
+ * Automatically isolates pure math expressions into standard LaTeX $...$ delimiters
+ */
+function normalizeMathInText(rawText: string): string {
+  if (!rawText) return '';
+  let str = String(rawText);
+
+  if (/\$[^\$\n]+?\$|\\\([\s\S]*?\\\)/.test(str)) {
+    return str;
+  }
+
+  const mathTriggerRegex = /[\^±√=]|\blog_?[0-9a-zA-Z]*|\b[a-zA-Z0-9_()]+\s*\/\s*[a-zA-Z0-9_()]+\b/i;
+  if (!mathTriggerRegex.test(str)) {
+    return str;
+  }
+
+  const formatFormulaOnly = (expr: string) => {
+    let s = expr.trim();
+    let punct = '';
+    const matchPunct = s.match(/([.,;:?!])$/);
+    if (matchPunct && !s.endsWith(')')) {
+      punct = matchPunct[1];
+      s = s.slice(0, -1).trim();
+    }
+
+    s = s.replace(/±|\+-/g, '\\pm ');
+    s = s.replace(/×/g, '\\times ').replace(/÷/g, '\\div ');
+    s = s.replace(/\^?\\?(degree|degrees|circ)\b/gi, '^{\\circ}').replace(/°/g, '^{\\circ}');
+
+    s = s.replace(/√\s*\(\s*\(\s*([^)]+)\s*\)\s*\)/g, '\\sqrt{$1}');
+    s = s.replace(/√\s*\(\s*([^)]+)\s*\)/g, '\\sqrt{$1}');
+    s = s.replace(/√\s*([a-zA-Z0-9_]+)/g, '\\sqrt{$1}');
+
+    s = s.replace(/\(\s*-b\s*\\pm\s*\\sqrt\{([^}]+)\}\s*\)\s*\/\s*(\(?\s*\d*[a-zA-Z0-9^]+\s*\)?)/g, '\\frac{-b \\pm \\sqrt{$1}}{$2}');
+    s = s.replace(/\\sqrt\{\s*\(?\s*([^/]+?)\s*\/\s*([^)]+?)\s*\)?\s*\}/g, '\\sqrt{\\frac{$1}{$2}}');
+
+    const parenFracRegex = /\(\s*((?:[^{}()]+|\([^()]*\))+?)\s*\/\s*((?:[^{}()]+|\([^()]*\))+?)\s*\)/g;
+    s = s.replace(parenFracRegex, (match, num, den) => {
+      let n = num.trim();
+      let d = den.trim();
+      if (n.startsWith('(') && n.endsWith(')')) n = n.slice(1, -1).trim();
+      return `\\frac{${n}}{${d}}`;
+    });
+
+    const unparenFracRegex = /(\b[a-zA-Z0-9_]+(?:\([^()]*\))?)\s*\/\s*(\b[a-zA-Z0-9_]+(?:\([^()]*\))?)/g;
+    s = s.replace(unparenFracRegex, '\\frac{$1}{$2}');
+    // Clean up stray closing parenthesis directly following \frac{...}{...}
+    s = s.replace(/(\\frac\s*\{[^{}]*\}\s*\{[^}]+\})\)/g, (m, p1) => p1);
+
+    // Wrap fractions adjacent to whole numbers in parens: 2\frac{1}{3} or 2 1/3 -> 2\left(\frac{1}{3}\right)
+    s = s.replace(/(\b\d+)\s*\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1\\left(\\frac{$2}{$3}\\right)');
+    s = s.replace(/(\b\d+)\s+([a-zA-Z0-9_]+)\s*\/\s*([a-zA-Z0-9_]+)/g, '$1\\left(\\frac{$2}{$3}\\right)');
+    s = s.replace(/\\left\(\\left\(/g, '\\left(').replace(/\\right\)\\right\)/g, '\\right)');
+
+    s = s.replace(/(?<!\\)\b(sin|cos|tan|asin|acos|atan|csc|sec|cot)\b/g, (m) => '\\' + m);
+
+    s = s.replace(/\blog_?([0-9a-zA-Z]+)\s*\(([^)]+)\)/gi, '\\log_{$1}($2)');
+    s = s.replace(/\blog_?([0-9a-zA-Z]+)\s+([0-9a-zA-Z]+)/gi, '\\log_{$1}{$2}');
+    // Format inverse functions and negative exponents: f^(-1) -> f^{-1}, f^-1 -> f^{-1}
+    s = s.replace(/([a-zA-Z0-9_])\^?\s*\(\s*-\s*([0-9a-zA-Z]+)\s*\)/g, '$1^{-$2}');
+    s = s.replace(/([a-zA-Z0-9_])\^?\s*\{\s*\(?\s*-\s*([0-9a-zA-Z]+)\s*\)?\s*\}/g, '$1^{-$2}');
+    s = s.replace(/([a-zA-Z0-9_])\^\s*-\s*([0-9a-zA-Z]+)/g, '$1^{-$2}');
+
+    s = s.replace(/([a-zA-Z0-9_)]+)\^([a-zA-Z0-9_]+)/g, '$1^{$2}');
+
+    let openCount = (s.match(/\(/g) || []).length;
+    let closeCount = (s.match(/\)/g) || []).length;
+    while (closeCount > openCount && s.endsWith(')')) {
+      s = s.slice(0, -1).trim();
+      closeCount--;
+    }
+
+    s = s.replace(/\s+/g, ' ').trim();
+    return `$${s}$` + punct;
+  };
+
+  const isProseWord = (word: string) => {
+    const w = word.toLowerCase().trim();
+    if (!w || w.length < 2) return false;
+    if (/^log_?[0-9a-zA-Z]*$/i.test(w)) return false;
+    const mathKeywords = new Set([
+      'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'log', 'ln', 'lim', 'det',
+      'min', 'max', 'ax', 'bx', 'cx', 'dx', 'ex', 'fx', 'gx', 'hx', 'pm'
+    ]);
+    return !mathKeywords.has(w);
+  };
+
+  return str.replace(/((?:\([^)]+\)|[a-zA-Z0-9_]|\s|[+\-*/=^±√().,°%\[\]{}]){1,})/g, (match) => {
+    const trimmed = match.trim();
+    if (!trimmed) return match;
+
+    const words = trimmed.match(/\b[a-zA-Z]{2,}\b/g) || [];
+    const proseWords = words.filter(isProseWord);
+
+    if (proseWords.length > 0) {
+      return match;
+    }
+
+    const hasMathIndicator = /[\^±√=]|\blog_?[0-9a-zA-Z]*|\b[a-zA-Z0-9_]+\s*[+\-*/=]\s*[a-zA-Z0-9_]+\b|\([a-zA-Z0-9^+\-*/\s]+\)\s*\(/i.test(trimmed);
+    if (hasMathIndicator) {
+      return formatFormulaOnly(trimmed);
+    }
+
+    return match;
+  });
 }
 
 // ─── Block types ──────────────────────────────────────────────────────────────
 type Block =
-  | { type: 'display-math'; text: string }
-  | { type: 'bullet';       text: string }
-  | { type: 'numbered';     n: number; text: string }
-  | { type: 'paragraph';    text: string };
+  | { type: 'display-math'; rawMath: string }
+  | { type: 'heading'; level: number; text: string }
+  | { type: 'bullet'; text: string }
+  | { type: 'numbered'; n: number; text: string }
+  | { type: 'table'; rows: string[][] }
+  | { type: 'paragraph'; text: string };
+
+function isInvalidDisplayMath(raw: string): boolean {
+  if (!raw) return true;
+  // If raw contains Markdown headers, URLs, or markdown links/bold, it's not a pure math block
+  if (/#{1,6}\s+|https?:\/\/|\*\*|\[.+\]\(.+\)/.test(raw)) return true;
+  // If raw contains backtick code spans or list markers, it's prose/code explanation
+  if (/`|^\s*[-*•]\s+/m.test(raw)) return true;
+  return false;
+}
 
 function parseBlocks(content: string): Block[] {
+  const normalized = normalizeMathInText(content);
   const blocks: Block[] = [];
 
-  // Split on $$...$$ first
-  const displayRe = /\$\$([\s\S]+?)\$\$/g;
+  const displayRe = /(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\])/g;
   let last = 0;
   let m: RegExpExecArray | null;
 
-  while ((m = displayRe.exec(content)) !== null) {
-    if (m.index > last) parseLineBlocks(content.slice(last, m.index), blocks);
-    blocks.push({ type: 'display-math', text: cleanLatex(m[1].trim()) });
-    last = m.index + m[0].length;
+  while ((m = displayRe.exec(normalized)) !== null) {
+    const raw = m[0].startsWith('$$') ? m[0].slice(2, -2) : m[0].slice(2, -2);
+    if (!isInvalidDisplayMath(raw)) {
+      if (m.index > last) parseLineBlocks(normalized.slice(last, m.index), blocks);
+      blocks.push({ type: 'display-math', rawMath: raw.trim() });
+      last = m.index + m[0].length;
+    }
   }
-  if (last < content.length) parseLineBlocks(content.slice(last), blocks);
+  if (last < normalized.length) parseLineBlocks(normalized.slice(last), blocks);
   return blocks;
 }
 
@@ -157,19 +278,68 @@ function parseLineBlocks(text: string, out: Block[]) {
     if (t) out.push({ type: 'paragraph', text: t });
     para = '';
   };
-  for (const raw of text.split('\n')) {
+
+  const lines = text.split('\n');
+  let tableBuffer: string[] = [];
+
+  const flushTable = () => {
+    if (tableBuffer.length > 0) {
+      const cleanRows = tableBuffer
+        .map(l => l.trim())
+        .filter(l => l.startsWith('|') || l.endsWith('|'))
+        .map(l => {
+          const cells = l.split('|');
+          if (cells.length > 1 && cells[0].trim() === '') cells.shift();
+          if (cells.length > 0 && cells[cells.length - 1].trim() === '') cells.pop();
+          return cells.map(c => c.trim());
+        });
+
+      if (cleanRows.length > 0) {
+        const isDivider = cleanRows[1] && cleanRows[1].every(c => /^:?-+:?$/.test(c.replace(/\s+/g, '')));
+        const finalRows = isDivider ? [cleanRows[0], ...cleanRows.slice(2)] : cleanRows;
+        out.push({ type: 'table', rows: finalRows });
+      }
+      tableBuffer = [];
+    }
+  };
+
+  for (const raw of lines) {
     const t = raw.trim();
-    if (!t) { flush(); continue; }
-    const bullet = t.match(/^[-*•]\s+(.+)$/);
-    const num    = t.match(/^(\d+)\.\s+(.+)$/);
-    if (bullet)   { flush(); out.push({ type: 'bullet',   text: bullet[1] }); }
-    else if (num) { flush(); out.push({ type: 'numbered', n: parseInt(num[1]), text: num[2] }); }
-    else          { para += (para ? ' ' : '') + t; }
+    if (!t) {
+      flushTable();
+      flush();
+      continue;
+    }
+
+    if (t.startsWith('|') && t.includes('|')) {
+      flush();
+      tableBuffer.push(t);
+      continue;
+    }
+    flushTable();
+
+    const heading = t.match(/^(#{1,4})\s+(.+)$/);
+    const bullet  = t.match(/^[-*•]\s+(.+)$/);
+    const num     = t.match(/^(\d+)\.\s+(.+)$/);
+
+    if (heading) {
+      flush();
+      out.push({ type: 'heading', level: heading[1].length, text: heading[2] });
+    } else if (bullet) {
+      flush();
+      out.push({ type: 'bullet', text: bullet[1] });
+    } else if (num) {
+      flush();
+      out.push({ type: 'numbered', n: parseInt(num[1], 10), text: num[2] });
+    } else {
+      para += (para ? ' ' : '') + t;
+    }
   }
+  flushTable();
   flush();
 }
 
-// ─── Inline text: **bold** + $math$ + plain ──────────────────────────────────
+// ─── Inline renderer: bold + code + math + text ──────────────────────────────
 function InlineText({
   text,
   color,
@@ -181,48 +351,72 @@ function InlineText({
   fontSize: number;
   mathBg: string;
 }) {
-  type Part = { t: 'plain' | 'bold' | 'math'; v: string };
+  type Part = { type: 'plain' | 'bold' | 'code' | 'math'; value: string };
   const parts: Part[] = [];
-  const re = /(\*\*(.+?)\*\*|\$(?!\$)([^$\n]+?)\$)/g;
+  const re = /(\*\*(.+?)\*\*|`([^`\n]+)`|\$(?!\$)([^$\n]+?)\$|\\\((.+?)\\\))/g;
   let last = 0;
   let m: RegExpExecArray | null;
 
   while ((m = re.exec(text)) !== null) {
-    if (m.index > last) parts.push({ t: 'plain', v: text.slice(last, m.index) });
-    if (m[0].startsWith('**')) parts.push({ t: 'bold', v: m[2] });
-    else                        parts.push({ t: 'math', v: cleanLatex(m[3]) });
+    if (m.index > last) parts.push({ type: 'plain', value: text.slice(last, m.index) });
+    if (m[0].startsWith('**')) {
+      parts.push({ type: 'bold', value: m[2] });
+    } else if (m[0].startsWith('`')) {
+      parts.push({ type: 'code', value: m[3] });
+    } else {
+      const mathStr = m[4] || m[5];
+      parts.push({ type: 'math', value: mathStr });
+    }
     last = m.index + m[0].length;
   }
-  if (last < text.length) parts.push({ t: 'plain', v: cleanLatex(text.slice(last)) });
+  if (last < text.length) parts.push({ type: 'plain', value: text.slice(last) });
 
   return (
-    <Text style={{ color, fontSize, lineHeight: fontSize * 1.65, flexShrink: 1 }}>
+    <Text style={{ color, fontSize, lineHeight: fontSize * 1.55, flexShrink: 1 }}>
       {parts.map((p, i) => {
-        if (p.t === 'bold') {
+        if (p.type === 'bold') {
           return (
             <Text key={i} style={{ fontWeight: '700', color }}>
-              {p.v}
+              {p.value}
             </Text>
           );
         }
-        if (p.t === 'math') {
+        if (p.type === 'code') {
           return (
             <Text
               key={i}
               style={{
                 fontFamily: 'monospace',
+                fontSize: fontSize * 0.9,
                 color,
                 backgroundColor: mathBg,
-                fontSize: fontSize - 1,
-                paddingHorizontal: 3,
-                borderRadius: 3,
+                paddingHorizontal: 4,
+                borderRadius: 4,
               }}
             >
-              {p.v}
+              {p.value}
             </Text>
           );
         }
-        return <Text key={i}>{p.v}</Text>;
+        if (p.type === 'math') {
+          // Cleaned Math symbol matching Web KaTeX font & transparent background
+          const mathDisplay = cleanLatexFallback(p.value);
+          return (
+            <Text
+              key={i}
+              style={{
+                fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+                fontWeight: '600',
+                color,
+                fontSize,
+                paddingHorizontal: 1,
+              }}
+            >
+              {mathDisplay}
+            </Text>
+          );
+        }
+        return <Text key={i}>{p.value}</Text>;
       })}
     </Text>
   );
@@ -238,14 +432,15 @@ export default function MessageRenderer({
   const { darkMode } = useTheme();
   const effectiveFontSize = fontSize;
 
-  const resolvedColor = textColor ?? (isUser ? '#ffffff' : (darkMode ? '#f0f0f0' : '#091426'));
-  const mathBg  = isUser
+  const resolvedColor = isUser ? '#ffffff' : (textColor ?? (darkMode ? '#f0f0f0' : '#091426'));
+  const mathBg = isUser
     ? 'rgba(255,255,255,0.15)'
     : (darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(75,65,225,0.08)');
   const displayBg = isUser
     ? 'rgba(255,255,255,0.1)'
-    : (darkMode ? '#242424' : '#f0eeff');
+    : (darkMode ? '#1e1e1e' : '#f0eeff');
   const displayColor = isUser ? '#ffffff' : (darkMode ? '#c4b5fd' : '#4b41e1');
+  const borderColor = darkMode ? '#2e2e2e' : '#e0e3e5';
 
   const blocks = useMemo(() => parseBlocks(content), [content]);
 
@@ -254,18 +449,23 @@ export default function MessageRenderer({
       {blocks.map((block, i) => {
         if (block.type === 'display-math') {
           return (
-            <View key={i} style={[styles.displayBlock, { backgroundColor: displayBg }]}>
-              <Text
-                style={{
-                  fontFamily: 'monospace',
-                  fontSize: effectiveFontSize + 1,
-                  color: displayColor,
-                  textAlign: 'center',
-                  lineHeight: (effectiveFontSize + 1) * 1.6,
-                }}
-              >
-                {block.text}
-              </Text>
+            <MathRenderer
+              key={i}
+              math={block.rawMath}
+              displayMode={true}
+              color={displayColor}
+              fontSize={effectiveFontSize + 1}
+              backgroundColor={displayBg}
+            />
+          );
+        }
+
+        if (block.type === 'heading') {
+          const hSizes: Record<number, number> = { 1: 18, 2: 17, 3: 16, 4: 15 };
+          const hSize = hSizes[block.level] || 15;
+          return (
+            <View key={i} style={{ marginTop: 8, marginBottom: 4 }}>
+              <InlineText text={block.text} color={resolvedColor} fontSize={hSize} mathBg={mathBg} />
             </View>
           );
         }
@@ -292,6 +492,29 @@ export default function MessageRenderer({
           );
         }
 
+        if (block.type === 'table') {
+          return (
+            <View key={i} style={[styles.tableCard, { borderColor }]}>
+              {block.rows.map((row, rIdx) => (
+                <View
+                  key={rIdx}
+                  style={[
+                    styles.tableRow,
+                    rIdx === 0 && { backgroundColor: darkMode ? '#252f40' : '#f0eeff' },
+                    rIdx < block.rows.length - 1 && { borderBottomWidth: 1, borderBottomColor: borderColor }
+                  ]}
+                >
+                  {row.map((cell, cIdx) => (
+                    <View key={cIdx} style={styles.tableCell}>
+                      <InlineText text={cell} color={resolvedColor} fontSize={effectiveFontSize - 1} mathBg={mathBg} />
+                    </View>
+                  ))}
+                </View>
+              ))}
+            </View>
+          );
+        }
+
         // paragraph
         return (
           <View key={i} style={i > 0 ? styles.paraGap : undefined}>
@@ -308,25 +531,35 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     gap: 4,
   },
-  displayBlock: {
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginVertical: 6,
-  },
   listRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 6,
   },
   bullet: {
-    minWidth: 20,
-    lineHeight: 24,
+    minWidth: 18,
+    lineHeight: 22,
+    fontWeight: '700',
   },
   listContent: {
     flex: 1,
   },
   paraGap: {
     marginTop: 4,
+  },
+  tableCard: {
+    marginVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  tableCell: {
+    flex: 1,
+    paddingHorizontal: 4,
   },
 });

@@ -9,6 +9,7 @@ import {
   IoCreateOutline,
   IoBulbOutline,
   IoArrowForwardCircleOutline,
+  IoTrashOutline,
 } from 'react-icons/io5';
 import { tutorApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -52,25 +53,63 @@ function Message({ msg }) {
 
 export default function TutorAI() {
   const { user } = useAuth();
-  const [messages, setMessages]             = useState([]);
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('mathmentor_tutor_messages');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch { /* ignore */ }
+    return [];
+  });
   const [input, setInput]                   = useState('');
   const [loading, setLoading]               = useState(false);
-  const [conversationId, setConversationId] = useState(null);
+  const [conversationId, setConversationId] = useState(() => {
+    try {
+      return sessionStorage.getItem('mathmentor_tutor_conv_id') || null;
+    } catch {
+      return null;
+    }
+  });
   const [error, setError]                 = useState('');
+  const [showClearModal, setShowClearModal] = useState(false);
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
 
   const firstName = user?.displayName ? user.displayName.split(' ')[0] : 'there';
 
   useEffect(() => {
-    const welcome = {
-      id: 'welcome',
-      role: 'assistant',
-      content: `Hello, ${firstName}! 👋 I'm **MathMentor AI**, your personal mathematics tutor. Ask me anything about **Algebra**, **Geometry**, or **Trigonometry**!`,
-      timestamp: new Date().toISOString(),
-    };
-    setMessages([welcome]);
-  }, [user, firstName]);
+    setMessages((prev) => {
+      if (prev.length > 0) return prev;
+      return [{
+        id: 'welcome',
+        role: 'assistant',
+        content: `Hello, ${firstName}! 👋 I'm **MathMentor AI**, your personal mathematics tutor. Ask me anything about **Algebra**, **Geometry**, or **Trigonometry**!`,
+        timestamp: new Date().toISOString(),
+      }];
+    });
+  }, [firstName]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        sessionStorage.setItem('mathmentor_tutor_messages', JSON.stringify(messages));
+      } catch { /* ignore */ }
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (conversationId) {
+      try {
+        sessionStorage.setItem('mathmentor_tutor_conv_id', conversationId);
+      } catch { /* ignore */ }
+    } else {
+      try {
+        sessionStorage.removeItem('mathmentor_tutor_conv_id');
+      } catch { /* ignore */ }
+    }
+  }, [conversationId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -109,6 +148,10 @@ export default function TutorAI() {
     if (conversationId) {
       try { await tutorApi.clearConversation({ conversationId }); } catch { /* ignore */ }
     }
+    try {
+      sessionStorage.removeItem('mathmentor_tutor_messages');
+      sessionStorage.removeItem('mathmentor_tutor_conv_id');
+    } catch { /* ignore */ }
     setConversationId(null);
     const welcome = {
       id: 'welcome-new',
@@ -136,7 +179,7 @@ export default function TutorAI() {
             </div>
           </div>
           <button
-            onClick={handleClear}
+            onClick={() => setShowClearModal(true)}
             className="w-9 h-9 rounded-full bg-[#f2f4f6] dark:bg-[#252f40] flex items-center justify-center text-[#75777d] dark:text-white hover:bg-[#e2e8f0] dark:hover:bg-[#323f54] transition-colors cursor-pointer"
             title="Reset conversation"
           >
@@ -225,6 +268,38 @@ export default function TutorAI() {
           </button>
         </div>
       </div>
+
+      {/* Clear Conversation Confirmation Modal */}
+      {showClearModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-[#1a2333] border border-[#e0e3e5] dark:border-[#2d3748] rounded-3xl p-6 sm:p-7 max-w-sm w-full shadow-2xl text-center">
+            <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-950/40 text-[#ba1a1a] dark:text-red-400 flex items-center justify-center mx-auto mb-4">
+              <IoTrashOutline size={28} />
+            </div>
+            <h2 className="text-xl font-bold text-[#091426] dark:text-white mb-2">Clear Conversation?</h2>
+            <p className="text-sm text-[#75777d] dark:text-gray-300 mb-6 leading-relaxed">
+              Are you sure you want to clear your conversation history? This action cannot be undone.
+            </p>
+            <div className="flex flex-col sm:flex-row-reverse gap-2.5">
+              <button
+                onClick={() => {
+                  setShowClearModal(false);
+                  handleClear();
+                }}
+                className="w-full sm:flex-1 bg-[#ba1a1a] hover:bg-[#9c1515] text-white font-semibold py-3 px-4 rounded-xl transition-colors cursor-pointer text-sm shadow-xs"
+              >
+                Clear Chat
+              </button>
+              <button
+                onClick={() => setShowClearModal(false)}
+                className="w-full sm:flex-1 bg-[#f2f4f6] dark:bg-[#252f40] hover:bg-[#e2e8f0] dark:hover:bg-[#323f54] text-[#091426] dark:text-white font-semibold py-3 px-4 rounded-xl transition-colors cursor-pointer text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

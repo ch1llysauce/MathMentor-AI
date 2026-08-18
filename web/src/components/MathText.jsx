@@ -68,7 +68,7 @@ function normalizeMathInText(rawText) {
     // Clean symbols
     s = s.replace(/±|\+-/g, '\\pm ');
     s = s.replace(/×/g, '\\times ').replace(/÷/g, '\\div ');
-    s = s.replace(/°/g, '^{\\circ}');
+    s = s.replace(/\^?\\?(degree|degrees|circ)\b/gi, '^{\\circ}').replace(/°/g, '^{\\circ}');
 
     // Roots: √((...)) or √( ... ) or √...
     s = s.replace(/√\s*\(\s*\(\s*([^)]+)\s*\)\s*\)/g, '\\sqrt{$1}');
@@ -96,13 +96,22 @@ function normalizeMathInText(rawText) {
     // Clean up stray closing parenthesis directly following \frac{...}{...}
     s = s.replace(/(\\frac\s*\{[^{}]*\}\s*\{[^}]+\})\)/g, (m, p1) => p1);
 
+    // Wrap fractions adjacent to whole numbers in parens: 2\frac{1}{3} or 2 1/3 -> 2\left(\frac{1}{3}\right)
+    s = s.replace(/(\b\d+)\s*\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1\\left(\\frac{$2}{$3}\\right)');
+    s = s.replace(/(\b\d+)\s+([a-zA-Z0-9_]+)\s*\/\s*([a-zA-Z0-9_]+)/g, '$1\\left(\\frac{$2}{$3}\\right)');
+    // Remove potential double parens if already wrapped
+    s = s.replace(/\\left\(\\left\(/g, '\\left(').replace(/\\right\)\\right\)/g, '\\right)');
+
     // Format trig functions safely
     s = s.replace(/(?<!\\)\b(sin|cos|tan|asin|acos|atan|csc|sec|cot)\b/g, (m) => '\\' + m);
 
     // Logarithms with bases: log2(16) -> \log_{2}(16), log_b(x) -> \log_{b}(x), log10(x) -> \log_{10}(x)
     s = s.replace(/\blog_?([0-9a-zA-Z]+)\s*\(([^)]+)\)/gi, '\\log_{$1}($2)');
     s = s.replace(/\blog_?([0-9a-zA-Z]+)\s+([0-9a-zA-Z]+)/gi, '\\log_{$1}{$2}');
-    s = s.replace(/\blog\b(?!\s*\_|\s*\{)/gi, '\\log ');
+    // Inverse functions & negative exponents: f^(-1) -> f^{-1}, f^-1 -> f^{-1}
+    s = s.replace(/([a-zA-Z0-9_])\^?\s*\(\s*-\s*([0-9a-zA-Z]+)\s*\)/g, '$1^{-$2}');
+    s = s.replace(/([a-zA-Z0-9_])\^?\s*\{\s*\(?\s*-\s*([0-9a-zA-Z]+)\s*\)?\s*\}/g, '$1^{-$2}');
+    s = s.replace(/([a-zA-Z0-9_])\^\s*-\s*([0-9a-zA-Z]+)/g, '$1^{-$2}');
 
     // Exponents: ax^2 -> ax^{2}, b^2 -> b^{2}, 4a^2 -> 4a^{2}
     s = s.replace(/([a-zA-Z0-9_)]+)\^([a-zA-Z0-9_]+)/g, '$1^{$2}');

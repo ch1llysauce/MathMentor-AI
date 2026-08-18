@@ -25,6 +25,7 @@ export default function LessonChat() {
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [conversationId, setConversationId] = useState(undefined);
   const [deleting, setDeleting]             = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
@@ -124,8 +125,9 @@ export default function LessonChat() {
   };
 
   // ── Delete conversation ────────────────────────────────────────────────────
-  const handleDelete = async () => {
-    if (!conversationId || !window.confirm('Delete this conversation? This cannot be undone.')) return;
+  const executeDelete = async () => {
+    setShowDeleteModal(false);
+    if (!conversationId) return;
     setDeleting(true);
     try {
       await learningApi.deleteLessonConversation(lessonId);
@@ -166,9 +168,9 @@ export default function LessonChat() {
 
           {conversationId && (
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteModal(true)}
               disabled={deleting}
-              className="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center text-red-500 hover:bg-red-100 shrink-0"
+              className="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center text-red-500 hover:bg-red-100 shrink-0 cursor-pointer"
               title="Delete conversation"
             >
               {deleting
@@ -260,6 +262,35 @@ export default function LessonChat() {
           </button>
         </div>
       </div>
+
+      {/* Delete Conversation Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-[#1a2333] border border-[#e0e3e5] dark:border-[#2d3748] rounded-3xl p-6 sm:p-7 max-w-sm w-full shadow-2xl text-center">
+            <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-950/40 text-[#ba1a1a] dark:text-red-400 flex items-center justify-center mx-auto mb-4">
+              <IoTrashOutline size={28} />
+            </div>
+            <h2 className="text-xl font-bold text-[#091426] dark:text-white mb-2">Clear Lesson Chat?</h2>
+            <p className="text-sm text-[#75777d] dark:text-gray-300 mb-6 leading-relaxed">
+              Are you sure you want to clear your conversation history for this lesson? This action cannot be undone.
+            </p>
+            <div className="flex flex-col sm:flex-row-reverse gap-2.5">
+              <button
+                onClick={executeDelete}
+                className="w-full sm:flex-1 bg-[#ba1a1a] hover:bg-[#9c1515] text-white font-semibold py-3 px-4 rounded-xl transition-colors cursor-pointer text-sm shadow-xs"
+              >
+                Clear Chat
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="w-full sm:flex-1 bg-[#f2f4f6] dark:bg-[#252f40] hover:bg-[#e2e8f0] dark:hover:bg-[#323f54] text-[#091426] dark:text-white font-semibold py-3 px-4 rounded-xl transition-colors cursor-pointer text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

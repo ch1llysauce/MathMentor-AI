@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/hooks/useAuth';
 import Loading from '@/components/common/Loading';
 import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
+import { useCalculatorContext } from '@/context/CalculatorContext';
 import { getBannerGradientColors } from '@/constants/bannerThemes';
 
 interface MenuCardItemProps {
@@ -114,6 +115,7 @@ export default function ProfileScreen() {
   const { user, logout, loading } = useAuth();
   const router = useRouter();
   const { darkMode, toggleDarkMode } = useTheme();
+  const { fabDismissed, restoreFab } = useCalculatorContext();
 
   const [isReady, setIsReady] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
@@ -312,9 +314,25 @@ export default function ProfileScreen() {
         {/* Preferences Section */}
         <View style={styles.sectionContainer}>
           <Text style={[styles.sectionHeaderTitle, { color: darkMode ? '#94a3b8' : '#45474c' }]}>
-            PREFERENCES
+            PREFERENCES & UTILITIES
           </Text>
           <View style={styles.sectionCardsList}>
+            <MenuCardItem
+              icon="calculator-outline"
+              title="Scientific Calculator"
+              description="Open calculator modal or restore floating chathead icon"
+              badgeText={fabDismissed ? 'Hidden (Tap to restore)' : 'Active'}
+              badgeColor={
+                fabDismissed
+                  ? darkMode ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2'
+                  : darkMode ? 'rgba(75, 65, 225, 0.2)' : '#e2dfff'
+              }
+              badgeTextColor={fabDismissed ? '#ef4444' : (darkMode ? '#a5b4fc' : '#4b41e1')}
+              iconBg={darkMode ? 'rgba(165, 180, 252, 0.15)' : 'rgba(75, 65, 225, 0.1)'}
+              iconColor={darkMode ? '#a5b4fc' : '#4b41e1'}
+              onPress={restoreFab}
+            />
+
             <MenuCardItem
               icon="settings-outline"
               title="App Settings"

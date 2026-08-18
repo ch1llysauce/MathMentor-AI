@@ -34,18 +34,18 @@ const auditAndFixLessons = async () => {
       for (const ex of section.examples) {
         if (!ex.steps || !Array.isArray(ex.steps) || ex.steps.length === 0) continue;
 
-        // Specific Fix: Absolute value inequality |x - 3| < 5
-        if (ex.problem && ex.problem.includes('|x - 3| < 5')) {
-          ex.problem = 'Solve the inequality |x - 3| < 5.';
+        // Specific Fix: Logarithmic conversion 3^2 = 9
+        if (ex.problem && (ex.problem.includes('3^2 = 9') || ex.problem.toLowerCase().includes('to logarithmic form'))) {
+          ex.problem = 'Convert the exponential equation 3^2 = 9 to logarithmic form.';
           ex.steps = [
-            'Write the inequality as a double inequality: -5 < x - 3 < 5',
-            'Add 3 to all parts of the inequality: -2 < x < 8',
-            'Write the solution in interval notation: (-2, 8)'
+            'Identify the base (b = 3), exponent (y = 2), and value (x = 9).',
+            'Apply the logarithm definition: b^y = x ⇔ log_b(x) = y.',
+            'Substitute the values into the logarithmic form: log_3(9) = 2.'
           ];
-          ex.solution = '(-2, 8)';
+          ex.solution = 'log_3(9) = 2';
           lessonModified = true;
           fixedCount++;
-          console.log(`  🔧 Fixed |x - 3| < 5 in lesson "${lesson.title}" -> Solution: (-2, 8)`);
+          console.log(`  🔧 Fixed logarithmic form in lesson "${lesson.title}" -> Solution: \\log_3(9) = 2`);
           continue;
         }
 

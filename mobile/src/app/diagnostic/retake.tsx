@@ -400,8 +400,10 @@ export default function RetakeDiagnosticScreen() {
                 </TouchableOpacity>
               ) : (
                 <View style={[styles.hintCard, { backgroundColor: RK.hintBg }]}>
-                  <Ionicons name="bulb" size={18} color="#f59e0b" />
-                  <Text style={[styles.hintText, { color: RK.hintBody }]}>{currentQuestion.hints[0]}</Text>
+                  <Ionicons name="bulb" size={18} color="#f59e0b" style={{ marginTop: 2 }} />
+                  <View style={{ flex: 1 }}>
+                    <MessageRenderer content={currentQuestion.hints[0]} textColor={RK.hintBody} fontSize={14} />
+                  </View>
                 </View>
               )}
             </View>
@@ -415,7 +417,12 @@ export default function RetakeDiagnosticScreen() {
               </Text>
               <MessageRenderer content={currentQuestion.explanation} textColor={RK.explText} fontSize={14} />
               {!isCorrect && (
-                <Text style={[styles.correctAnswerText, { color: RK.correctText }]}>Correct answer: {currentQuestion.correctAnswer}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginTop: 4 }}>
+                  <Text style={[styles.correctAnswerText, { color: RK.correctText }]}>
+                    Correct answer:{' '}
+                  </Text>
+                  <MessageRenderer content={currentQuestion.correctAnswer} textColor={RK.correctText} fontSize={14} />
+                </View>
               )}
             </View>
           )}

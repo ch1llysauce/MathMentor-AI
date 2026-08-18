@@ -68,11 +68,20 @@ export const authService = {
   // ── Profile / session ─────────────────────────────────────────────────────
 
   async getProfile(): Promise<AuthResponse> {
-    const response = await api.get(AUTH_ENDPOINTS.PROFILE);
-    if (response.data.success) {
-      await storage.setItem('user', JSON.stringify(response.data.data.user));
+    try {
+      const response = await api.get(AUTH_ENDPOINTS.PROFILE);
+      if (response.data.success) {
+        await storage.setItem('user', JSON.stringify(response.data.data.user));
+      }
+      return response.data;
+    } catch (e) {
+      console.warn('Network error fetching profile, returning cached stored user');
+      const cachedUser = await this.getStoredUser();
+      if (cachedUser) {
+        return { success: true, data: { user: cachedUser } } as any;
+      }
+      throw e;
     }
-    return response.data;
   },
 
   async updateProfile(updates: Partial<User>): Promise<AuthResponse> {

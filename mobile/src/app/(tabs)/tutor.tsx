@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { tutorService } from '@/services/tutorService';
@@ -29,12 +29,14 @@ export default function TutorScreen() {
     quickCardBg: darkMode ? '#1a1a1a' : Colors.white,
     quickIconBg: darkMode ? '#312e81' : '#e2dfff',
     placeholder: darkMode ? '#666666' : '#b0b3b8',
+    modalBg: darkMode ? '#18181b' : '#ffffff',
   };
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>();
+  const [showClearModal, setShowClearModal] = useState(false);
 
   const quickActions: QuickAction[] = [
     {
@@ -140,37 +142,29 @@ export default function TutorScreen() {
   };
 
   const handleClearConversation = () => {
-    Alert.alert(
-      'Clear Conversation',
-      'Are you sure you want to start a new conversation? This will clear the chat history.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: async () => {
-            if (conversationId) {
-              try {
-                await tutorService.clearConversation(conversationId);
-              } catch (error) {
-                console.error('Error clearing conversation:', error);
-              }
-            }
-            setMessages([]);
-            setConversationId(undefined);
-            
-            // Re-add welcome message
-            const welcomeMessage: Message = {
-              id: 'welcome',
-              role: 'assistant',
-              content: `Hi ${user?.displayName || 'there'}! 👋 I'm your AI math tutor. I'm here to help you understand math concepts, solve problems, and answer any questions you have about Algebra, Geometry, or Trigonometry.\n\nHow can I help you today?`,
-              timestamp: new Date().toISOString(),
-            };
-            setMessages([welcomeMessage]);
-          },
-        },
-      ]
-    );
+    setShowClearModal(true);
+  };
+
+  const executeClearConversation = async () => {
+    setShowClearModal(false);
+    if (conversationId) {
+      try {
+        await tutorService.clearConversation(conversationId);
+      } catch (error) {
+        console.error('Error clearing conversation:', error);
+      }
+    }
+    setMessages([]);
+    setConversationId(undefined);
+    
+    // Re-add welcome message
+    const welcomeMessage: Message = {
+      id: 'welcome',
+      role: 'assistant',
+      content: `Hi ${user?.displayName || 'there'}! 👋 I'm your AI math tutor. I'm here to help you understand math concepts, solve problems, and answer any questions you have about Algebra, Geometry, or Trigonometry.\n\nHow can I help you today?`,
+      timestamp: new Date().toISOString(),
+    };
+    setMessages([welcomeMessage]);
   };
 
   const MessageBubble = ({ message }: { message: Message }) => {
@@ -190,7 +184,7 @@ export default function TutorScreen() {
           <MessageRenderer
             content={message.content}
             isUser={isUser}
-            textColor={T.text}
+            textColor={isUser ? '#ffffff' : T.text}
             fontSize={15}
           />
         </View>
@@ -299,6 +293,38 @@ export default function TutorScreen() {
         </View>
       </View>
       </KeyboardAvoidingView>
+
+      {/* Clear Conversation Modal Confirmation */}
+      <Modal visible={showClearModal} transparent animationType="fade" onRequestClose={() => setShowClearModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: T.modalBg, borderColor: T.border }]}>
+            <View style={[styles.modalIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.12)' }]}>
+              <Ionicons name="trash-outline" size={28} color="#ef4444" />
+            </View>
+            <Text style={[styles.modalTitle, { color: T.text }]}>Clear Conversation?</Text>
+            <Text style={[styles.modalSubtitle, { color: T.textLight }]}>
+              Are you sure you want to clear your conversation history? This action cannot be undone.
+            </Text>
+
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: '#ba1a1a' }]}
+                onPress={executeClearConversation}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalConfirmBtnText}>Clear Chat</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: darkMode ? '#242424' : '#f2f4f6' }]}
+                onPress={() => setShowClearModal(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.modalCancelBtnText, { color: T.text }]}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -498,5 +524,63 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.4,
+  },
+
+  /* Modal Confirmation Styles */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 24,
+    alignItems: 'center',
+  },
+  modalIconBox: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+    marginBottom: 22,
+  },
+  modalBtnRow: {
+    flexDirection: 'column',
+    gap: 10,
+    width: '100%',
+  },
+  modalBtn: {
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalConfirmBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  modalCancelBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

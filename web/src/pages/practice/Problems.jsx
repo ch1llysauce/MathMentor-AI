@@ -123,7 +123,7 @@ export default function Problems() {
        .replace(/≈/g, '')
        .replace(/\*/g, '');
 
-    const extractNums = (s) => s.match(/-?\d+\.?\d*/g)?.join(',') ?? s;
+    const extractNums = (s) => s.match(/-?\d+\.?\d*/g) ?? [];
     const userNorm    = normalize(userAns);
     const correctNorm = normalize(correctAns);
 
@@ -133,9 +133,21 @@ export default function Problems() {
     // 2. If not matched, try splitting multi-value answers by "or" or "and"
     if (!correct) {
       const correctParts = correctAns.split(/\s+or\s+|\s+and\s+/i).map(normalize);
-      correct = correctParts.some(
-        (part) => userNorm === part || extractNums(userNorm) === extractNums(part)
-      );
+      const userNums = extractNums(userNorm).map(n => parseFloat(n)).filter(n => !isNaN(n));
+
+      correct = correctParts.some((part) => {
+        const partNorm = normalize(part);
+        if (userNorm === partNorm) return true;
+
+        const partNums = extractNums(partNorm).map(n => parseFloat(n)).filter(n => !isNaN(n));
+
+        if (userNums.length > 0 && partNums.length > 0) {
+          return userNums.some((uNum) =>
+            partNums.some((pNum) => Math.abs(uNum - pNum) < 0.02 || uNum.toFixed(2) === pNum.toFixed(2))
+          );
+        }
+        return false;
+      });
     }
 
     setIsCorrect(correct);
@@ -224,6 +236,13 @@ export default function Problems() {
 
   // ── Problem view ───────────────────────────────────────────────────────────
   const progress = ((currentIndex + 1) / problems.length) * 100;
+  const isAbsoluteValue = current
+    ? ((current.question || current.problem?.text || '').includes('|') ||
+       (current.subtopic || '').toLowerCase().includes('absolute') ||
+       (current.topic || '').toLowerCase().includes('absolute') ||
+       (current.question || current.problem?.text || '').toLowerCase().includes('absolute value') ||
+       (current.correctAnswer || '').includes('or'))
+    : false;
 
   return (
     <>
@@ -348,8 +367,11 @@ export default function Problems() {
           {/* Free-response input + calculator button + math toolbar */}
           {isFree && (
             <div className="mb-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-gray-600 uppercase tracking-wide">Type your answer:</span>
+              <div className="flex flex-wrap items-center justify-between gap-1 mb-2">
+                <span className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">Type your answer:</span>
+                <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2.5 py-1 rounded-lg border border-purple-100 dark:border-purple-800/40">
+                  {isAbsoluteValue ? 'Use 2 decimal places max • Providing either solution is accepted' : 'Use 2 decimal places if needed'}
+                </span>
               </div>
               <input
                 ref={answerRef}

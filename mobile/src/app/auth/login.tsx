@@ -11,6 +11,7 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -50,19 +51,19 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
 
   const D = {
-    bg: darkMode ? '#0a0a0a' : '#f7f9fb',
-    card: darkMode ? '#1a1a1a' : '#ffffff',
-    border: darkMode ? '#2e2e2e' : '#e0e3e5',
-    text: darkMode ? '#f0f0f0' : '#091426',
-    textLight: darkMode ? '#a0a0a0' : '#45474c',
-    placeholder: darkMode ? '#6b7280' : '#75777d',
-    inputBg: darkMode ? '#242424' : '#f2f4f6',
-    inputBorder: darkMode ? '#2e2e2e' : '#c5c6cd',
-    divider: darkMode ? '#2e2e2e' : '#e0e3e5',
+    bg: darkMode ? '#09090b' : '#f7f9fb',
+    card: darkMode ? '#18181b' : '#ffffff',
+    border: darkMode ? '#27272a' : '#e0e3e5',
+    text: darkMode ? '#f4f4f5' : '#091426',
+    textLight: darkMode ? '#a1a1aa' : '#45474c',
+    placeholder: darkMode ? '#71717a' : '#75777d',
+    inputBg: darkMode ? '#27272a' : '#f2f4f6',
+    inputBorder: darkMode ? '#3f3f46' : '#c5c6cd',
+    divider: darkMode ? '#27272a' : '#e0e3e5',
     btnSecondary: darkMode ? '#312e81' : '#e2dfff',
     btnSecondaryText: darkMode ? '#a5b4fc' : '#3323cc',
-    glow: darkMode ? 'rgba(75, 65, 225, 0.15)' : 'rgba(75, 65, 225, 0.08)',
-    modalBg: darkMode ? '#1a1a1a' : '#ffffff',
+    glow: darkMode ? 'rgba(75, 65, 225, 0.18)' : 'rgba(75, 65, 225, 0.08)',
+    modalBg: darkMode ? '#18181b' : '#ffffff',
   };
 
   const [email, setEmail] = useState('');
@@ -187,15 +188,17 @@ export default function LoginScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: D.bg }]}>
       <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={D.bg} />
-      <View style={[styles.ambientGlow, styles.glowTopLeft, { backgroundColor: D.glow }]} />
-      <View style={[styles.ambientGlow, styles.glowBottomRight, { backgroundColor: D.glow }]} />
+      <View style={[styles.ambientGlow, styles.glowTopLeft, { backgroundColor: D.glow }]} pointerEvents="none" />
+      <View style={[styles.ambientGlow, styles.glowBottomRight, { backgroundColor: D.glow }]} pointerEvents="none" />
 
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          <View style={styles.logoBox}>
-            <Ionicons name="calculator" size={24} color="#ffffff" />
-          </View>
+          <Image
+            source={require('@/assets/images/MathMentorAILogoIcon.png')}
+            style={styles.brandLogo}
+            resizeMode="contain"
+          />
           <Text style={[styles.logoText, { color: D.text }]}>MathMentor AI</Text>
         </View>
       </View>
@@ -366,7 +369,7 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f7f9fb' },
+  container: { flex: 1, backgroundColor: '#f7f9fb', overflow: 'hidden' },
   ambientGlow: {
     position: 'absolute', width: 400, height: 400,
     borderRadius: 200, backgroundColor: 'rgba(75, 65, 225, 0.08)', zIndex: -1,
@@ -375,11 +378,10 @@ const styles = StyleSheet.create({
   glowBottomRight: { bottom: -200, right: -200 },
   header: { paddingVertical: 20, alignItems: 'center', paddingTop: 60 },
   logoContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  logoBox: {
-    width: 40, height: 40, backgroundColor: '#4b41e1', borderRadius: 8,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#4b41e1', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2, shadowRadius: 8, elevation: 4,
+  brandLogo: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
   },
   logoText: { fontSize: 28, fontWeight: '600', color: '#091426', letterSpacing: -0.5 },
   body: { flex: 1, justifyContent: 'center', paddingHorizontal: 16, paddingBottom: 40 },

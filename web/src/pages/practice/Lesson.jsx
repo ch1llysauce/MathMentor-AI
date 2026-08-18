@@ -48,7 +48,11 @@ export default function LessonScreen() {
     }
   };
 
-  useEffect(() => { fetchLesson(activeLessonId); }, [activeLessonId]);
+  useEffect(() => {
+    if (lessonId) {
+      fetchLesson(lessonId);
+    }
+  }, [lessonId]);
 
   const isCompleted = lesson?.userProgress?.status === 'completed';
 
@@ -78,10 +82,11 @@ export default function LessonScreen() {
 
   const goTo = (index) => {
     if (lessonList[index]) {
-      setActiveLessonId(lessonList[index]._id);
+      const nextId = lessonList[index]._id;
       setCurrentIndex(index);
       startTimeRef.current = Date.now();
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      navigate(`/practice/lesson/${nextId}`, { replace: true, state: { topicName, mastery } });
     }
   };
 

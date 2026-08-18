@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Modal,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,6 +46,7 @@ export default function LessonChatScreen() {
     surface: darkMode ? '#1a1a1a' : '#f2f4f6',
     placeholder: darkMode ? '#666666' : '#b0b3b8',
     iconBg: darkMode ? '#312e81' : '#e2dfff',
+    modalBg: darkMode ? '#18181b' : '#ffffff',
   };
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -53,6 +55,7 @@ export default function LessonChatScreen() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [conversationId, setConversationId] = useState<string | undefined>();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const quickSuggestions = [
     `Can you give me a practice problem for ${lessonTitle}?`,
@@ -117,36 +120,29 @@ export default function LessonChatScreen() {
 
   const handleDeleteConversation = () => {
     if (!conversationId) return;
-    Alert.alert(
-      'Delete Conversation',
-      'This will permanently delete your chat history for this lesson. Are you sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
+    setShowDeleteModal(true);
+  };
+
+  const executeDeleteConversation = async () => {
+    setShowDeleteModal(false);
+    if (!conversationId) return;
+    setIsDeleting(true);
+    try {
+      await lessonService.deleteLessonConversation(lessonId);
+      setConversationId(undefined);
+      setMessages([
         {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setIsDeleting(true);
-            try {
-              await lessonService.deleteLessonConversation(lessonId);
-              setConversationId(undefined);
-              setMessages([
-                {
-                  id: 'welcome',
-                  role: 'assistant',
-                  content: `Chat cleared! 🗑️ Starting fresh on **${lessonTitle}**.\n\nWhat would you like to explore?`,
-                  timestamp: new Date().toISOString(),
-                },
-              ]);
-            } catch {
-              Alert.alert('Error', 'Failed to delete conversation. Please try again.');
-            } finally {
-              setIsDeleting(false);
-            }
-          },
+          id: 'welcome',
+          role: 'assistant',
+          content: `Chat cleared! 🗑️ Starting fresh on **${lessonTitle}**.\n\nWhat would you like to explore?`,
+          timestamp: new Date().toISOString(),
         },
-      ]
-    );
+      ]);
+    } catch {
+      Alert.alert('Error', 'Failed to delete conversation. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleSendMessage = async (text?: string) => {
@@ -228,7 +224,7 @@ export default function LessonChatScreen() {
           <MessageRenderer
             content={message.content}
             isUser={isUser}
-            textColor={C.text}
+            textColor={isUser ? '#ffffff' : C.text}
             fontSize={15}
           />
         </View>
@@ -391,6 +387,38 @@ export default function LessonChatScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Delete Conversation Confirmation Modal */}
+      <Modal visible={showDeleteModal} transparent animationType="fade" onRequestClose={() => setShowDeleteModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: C.modalBg, borderColor: C.border }]}>
+            <View style={[styles.modalIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.12)' }]}>
+              <Ionicons name="trash-outline" size={28} color="#ef4444" />
+            </View>
+            <Text style={[styles.modalTitle, { color: C.text }]}>Clear Lesson Chat?</Text>
+            <Text style={[styles.modalSubtitle, { color: C.textLight }]}>
+              Are you sure you want to clear your conversation history for this lesson? This action cannot be undone.
+            </Text>
+
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: '#ba1a1a' }]}
+                onPress={executeDeleteConversation}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalConfirmBtnText}>Clear Chat</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: darkMode ? '#242424' : '#f2f4f6' }]}
+                onPress={() => setShowDeleteModal(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.modalCancelBtnText, { color: C.text }]}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -606,5 +634,63 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.4,
+  },
+
+  /* Modal Confirmation Styles */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 24,
+    alignItems: 'center',
+  },
+  modalIconBox: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+    marginBottom: 22,
+  },
+  modalBtnRow: {
+    flexDirection: 'column',
+    gap: 10,
+    width: '100%',
+  },
+  modalBtn: {
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalConfirmBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  modalCancelBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useActiveSession } from '../context/ActiveSessionContext';
 import SignOutModal from './SignOutModal';
+import ScientificCalculator from './ScientificCalculator';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', Icon: IoGridOutline },
@@ -30,6 +31,7 @@ export default function AppLayout() {
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [pendingPath, setPendingPath] = useState(null);
+  const [calcOpen, setCalcOpen] = useState(false);
 
   const handleConfirmSignOut = async () => {
     await logout();
@@ -59,18 +61,29 @@ export default function AppLayout() {
           <img src="/logo.png" alt="MathMentor AI Logo" className="w-9 h-9 rounded-xl object-contain shadow-xs shrink-0" />
           <span className="text-lg font-bold text-[#091426] dark:text-white tracking-tight truncate">MathMentor AI</span>
         </NavLink>
-        {onNav && (
+        <div className="flex items-center gap-1">
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onNav();
-            }}
-            className="text-[#75777d] hover:text-[#091426] dark:hover:text-white p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#252f40] transition-colors cursor-pointer"
-            aria-label="Close menu"
+            type="button"
+            onClick={() => setCalcOpen(true)}
+            className="text-[#75777d] hover:text-[#4b41e1] dark:hover:text-white p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#252f40] transition-colors cursor-pointer"
+            title="Open Scientific Calculator"
           >
-            <IoCloseOutline size={22} />
+            <IoCalculatorOutline size={20} />
           </button>
-        )}
+          {onNav && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onNav();
+              }}
+              className="text-[#75777d] hover:text-[#091426] dark:hover:text-white p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#252f40] transition-colors cursor-pointer"
+              aria-label="Close menu"
+            >
+              <IoCloseOutline size={22} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Nav */}
@@ -115,13 +128,16 @@ export default function AppLayout() {
         </NavLink>
         <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#f2f4f6]">
           <button
+            type="button"
             onClick={toggleDarkMode}
             className="flex-1 text-left text-xs font-semibold text-[#75777d] hover:text-[#4b41e1] transition-colors flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#f2f4f6]"
           >
             {darkMode ? <IoMoonOutline size={16} className="text-[#4b41e1]" /> : <IoSunnyOutline size={16} className="text-amber-400" />}
             <span>{darkMode ? 'Dark Theme' : 'Light Theme'}</span>
           </button>
-          <button onClick={() => setShowSignOutModal(true)}
+          <button
+            type="button"
+            onClick={() => setShowSignOutModal(true)}
             className="text-xs text-[#75777d] hover:text-[#ba1a1a] transition-colors flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-red-50 cursor-pointer"
             title="Sign out"
           >
@@ -149,12 +165,14 @@ export default function AppLayout() {
             </p>
             <div className="flex gap-3">
               <button
+                type="button"
                 onClick={() => { setShowSessionModal(false); setPendingPath(null); }}
                 className="flex-1 bg-gray-100 dark:bg-[#252f40] hover:bg-gray-200 dark:hover:bg-[#2d3748] text-gray-700 dark:text-gray-200 font-bold py-3.5 px-4 rounded-2xl text-sm transition-colors cursor-pointer"
               >
                 {activeSession?.type === 'diagnostic' ? 'Keep Testing' : 'Keep Practicing'}
               </button>
               <button
+                type="button"
                 onClick={() => {
                   if (activeSession?.allowLeaveRef) {
                     activeSession.allowLeaveRef.current = true;
@@ -200,24 +218,52 @@ export default function AppLayout() {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile top bar */}
-        <header className="lg:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-[#e0e3e5] shrink-0">
-          <button onClick={() => setMobileOpen(true)} className="text-[#45474c] hover:text-[#091426]">
-            <IoMenuOutline size={24} />
-          </button>
-          <NavLink
-            to="/dashboard"
-            onClick={(e) => handleNavClick(e, '/dashboard')}
-            className="flex items-center gap-2 hover:opacity-85 transition-opacity cursor-pointer"
+        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-[#e0e3e5] shrink-0">
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => setMobileOpen(true)} className="text-[#45474c] hover:text-[#091426]">
+              <IoMenuOutline size={24} />
+            </button>
+            <NavLink
+              to="/dashboard"
+              onClick={(e) => handleNavClick(e, '/dashboard')}
+              className="flex items-center gap-2 hover:opacity-85 transition-opacity cursor-pointer"
+            >
+              <img src="/logo.png" alt="MathMentor AI Logo" className="w-7 h-7 rounded-lg object-contain" />
+              <span className="text-base font-bold text-[#091426]">MathMentor AI</span>
+            </NavLink>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCalcOpen(true)}
+            className="text-[#45474c] hover:text-[#4b41e1] dark:text-gray-300 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#252f40] transition-colors cursor-pointer"
+            title="Scientific Calculator"
           >
-            <img src="/logo.png" alt="MathMentor AI Logo" className="w-7 h-7 rounded-lg object-contain" />
-            <span className="text-base font-bold text-[#091426]">MathMentor AI</span>
-          </NavLink>
+            <IoCalculatorOutline size={22} />
+          </button>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto relative">
           <Outlet />
+
+          {/* Floating Global Calculator Launcher Button */}
+          <button
+            type="button"
+            onClick={() => setCalcOpen(true)}
+            className="fixed bottom-6 right-6 z-40 w-12 h-12 bg-[#4b41e1] hover:bg-[#3b32c6] text-white rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center cursor-pointer group"
+            title="Scientific Calculator"
+            aria-label="Scientific Calculator"
+          >
+            <IoCalculatorOutline size={24} />
+            <span className="absolute right-14 bg-gray-900 text-white text-xs font-semibold px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-md">
+              Scientific Calculator
+            </span>
+          </button>
         </main>
       </div>
+
+      {/* Global Scientific Calculator Overlay */}
+      <ScientificCalculator isOpen={calcOpen} onClose={() => setCalcOpen(false)} />
     </div>
   );
 }
+

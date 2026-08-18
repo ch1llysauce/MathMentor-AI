@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
-  ScrollView, StatusBar,
+  ScrollView, StatusBar, Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,17 +17,17 @@ export default function ForgotPasswordScreen() {
   const { darkMode } = useTheme();
 
   const D = {
-    bg: darkMode ? '#0a0a0a' : '#f7f9fb',
-    card: darkMode ? '#1a1a1a' : '#ffffff',
-    border: darkMode ? '#2e2e2e' : '#e0e3e5',
-    text: darkMode ? '#f0f0f0' : '#091426',
-    textLight: darkMode ? '#a0a0a0' : '#45474c',
-    placeholder: darkMode ? '#6b7280' : '#75777d',
-    inputBg: darkMode ? '#242424' : '#f2f4f6',
-    inputBorder: darkMode ? '#2e2e2e' : '#c5c6cd',
-    glow: darkMode ? 'rgba(75, 65, 225, 0.15)' : 'rgba(75, 65, 225, 0.08)',
-    stepDot: darkMode ? '#2e2e2e' : '#e2e8f0',
-    stepLine: darkMode ? '#2e2e2e' : '#e2e8f0',
+    bg: darkMode ? '#09090b' : '#f7f9fb',
+    card: darkMode ? '#18181b' : '#ffffff',
+    border: darkMode ? '#27272a' : '#e0e3e5',
+    text: darkMode ? '#f4f4f5' : '#091426',
+    textLight: darkMode ? '#a1a1aa' : '#45474c',
+    placeholder: darkMode ? '#71717a' : '#75777d',
+    inputBg: darkMode ? '#27272a' : '#f2f4f6',
+    inputBorder: darkMode ? '#3f3f46' : '#c5c6cd',
+    glow: darkMode ? 'rgba(75, 65, 225, 0.18)' : 'rgba(75, 65, 225, 0.08)',
+    stepDot: darkMode ? '#27272a' : '#e2e8f0',
+    stepLine: darkMode ? '#27272a' : '#e2e8f0',
   };
 
   const [step, setStep] = useState<Step>('email');
@@ -165,8 +165,8 @@ export default function ForgotPasswordScreen() {
   return (
     <View style={[styles.container, { backgroundColor: D.bg }]}>
       <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={D.bg} />
-      <View style={[styles.ambientGlow, styles.glowTopLeft, { backgroundColor: D.glow }]} />
-      <View style={[styles.ambientGlow, styles.glowBottomRight, { backgroundColor: D.glow }]} />
+      <View style={[styles.ambientGlow, styles.glowTopLeft, { backgroundColor: D.glow }]} pointerEvents="none" />
+      <View style={[styles.ambientGlow, styles.glowBottomRight, { backgroundColor: D.glow }]} pointerEvents="none" />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -176,6 +176,15 @@ export default function ForgotPasswordScreen() {
             <TouchableOpacity style={[styles.backBtn, { backgroundColor: D.inputBg }]} onPress={() => step === 'email' ? router.back() : setStep(step === 'otp' ? 'email' : 'otp')}>
               <Ionicons name="arrow-back" size={24} color={D.text} />
             </TouchableOpacity>
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('@/assets/images/MathMentorAILogoIcon.png')}
+                style={styles.brandLogo}
+                resizeMode="contain"
+              />
+              <Text style={[styles.logoText, { color: D.text }]}>MathMentor AI</Text>
+            </View>
+            <View style={{ width: 40 }} />
           </View>
 
           {/* Step indicator */}
@@ -332,14 +341,17 @@ export default function ForgotPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f7f9fb' },
+  container: { flex: 1, backgroundColor: '#f7f9fb', overflow: 'hidden' },
   ambientGlow: { position: 'absolute', width: 400, height: 400, borderRadius: 200, backgroundColor: 'rgba(75,65,225,0.08)', zIndex: -1 },
   glowTopLeft: { top: -200, left: -200 },
   glowBottomRight: { bottom: -200, right: -200 },
   keyboardView: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 40 },
-  header: { paddingTop: 52, paddingBottom: 16 },
+  header: { paddingTop: 52, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#f2f4f6', alignItems: 'center', justifyContent: 'center' },
+  logoContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  brandLogo: { width: 32, height: 32, borderRadius: 8 },
+  logoText: { fontSize: 18, fontWeight: '600', color: '#091426', letterSpacing: -0.3 },
 
   // Step indicator
   stepIndicator: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 32 },

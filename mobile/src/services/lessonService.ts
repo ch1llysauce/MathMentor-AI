@@ -4,48 +4,40 @@ import { generateProblems } from './clientProblemGenerator';
 import { offlineCacheService } from './offlineCache';
 
 export const lessonService = {
-  // Get all lessons for a topic/subtopic
+  // Get all lessons for a topic/subtopic (tries fresh API first, falls back to offline cache)
   async getLessons(topic?: string, subtopic?: string): Promise<{ lessons: Lesson[] }> {
-    const isOffline = await offlineCacheService.isOfflineCacheEnabled();
-    if (isOffline) {
-      const cached = await offlineCacheService.getOfflineLessons(topic, subtopic);
-      return { lessons: cached };
-    }
-
     try {
       const params = new URLSearchParams();
       if (topic) params.append('topic', topic);
       if (subtopic) params.append('subtopic', subtopic);
       const response = await api.get(`/learning/lessons?${params.toString()}`);
-      return response.data.data;
+      if (response.data?.data?.lessons) {
+        return response.data.data;
+      }
     } catch (e) {
       console.warn('Network error fetching lessons, using offline cache fallback');
-      const cached = await offlineCacheService.getOfflineLessons(topic, subtopic);
-      return { lessons: cached };
     }
+
+    const cached = await offlineCacheService.getOfflineLessons(topic, subtopic);
+    return { lessons: cached };
   },
 
-  // Get a single lesson by ID
+  // Get a single lesson by ID (tries fresh API first, falls back to offline cache)
   async getLesson(lessonId: string): Promise<{ lesson: Lesson; progress: any }> {
-    const isOffline = await offlineCacheService.isOfflineCacheEnabled();
-    if (isOffline) {
-      const cached = await offlineCacheService.getOfflineLesson(lessonId);
-      if (cached) {
-        return { lesson: cached, progress: { completed: false, timeSpent: 0 } };
-      }
-    }
-
     try {
       const response = await api.get(`/learning/lessons/${lessonId}`);
-      return response.data.data;
+      if (response.data?.data) {
+        return response.data.data;
+      }
     } catch (e) {
       console.warn('Network error fetching lesson, using offline cache fallback');
-      const cached = await offlineCacheService.getOfflineLesson(lessonId);
-      if (cached) {
-        return { lesson: cached, progress: { completed: false, timeSpent: 0 } };
-      }
-      throw e;
     }
+
+    const cached = await offlineCacheService.getOfflineLesson(lessonId);
+    if (cached) {
+      return { lesson: cached, progress: { completed: false, timeSpent: 0 } };
+    }
+    throw new Error('Lesson not found');
   },
 
   // Mark lesson as completed
@@ -108,15 +100,21 @@ export const lessonService = {
     limit?: number;
   }): Promise<{ problems: PracticeProblem[] }> {
 
-    // ── Path A: lesson-specific → database ──────────────────────────────────
+    // ── Path A: lesson-specific → database (with client generator fallback) ───
     if (params.lessonId) {
-      const q = new URLSearchParams();
-      if (params.topic)      q.append('topic', params.topic);
-      if (params.difficulty) q.append('difficulty', params.difficulty);
-      q.append('lessonId', params.lessonId);
-      if (params.limit)      q.append('limit', params.limit.toString());
-      const response = await api.get(`/learning/practice?${q.toString()}`);
-      return response.data.data;
+      try {
+        const q = new URLSearchParams();
+        if (params.topic)      q.append('topic', params.topic);
+        if (params.difficulty) q.append('difficulty', params.difficulty);
+        q.append('lessonId', params.lessonId);
+        if (params.limit)      q.append('limit', params.limit.toString());
+        const response = await api.get(`/learning/practice?${q.toString()}`);
+        if (response.data?.data?.problems) {
+          return response.data.data;
+        }
+      } catch (e) {
+        console.warn('Network error fetching lesson practice problems, falling back to client generator');
+      }
     }
 
     // ── Path B: general practice → client-side generator (PRIMARY) ──────────

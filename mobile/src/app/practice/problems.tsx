@@ -132,6 +132,13 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
   };
 
   const currentProblem = problems[currentIndex];
+  const isAbsoluteValue = currentProblem
+    ? ((currentProblem.problem?.text ?? '').includes('|') ||
+       (currentProblem.subtopic ?? '').toLowerCase().includes('absolute') ||
+       (currentProblem.topic ?? '').toLowerCase().includes('absolute') ||
+       (currentProblem.problem?.text ?? '').toLowerCase().includes('absolute value') ||
+       (currentProblem.correctAnswer ?? '').includes('or'))
+    : false;
 
   const handleSubmitAnswer = async () => {
     if (!selectedAnswer?.trim() || !currentProblem) return;
@@ -169,7 +176,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
               .replace(/≈/g, '')
               .replace(/\*/g, '');
 
-          const extractNums = (s: string) => s.match(/-?\d+\.?\d*/g)?.join(',') ?? s;
+          const extractNums = (s: string) => s.match(/-?\d+\.?\d*/g) ?? [];
           const userNorm    = normalize(selectedAnswer);
           const correctRaw  = currentProblem.correctAnswer ?? '';
           const correctNorm = normalize(correctRaw);
@@ -182,12 +189,21 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
             const correctParts = correctRaw
               .split(/\s+or\s+|\s+and\s+/i)
               .map(normalize);
+            const userNums = extractNums(userNorm).map(n => parseFloat(n)).filter(n => !isNaN(n));
 
-            correct = correctParts.some(
-              part =>
-                userNorm === part ||
-                extractNums(userNorm) === extractNums(part),
-            );
+            correct = correctParts.some((part) => {
+              const partNorm = normalize(part);
+              if (userNorm === partNorm) return true;
+
+              const partNums = extractNums(partNorm).map(n => parseFloat(n)).filter(n => !isNaN(n));
+
+              if (userNums.length > 0 && partNums.length > 0) {
+                return userNums.some((uNum) =>
+                  partNums.some((pNum) => Math.abs(uNum - pNum) < 0.02 || uNum.toFixed(2) === pNum.toFixed(2))
+                );
+              }
+              return false;
+            });
           }
         }
 
@@ -466,7 +482,12 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
         {/* Free Response */}
         {currentProblem.type === 'free-response' && (
           <View style={styles.freeResponseContainer}>
-            <Text style={[styles.freeResponseLabel, { color: PR.textLight, marginBottom: 8 }]}>Type your answer:</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+              <Text style={[styles.freeResponseLabel, { color: PR.textLight }]}>Type your answer:</Text>
+              <Text style={{ fontSize: 11, fontWeight: '600', color: '#6366f1', backgroundColor: darkMode ? 'rgba(99, 102, 241, 0.2)' : '#e0e7ff', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                {isAbsoluteValue ? 'Use 2 decimal places max • Providing either solution is accepted' : 'Use 2 decimal places if needed'}
+              </Text>
+            </View>
             <TextInput
               style={[styles.freeResponseInput, { backgroundColor: PR.inputBg, borderColor: PR.inputBorder, color: PR.text },
                 showExplanation && isCorrect  && { backgroundColor: PR.inputCorrectBg, borderColor: PR.inputCorrectBorder },

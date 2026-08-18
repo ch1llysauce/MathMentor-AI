@@ -1,4 +1,4 @@
-import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
@@ -46,9 +46,11 @@ export default function AboutScreen() {
 
         {/* App identity */}
         <View style={[styles.heroCard, { backgroundColor: C.primaryBg, borderColor: C.mutedBorder }]}>
-          <View style={[styles.appIcon, { backgroundColor: C.primary }]}>
-            <Ionicons name="calculator" size={32} color="#ffffff" />
-          </View>
+          <Image
+            source={require('@/assets/images/MathMentorAILogoIcon.png')}
+            style={styles.heroLogo}
+            resizeMode="contain"
+          />
           <Text style={[styles.appName, { color: C.text }]}>MathMentor AI</Text>
           <Text style={[styles.appVersion, { color: C.textLight }]}>Version {APP_VERSION}</Text>
           <Text style={[styles.appTagline, { color: C.textLight }]}>
@@ -123,9 +125,11 @@ const styles = StyleSheet.create({
     alignItems: 'center', padding: 28, borderRadius: 20,
     borderWidth: 1, marginBottom: 24, gap: 6,
   },
-  appIcon: {
-    width: 68, height: 68, borderRadius: 18,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 4,
+  heroLogo: {
+    width: 68,
+    height: 68,
+    borderRadius: 18,
+    marginBottom: 4,
   },
   appName: { fontSize: 22, fontWeight: '700', letterSpacing: -0.4 },
   appVersion: { fontSize: 13 },

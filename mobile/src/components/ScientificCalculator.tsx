@@ -20,6 +20,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -33,22 +34,26 @@ interface Props {
 type AngleMode = 'DEG' | 'RAD';
 
 // ─── Safe expression evaluator ────────────────────────────────────────────────
-function safeEval(expr: string, mode: AngleMode): string {
+function safeEval(expr: string, mode: AngleMode, lastAns: string = '0'): string {
   try {
     if (!expr || typeof expr !== 'string') return 'Error';
 
-    const _sin  = (x: number) => (mode === 'DEG' ? Math.sin((x * Math.PI) / 180) : Math.sin(x));
-    const _cos  = (x: number) => (mode === 'DEG' ? Math.cos((x * Math.PI) / 180) : Math.cos(x));
-    const _tan  = (x: number) => (mode === 'DEG' ? Math.tan((x * Math.PI) / 180) : Math.tan(x));
-    const _asin = (x: number) => (mode === 'DEG' ? (Math.asin(x) * 180) / Math.PI : Math.asin(x));
-    const _acos = (x: number) => (mode === 'DEG' ? (Math.acos(x) * 180) / Math.PI : Math.acos(x));
-    const _atan = (x: number) => (mode === 'DEG' ? (Math.atan(x) * 180) / Math.PI : Math.atan(x));
-    const _log  = Math.log10;
-    const _ln   = Math.log;
-    const _sqrt = Math.sqrt;
-    const _cbrt = Math.cbrt;
+    const _sin   = (x: number) => (mode === 'DEG' ? Math.sin((x * Math.PI) / 180) : Math.sin(x));
+    const _cos   = (x: number) => (mode === 'DEG' ? Math.cos((x * Math.PI) / 180) : Math.cos(x));
+    const _tan   = (x: number) => (mode === 'DEG' ? Math.tan((x * Math.PI) / 180) : Math.tan(x));
+    const _asin  = (x: number) => (mode === 'DEG' ? (Math.asin(x) * 180) / Math.PI : Math.asin(x));
+    const _acos  = (x: number) => (mode === 'DEG' ? (Math.acos(x) * 180) / Math.PI : Math.acos(x));
+    const _atan  = (x: number) => (mode === 'DEG' ? (Math.atan(x) * 180) / Math.PI : Math.atan(x));
+    const _log   = (y: number, b?: number) => (b === undefined ? Math.log10(y) : Math.log(y) / Math.log(b));
+    const _ln    = Math.log;
+    const _log_b = (y: number, b?: number) => (b === undefined ? Math.log10(y) : Math.log(y) / Math.log(b));
+    const _sqrt  = Math.sqrt;
+    const _cbrt  = Math.cbrt;
+
+    const safeAns = (lastAns && lastAns !== 'Error') ? lastAns : '0';
 
     let e = expr
+      .replace(/\bAns\b/gi, `(${safeAns})`)
       .replace(/π/g, `(${Math.PI})`)
       .replace(/\be\b/g, `(${Math.E})`)
       .replace(/²/g, '**2')
@@ -63,6 +68,8 @@ function safeEval(expr: string, mode: AngleMode): string {
       .replace(/\bsin\(/g,  '_sin(')
       .replace(/\bcos\(/g,  '_cos(')
       .replace(/\btan\(/g,  '_tan(')
+      .replace(/\blog_?(\d+)\(([^)]+)\)/g, '_log_b($2, $1)')
+      .replace(/\blog_b\(/g, '_log_b(')
       .replace(/\blog\(/g,  '_log(')
       .replace(/\bln\(/g,   '_ln(')
       .replace(/√\(/g,     '_sqrt(')
@@ -73,7 +80,7 @@ function safeEval(expr: string, mode: AngleMode): string {
     // Implicit multiplication: e.g. 2( -> 2*(, )( -> )*(, )2 -> )*2, 2_sin -> 2*_sin
     e = e
       .replace(/(\d|\))\s*(\()/g, '$1*$2')
-      .replace(/(\d|\))\s*(_sin|_cos|_tan|_asin|_acos|_atan|_log|_ln|_sqrt|_cbrt)/g, '$1*$2')
+      .replace(/(\d|\))\s*(_sin|_cos|_tan|_asin|_acos|_atan|_log_b|_log|_ln|_sqrt|_cbrt)/g, '$1*$2')
       .replace(/(\))\s*(\d)/g, '$1*$2');
 
     // Auto-close missing parentheses
@@ -89,8 +96,8 @@ function safeEval(expr: string, mode: AngleMode): string {
     }
 
     // eslint-disable-next-line no-new-func
-    const fn = new Function('_sin', '_cos', '_tan', '_asin', '_acos', '_atan', '_log', '_ln', '_sqrt', '_cbrt', `"use strict"; return (${e});`);
-    const result = fn(_sin, _cos, _tan, _asin, _acos, _atan, _log, _ln, _sqrt, _cbrt);
+    const fn = new Function('_sin', '_cos', '_tan', '_asin', '_acos', '_atan', '_log_b', '_log', '_ln', '_sqrt', '_cbrt', `"use strict"; return (${e});`);
+    const result = fn(_sin, _cos, _tan, _asin, _acos, _atan, _log_b, _log, _ln, _sqrt, _cbrt);
 
     if (typeof result !== 'number' || !isFinite(result)) return 'Error';
 
@@ -106,6 +113,7 @@ export default function ScientificCalculator({ visible, onClose, onUseResult, da
   const [expression, setExpression] = useState('');
   const [angleMode, setAngleMode] = useState<AngleMode>('DEG');
   const [justEvaluated, setJustEvaluated] = useState(false);
+  const [lastAns, setLastAns] = useState('0');
   const insets = useSafeAreaInsets();
 
   const C = {
@@ -119,6 +127,8 @@ export default function ScientificCalculator({ visible, onClose, onUseResult, da
     opText:      darkMode ? '#a5b4fc' : '#4b41e1',
     fnBg:        darkMode ? '#1e2a3a' : '#e8f4ff',
     fnText:      darkMode ? '#7dd3fc' : '#0369a1',
+    ansBg:       darkMode ? '#3e2d14' : '#fef3c7',
+    ansText:     darkMode ? '#fcd34d' : '#d97706',
     eqBg:        '#4b41e1',
     eqText:      '#ffffff',
     clearBg:     darkMode ? '#3a1a1a' : '#fee2e2',
@@ -130,9 +140,7 @@ export default function ScientificCalculator({ visible, onClose, onUseResult, da
 
   const append = (val: string) => {
     if (justEvaluated) {
-      // If user taps a number after =, start fresh
-      // If user taps an operator, continue with result
-      if ('0123456789.π e('.includes(val)) {
+      if ('0123456789.πe(Ans'.includes(val)) {
         setDisplay(val === '0' ? '0' : val);
         setExpression(val);
       } else {
@@ -160,10 +168,13 @@ export default function ScientificCalculator({ visible, onClose, onUseResult, da
 
   const calculate = () => {
     if (!expression || expression === 'Error') return;
-    const result = safeEval(expression, angleMode);
+    const result = safeEval(expression, angleMode, lastAns);
     setDisplay(result);
     setExpression(result);
     setJustEvaluated(true);
+    if (result !== 'Error') {
+      setLastAns(result);
+    }
   };
 
   const clear = () => {
@@ -174,6 +185,17 @@ export default function ScientificCalculator({ visible, onClose, onUseResult, da
 
   const backspace = () => {
     if (justEvaluated) { clear(); return; }
+
+    const fnTokens = ['log_b(', 'asin(', 'acos(', 'atan(', 'sin(', 'cos(', 'tan(', 'log(', 'ln(', 'Ans'];
+    for (const token of fnTokens) {
+      if (expression.endsWith(token)) {
+        const next = expression.slice(0, -token.length);
+        setExpression(next);
+        setDisplay(next || '0');
+        return;
+      }
+    }
+
     const next = expression.slice(0, -1);
     setExpression(next);
     setDisplay(next || '0');
@@ -196,10 +218,10 @@ export default function ScientificCalculator({ visible, onClose, onUseResult, da
       activeOpacity={0.7}
     >
       <Text
-        style={[styles.btnText, { color: fg }, label.length >= 4 && { fontSize: 12 }]}
+        style={[styles.btnText, { color: fg }, label.length >= 4 && { fontSize: 11 }]}
         numberOfLines={1}
         adjustsFontSizeToFit
-        minimumFontScale={0.7}
+        minimumFontScale={0.6}
       >
         {label}
       </Text>
@@ -219,6 +241,9 @@ export default function ScientificCalculator({ visible, onClose, onUseResult, da
         style={styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={StyleSheet.absoluteFill} />
+        </TouchableWithoutFeedback>
         <View style={[styles.sheet, { backgroundColor: C.bg, paddingBottom: Math.max(insets.bottom, 16) }]}>
 
           {/* Header */}
@@ -247,6 +272,15 @@ export default function ScientificCalculator({ visible, onClose, onUseResult, da
             </Text>
           </View>
 
+          {/* Format Helper Hint Banner - Only visible when log_b is in expression */}
+          {expression.includes('log_b') && (
+            <View style={[styles.tipBanner, { backgroundColor: darkMode ? '#1a2436' : '#eff6ff', borderColor: darkMode ? '#2a3850' : '#dbeafe' }]}>
+              <Text style={[styles.tipText, { color: darkMode ? '#93c5fd' : '#1d4ed8' }]}>
+                Format: <Text style={{ fontWeight: '800' }}>log_b(value, base)</Text>  —  e.g. log_b(8, 2) = 3
+              </Text>
+            </View>
+          )}
+
           {/* Buttons */}
           <View style={styles.grid}>
             <View style={styles.row}>
@@ -258,15 +292,17 @@ export default function ScientificCalculator({ visible, onClose, onUseResult, da
               <Btn label="x²" onPress={() => append('²')} bg={C.fnBg} fg={C.fnText} />
               <Btn label="x³" onPress={() => append('³')} bg={C.fnBg} fg={C.fnText} />
               <Btn label="xʸ" onPress={() => append('^')} bg={C.fnBg} fg={C.fnText} />
-              {Fn('log')}{Fn('ln')}
+              {Fn('log')}{Fn('ln')}{Fn('log_b')}
             </View>
             <View style={styles.row}>
-              <Btn label="π"  onPress={() => append('π')}  bg={C.opBg}    fg={C.opText}    />
-              <Btn label="e"  onPress={() => append('e')}  bg={C.opBg}    fg={C.opText}    />
-              <Btn label="("  onPress={() => append('(')}  bg={C.numBg}   fg={C.numText}   />
-              <Btn label=")"  onPress={() => append(')')}  bg={C.numBg}   fg={C.numText}   />
-              <Btn label="⌫"  onPress={backspace}          bg={C.clearBg} fg={C.clearText} />
-              <Btn label="AC" onPress={clear}              bg={C.clearBg} fg={C.clearText} />
+              <Btn label="π"   onPress={() => append('π')}  bg={C.opBg}    fg={C.opText}    />
+              <Btn label="e"   onPress={() => append('e')}  bg={C.opBg}    fg={C.opText}    />
+              <Btn label=","   onPress={() => append(',')}  bg={C.numBg}   fg={C.numText}   />
+              <Btn label="Ans" onPress={() => append('Ans')} bg={C.ansBg}   fg={C.ansText}   />
+              <Btn label="("   onPress={() => append('(')}  bg={C.numBg}   fg={C.numText}   />
+              <Btn label=")"   onPress={() => append(')')}  bg={C.numBg}   fg={C.numText}   />
+              <Btn label="⌫"   onPress={backspace}          bg={C.clearBg} fg={C.clearText} />
+              <Btn label="AC"  onPress={clear}              bg={C.clearBg} fg={C.clearText} />
             </View>
             <View style={styles.row}>
               {Num('7')}{Num('8')}{Num('9')}{Op('÷')}
@@ -402,5 +438,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#ffffff',
+  },
+  tipBanner: {
+    marginHorizontal: 16,
+    marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tipText: {
+    fontSize: 11,
   },
 });

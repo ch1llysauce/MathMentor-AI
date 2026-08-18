@@ -9,6 +9,7 @@ import {
   Alert,
   StatusBar,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,15 +27,15 @@ export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
 
   const D = {
-    bg: darkMode ? '#0a0a0a' : '#f7f9fb',
-    card: darkMode ? '#1a1a1a' : '#ffffff',
-    border: darkMode ? '#2e2e2e' : '#e0e3e5',
-    text: darkMode ? '#f0f0f0' : '#091426',
-    textLight: darkMode ? '#a0a0a0' : '#45474c',
-    placeholder: darkMode ? '#6b7280' : '#75777d',
-    inputBg: darkMode ? '#242424' : '#f2f4f6',
-    inputBorder: darkMode ? '#2e2e2e' : '#c5c6cd',
-    glow: darkMode ? 'rgba(75, 65, 225, 0.15)' : 'rgba(75, 65, 225, 0.08)',
+    bg: darkMode ? '#09090b' : '#f7f9fb',
+    card: darkMode ? '#18181b' : '#ffffff',
+    border: darkMode ? '#27272a' : '#e0e3e5',
+    text: darkMode ? '#f4f4f5' : '#091426',
+    textLight: darkMode ? '#a1a1aa' : '#45474c',
+    placeholder: darkMode ? '#71717a' : '#75777d',
+    inputBg: darkMode ? '#27272a' : '#f2f4f6',
+    inputBorder: darkMode ? '#3f3f46' : '#c5c6cd',
+    glow: darkMode ? 'rgba(75, 65, 225, 0.18)' : 'rgba(75, 65, 225, 0.08)',
   };
 
   const params = useLocalSearchParams<{
@@ -117,15 +118,17 @@ export default function RegisterScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: D.bg }]}>
       <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={D.bg} />
-      <View style={[styles.ambientGlow, styles.glowTopLeft, { backgroundColor: D.glow }]} />
-      <View style={[styles.ambientGlow, styles.glowBottomRight, { backgroundColor: D.glow }]} />
+      <View style={[styles.ambientGlow, styles.glowTopLeft, { backgroundColor: D.glow }]} pointerEvents="none" />
+      <View style={[styles.ambientGlow, styles.glowBottomRight, { backgroundColor: D.glow }]} pointerEvents="none" />
 
       {/* Slim top bar */}
       <View style={styles.topBar}>
         <View style={styles.logoContainer}>
-          <View style={styles.logoBox}>
-            <Ionicons name="calculator" size={18} color="#ffffff" />
-          </View>
+          <Image
+            source={require('@/assets/images/MathMentorAILogoIcon.png')}
+            style={styles.brandLogo}
+            resizeMode="contain"
+          />
           <Text style={[styles.logoText, { color: D.text }]}>MathMentor AI</Text>
         </View>
       </View>
@@ -260,7 +263,7 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f7f9fb' },
+  container: { flex: 1, backgroundColor: '#f7f9fb', overflow: 'hidden' },
   ambientGlow: {
     position: 'absolute', width: 400, height: 400,
     borderRadius: 200, backgroundColor: 'rgba(75, 65, 225, 0.08)', zIndex: -1,
@@ -269,9 +272,10 @@ const styles = StyleSheet.create({
   glowBottomRight: { bottom: -200, right: -200 },
   topBar: { paddingVertical: 50, alignItems: 'center', paddingBottom: 20 },
   logoContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  logoBox: {
-    width: 32, height: 32, backgroundColor: '#091426', borderRadius: 8,
-    alignItems: 'center', justifyContent: 'center',
+  brandLogo: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
   },
   logoText: { fontSize: 17, fontWeight: '600', color: '#091426', letterSpacing: -0.3 },
   scrollContent: { paddingHorizontal: 16 },

@@ -393,10 +393,6 @@ export default function PracticeScreen() {
                           <Ionicons name="book-outline" size={14} color={P.textLight} />
                           <Text style={[styles.metaText, { color: P.textLight }]}>{topic.lessons} lessons</Text>
                         </View>
-                        <View style={styles.metaItem}>
-                          <Ionicons name="create-outline" size={14} color={P.textLight} />
-                          <Text style={[styles.metaText, { color: P.textLight }]}>{topic.problems} problems</Text>
-                        </View>
                       </View>
                     </View>
                     

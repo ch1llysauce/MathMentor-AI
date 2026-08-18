@@ -4,6 +4,8 @@
  */
 
 import api from './api';
+import { storage } from '../utils/storage';
+import { generateProblems } from './clientProblemGenerator';
 
 export interface PracticeProblem {
   id: string;
@@ -46,9 +48,16 @@ export interface CategoriesResponse {
 export const getPracticeCategories = async (): Promise<CategoriesResponse> => {
   try {
     const response = await api.get('/practice/categories');
+    if (response.data?.success && response.data?.data) {
+      await storage.setItem('mathmentor_offline_practice_categories', JSON.stringify(response.data.data));
+    }
     return response.data.data;
   } catch (error: any) {
-    console.error('Error fetching practice categories:', error);
+    console.warn('Network error fetching practice categories, checking cache');
+    const cached = await storage.getItem('mathmentor_offline_practice_categories');
+    if (cached) {
+      return JSON.parse(cached);
+    }
     throw new Error(error.response?.data?.message || 'Failed to fetch practice categories');
   }
 };
@@ -70,8 +79,18 @@ export const getPracticeProblems = async (
     });
     return response.data.data;
   } catch (error: any) {
-    console.error('Error fetching practice problems:', error);
-    throw new Error(error.response?.data?.message || 'Failed to fetch practice problems');
+    console.warn('Network error fetching practice problems, using client generator fallback');
+    try {
+      const generated = generateProblems(topic.toLowerCase(), category, count);
+      return {
+        topic,
+        category,
+        count: generated.length,
+        problems: generated as any,
+      };
+    } catch {
+      throw new Error(error.response?.data?.message || 'Failed to fetch practice problems');
+    }
   }
 };
 
