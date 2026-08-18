@@ -77,10 +77,10 @@ export default function DiagnosticScreen() {
     try {
       if (!silent) setLoading(true);
       const response = await diagnosticService.getLatestDiagnostic();
-      const diag = response.data.diagnostic;
+      const diag = response.data?.diagnostic || (response as any).data;
       setDiagnostic(diag);
       _diagCache.diagnostic = diag;
-      const timeline = await loadTimelineData(selectedPeriod);
+      await loadTimelineData(selectedPeriod);
       _diagCache.loaded = true;
     } catch (error: any) {
       console.error('Error loading diagnostic:', error);

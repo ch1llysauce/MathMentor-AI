@@ -1,4 +1,5 @@
 import api from './api';
+import { storage } from '../utils/storage';
 import { PROGRESS_ENDPOINTS, LEARNING_ENDPOINTS } from '../constants/api';
 
 export interface DashboardStats {
@@ -42,31 +43,72 @@ export interface DashboardData {
 export const dashboardService = {
   // Get dashboard summary data
   async getDashboardData(): Promise<DashboardData> {
-    const response = await api.get(PROGRESS_ENDPOINTS.SUMMARY);
-    return response.data.data;
+    try {
+      const response = await api.get(PROGRESS_ENDPOINTS.SUMMARY);
+      if (response.data?.success && response.data?.data) {
+        await storage.setItem('mathmentor_offline_dashboard_summary', JSON.stringify(response.data.data));
+      }
+      return response.data.data;
+    } catch (e) {
+      console.log('Network error fetching dashboard summary, checking offline cache');
+      const cached = await storage.getItem('mathmentor_offline_dashboard_summary');
+      if (cached) {
+        return JSON.parse(cached);
+      }
+      return {
+        user: { displayName: 'Student', currentStreak: 0, longestStreak: 0, totalStudyTime: 0 },
+        topicStats: [],
+        overallProgress: { totalTopics: 0, totalSubtopics: 0, totalQuestions: 0, totalCorrect: 0, averageResponseTime: 0 },
+      };
+    }
   },
 
   // Get all topic progress
   async getTopicProgress(): Promise<TopicProgress[]> {
-    const response = await api.get(PROGRESS_ENDPOINTS.BASE);
-    const progressData = response.data.data.progress;
+    try {
+      const response = await api.get(PROGRESS_ENDPOINTS.BASE);
+      const progressData = response.data?.data?.progress || [];
+      if (progressData.length > 0) {
+        await storage.setItem('mathmentor_offline_topic_progress', JSON.stringify(progressData));
+      }
 
-    // Group by topic and calculate stats
-    const topicMap = new Map<string, { total: number; correct: number }>();
-    
-    progressData.forEach((item: any) => {
-      const existing = topicMap.get(item.topic) || { total: 0, correct: 0 };
-      topicMap.set(item.topic, {
-        total: existing.total + item.questionsAnswered,
-        correct: existing.correct + item.correctAnswers,
+      // Group by topic and calculate stats
+      const topicMap = new Map<string, { total: number; correct: number }>();
+      
+      progressData.forEach((item: any) => {
+        const existing = topicMap.get(item.topic) || { total: 0, correct: 0 };
+        topicMap.set(item.topic, {
+          total: existing.total + item.questionsAnswered,
+          correct: existing.correct + item.correctAnswers,
+        });
       });
-    });
 
-    return Array.from(topicMap.entries()).map(([topic, stats]) => ({
-      topic,
-      progress: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
-      problemsSolved: stats.total,
-    }));
+      return Array.from(topicMap.entries()).map(([topic, stats]) => ({
+        topic,
+        progress: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
+        problemsSolved: stats.total,
+      }));
+    } catch (e) {
+      console.log('Network error fetching topic progress, checking offline cache');
+      const cached = await storage.getItem('mathmentor_offline_topic_progress');
+      if (cached) {
+        const progressData = JSON.parse(cached);
+        const topicMap = new Map<string, { total: number; correct: number }>();
+        progressData.forEach((item: any) => {
+          const existing = topicMap.get(item.topic) || { total: 0, correct: 0 };
+          topicMap.set(item.topic, {
+            total: existing.total + item.questionsAnswered,
+            correct: existing.correct + item.correctAnswers,
+          });
+        });
+        return Array.from(topicMap.entries()).map(([topic, stats]) => ({
+          topic,
+          progress: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
+          problemsSolved: stats.total,
+        }));
+      }
+      return [];
+    }
   },
 
   // Fetch accuracy and avg speed from the latest diagnostic result
@@ -74,7 +116,10 @@ export const dashboardService = {
     try {
       const response = await api.get(LEARNING_ENDPOINTS.GET_DIAGNOSTIC);
       // Response shape: { data: { diagnostic, analysis } }
-      const result = response.data?.data?.diagnostic;
+      const result = response.data?.data?.diagnostic || response.data?.diagnostic;
+      if (result) {
+        await storage.setItem('mathmentor_offline_user_progress', JSON.stringify({ diagnostic: result }));
+      }
       const correct: number = result?.correctAnswers ?? 0;
       const total: number = result?.totalQuestions ?? 0;
       const timeSpent: number = result?.timeSpent ?? 0;
@@ -84,6 +129,17 @@ export const dashboardService = {
 
       return { accuracy, accuracyCorrect: correct, accuracyTotal: total, avgSpeed };
     } catch {
+      const cached = await storage.getItem('mathmentor_offline_user_progress');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        const result = parsed?.diagnostic || parsed;
+        const correct: number = result?.correctAnswers ?? 0;
+        const total: number = result?.totalQuestions ?? 0;
+        const timeSpent: number = result?.timeSpent ?? 0;
+        const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+        const avgSpeed = total > 0 ? Math.round(timeSpent / total) : 0;
+        return { accuracy, accuracyCorrect: correct, accuracyTotal: total, avgSpeed };
+      }
       return { accuracy: 0, accuracyCorrect: 0, accuracyTotal: 0, avgSpeed: 0 };
     }
   },

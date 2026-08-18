@@ -9,6 +9,7 @@ import api from '@/services/api';
 import { PROGRESS_ENDPOINTS } from '@/constants/api';
 import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 import { dashCache } from '@/utils/tabCache';
+import { storage } from '@/utils/storage';
 
 interface TopicProgress {
   name: string;
@@ -180,6 +181,9 @@ export default function DashboardScreen() {
     try {
       const recResponse = await api.get(PROGRESS_ENDPOINTS.NEXT_RECOMMENDATION);
       const rec = recResponse.data.data;
+      if (rec) {
+        await storage.setItem('mathmentor_offline_dashboard_recommendation', JSON.stringify(rec));
+      }
 
       // Any valid response from this endpoint means a diagnostic was completed
       setDiagnosticDone(true);
@@ -205,9 +209,35 @@ export default function DashboardScreen() {
       setRecommendationProgress(recProgress);
       _dashCache.recommendationProgress = recProgress;
     } catch (recErr: any) {
-      // 404 means no diagnostic yet — don't override a true flag already set above
-      if (recErr?.response?.status === 404) {
-        // Leave diagnosticDone as-is (may already be true from diagnosticStats)
+      try {
+        const cachedRecRaw = await storage.getItem('mathmentor_offline_dashboard_recommendation');
+        if (cachedRecRaw) {
+          const rec = JSON.parse(cachedRecRaw);
+          setDiagnosticDone(true);
+
+          if (rec?.nextStep) {
+            const ns = {
+              topic: rec.nextStep.topic,
+              subtopic: rec.nextStep.subtopic,
+              currentScore: rec.nextStep.currentScore ?? 0,
+              reason: rec.nextStep.reason ?? '',
+              difficulty: rec.nextStep.difficulty ?? 'Easy',
+              completedLessons: rec.nextStep.completedLessons ?? 0,
+              totalLessonsInSubtopic: rec.nextStep.totalLessonsInSubtopic ?? 0,
+            };
+            setNextStep(ns);
+            _dashCache.nextStep = ns;
+          }
+          const recProgress = {
+            progressPercentage: rec?.progressPercentage ?? 0,
+            completedLessons: rec?.completedLessons ?? 0,
+            totalLessons: rec?.totalLessons ?? 0,
+          };
+          setRecommendationProgress(recProgress);
+          _dashCache.recommendationProgress = recProgress;
+        }
+      } catch (cacheErr) {
+        console.log('No offline dashboard recommendation cached');
       }
     } finally {
       setCardReady(true);

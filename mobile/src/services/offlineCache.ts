@@ -2,7 +2,7 @@ import { storage } from '@/utils/storage';
 import { generateProblems } from './clientProblemGenerator';
 import { Lesson } from '@/types/lesson';
 import { CURRICULUM } from '@/constants/curriculum';
-import { PRACTICE_ENDPOINTS } from '@/constants/api';
+import { PRACTICE_ENDPOINTS, PROGRESS_ENDPOINTS } from '@/constants/api';
 import api from '@/services/api';
 import { authService } from './authService';
 
@@ -177,7 +177,7 @@ const DEFAULT_OFFLINE_TOPICS = [
 
 export const offlineCacheService = {
   /**
-   * Pre-cache all lessons, formulas, topics, problem templates, user profile, diagnostic scores, topic masteries, AND daily challenge status
+   * Pre-cache all lessons, formulas, topics, problem templates, user profile, dashboard stats, diagnostic scores, timeline history, AND completed lessons
    */
   async preCacheOfflineData(): Promise<{ cachedCount: number; lessonsCount: number; formulasCount: number }> {
     try {
@@ -188,7 +188,27 @@ export const offlineCacheService = {
         console.log('Profile fetch skipped during offline pre-cache:', err);
       }
 
-      // 0b. Cache Diagnostic Scores & Topic Mastery Levels
+      // 0b. Cache Dashboard Summary & Stats
+      try {
+        const summaryRes = await api.get(PROGRESS_ENDPOINTS.SUMMARY);
+        if (summaryRes.data?.success && summaryRes.data?.data) {
+          await storage.setItem('mathmentor_offline_dashboard_summary', JSON.stringify(summaryRes.data.data));
+        }
+      } catch (err) {
+        console.log('Dashboard summary fetch skipped during offline pre-cache:', err);
+      }
+
+      // 0c. Cache Dashboard Recommendation Next Step
+      try {
+        const recRes = await api.get(PROGRESS_ENDPOINTS.NEXT_RECOMMENDATION);
+        if (recRes.data?.success && recRes.data?.data) {
+          await storage.setItem('mathmentor_offline_dashboard_recommendation', JSON.stringify(recRes.data.data));
+        }
+      } catch (err) {
+        console.log('Dashboard recommendation fetch skipped during offline pre-cache:', err);
+      }
+
+      // 0d. Cache Diagnostic Scores & Topic Mastery Levels
       try {
         const diagRes = await api.get('/learning/diagnostic/latest');
         if (diagRes.data?.success && diagRes.data?.data) {
@@ -198,7 +218,17 @@ export const offlineCacheService = {
         console.log('Diagnostic progress fetch skipped during offline pre-cache:', err);
       }
 
-      // 0c. Cache Daily Challenge Status & Scores
+      // 0e. Cache Diagnostic History Timeline
+      try {
+        const historyRes = await api.get('/learning/diagnostic/history');
+        if (historyRes.data?.success && historyRes.data?.data) {
+          await storage.setItem('mathmentor_offline_diagnostic_history', JSON.stringify(historyRes.data.data));
+        }
+      } catch (err) {
+        console.log('Diagnostic history fetch skipped during offline pre-cache:', err);
+      }
+
+      // 0f. Cache Daily Challenge Status & Scores
       try {
         const dailyRes = await api.get(PRACTICE_ENDPOINTS.DAILY_STATUS);
         if (dailyRes.data?.success && dailyRes.data?.data) {
@@ -215,23 +245,41 @@ export const offlineCacheService = {
         const response = await api.get('/learning/lessons');
         const serverLessons = response.data?.data?.lessons || response.data?.lessons;
         if (Array.isArray(serverLessons) && serverLessons.length > 0) {
-          lessonsList = serverLessons.map((l: any) => ({
-            _id: l._id || l.id,
-            topic: l.topic,
-            subtopic: l.subtopic || '',
-            order: l.order || 1,
-            title: l.title,
-            description: l.description || '',
-            difficulty: l.difficulty || 'Beginner',
-            estimatedTime: l.estimatedTime || 10,
-            isLocked: l.isLocked || false,
-            content: l.content || {
-              introduction: l.description || 'Offline lesson content',
-              sections: [],
-              summary: l.title,
-              keyTakeaways: [],
-            },
-          }));
+          const completedMap: Record<string, boolean> = {};
+
+          lessonsList = serverLessons.map((l: any) => {
+            const lessonId = l._id || l.id;
+            const isDone = l.userProgress?.status === 'completed' || l.completed === true;
+            if (isDone) {
+              completedMap[lessonId] = true;
+            }
+
+            return {
+              _id: lessonId,
+              topic: l.topic,
+              subtopic: l.subtopic || '',
+              order: l.order || 1,
+              title: l.title,
+              description: l.description || '',
+              difficulty: l.difficulty || 'Beginner',
+              estimatedTime: l.estimatedTime || 10,
+              isLocked: l.isLocked || false,
+              userProgress: l.userProgress || {
+                status: isDone ? 'completed' : 'not-started',
+                progress: isDone ? 100 : 0,
+                timeSpent: 0,
+                completedAt: isDone ? new Date().toISOString() : undefined,
+              },
+              content: l.content || {
+                introduction: l.description || 'Offline lesson content',
+                sections: [],
+                summary: l.title,
+                keyTakeaways: [],
+              },
+            };
+          });
+
+          await storage.setItem('mathmentor_offline_completed_lessons', JSON.stringify(completedMap));
         }
       } catch (err) {
         console.log('Backend offline during pre-cache, generating from 116 curriculum lessons structure.');
@@ -264,7 +312,7 @@ export const offlineCacheService = {
 
       const totalItems = lessonsList.length + DEFAULT_OFFLINE_FORMULAS.length + totalProblemsGenerated;
 
-      console.log(`✅ Offline cache built successfully with ${lessonsList.length} lessons, masteries & daily challenge status (${totalItems} total resources).`);
+      console.log(`✅ Offline cache built successfully with ${lessonsList.length} lessons, dashboard stats & diagnostic timeline (${totalItems} total resources).`);
       return {
         cachedCount: totalItems,
         lessonsCount: lessonsList.length,
@@ -301,10 +349,49 @@ export const offlineCacheService = {
   },
 
   /**
-   * Get cached offline lessons
+   * Get set of completed lesson IDs
+   */
+  async getCompletedLessonIds(): Promise<Record<string, boolean>> {
+    try {
+      const raw = await storage.getItem('mathmentor_offline_completed_lessons');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  },
+
+  /**
+   * Mark lesson completed in offline cache
+   */
+  async markOfflineLessonCompleted(lessonId: string): Promise<void> {
+    try {
+      const completed = await this.getCompletedLessonIds();
+      completed[lessonId] = true;
+      await storage.setItem('mathmentor_offline_completed_lessons', JSON.stringify(completed));
+    } catch (e) {
+      console.warn('Failed to mark lesson completed in offline cache:', e);
+    }
+  },
+
+  /**
+   * Mark lesson incomplete in offline cache
+   */
+  async markOfflineLessonIncomplete(lessonId: string): Promise<void> {
+    try {
+      const completed = await this.getCompletedLessonIds();
+      delete completed[lessonId];
+      await storage.setItem('mathmentor_offline_completed_lessons', JSON.stringify(completed));
+    } catch (e) {
+      console.warn('Failed to mark lesson incomplete in offline cache:', e);
+    }
+  },
+
+  /**
+   * Get cached offline lessons with completion status attached
    */
   async getOfflineLessons(topic?: string, subtopic?: string): Promise<Lesson[]> {
     try {
+      const completedMap = await this.getCompletedLessonIds();
       const raw = await storage.getItem('mathmentor_offline_cache');
       let list: Lesson[] = [];
       if (raw) {
@@ -316,6 +403,20 @@ export const offlineCacheService = {
       if (list.length === 0) {
         list = getAllCurriculumOfflineLessons();
       }
+
+      list = list.map((l) => {
+        const isDone = !!completedMap[l._id];
+        return {
+          ...l,
+          userProgress: l.userProgress || {
+            status: isDone ? 'completed' : 'not-started',
+            progress: isDone ? 100 : 0,
+            timeSpent: 0,
+            completedAt: isDone ? new Date().toISOString() : undefined,
+          },
+        };
+      });
+
       if (topic) {
         list = list.filter((l) => l.topic.toLowerCase() === topic.toLowerCase());
       }
@@ -324,7 +425,19 @@ export const offlineCacheService = {
       }
       return list;
     } catch (e) {
-      return getAllCurriculumOfflineLessons();
+      const completedMap = await this.getCompletedLessonIds();
+      return getAllCurriculumOfflineLessons().map((l) => {
+        const isDone = !!completedMap[l._id];
+        return {
+          ...l,
+          userProgress: {
+            status: isDone ? 'completed' : 'not-started',
+            progress: isDone ? 100 : 0,
+            timeSpent: 0,
+            completedAt: isDone ? new Date().toISOString() : undefined,
+          },
+        };
+      });
     }
   },
 
@@ -353,11 +466,23 @@ export const offlineCacheService = {
   },
 
   /**
-   * Get cached user progress & diagnostic snapshot (scores & masteries)
+   * Get cached user progress & diagnostic snapshot
    */
   async getOfflineUserProgress(): Promise<any | null> {
     try {
       const raw = await storage.getItem('mathmentor_offline_user_progress');
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  /**
+   * Get cached diagnostic timeline history
+   */
+  async getOfflineDiagnosticHistory(): Promise<any | null> {
+    try {
+      const raw = await storage.getItem('mathmentor_offline_diagnostic_history');
       return raw ? JSON.parse(raw) : null;
     } catch (e) {
       return null;

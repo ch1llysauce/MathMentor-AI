@@ -50,14 +50,25 @@ export const lessonService = {
 
   // Mark lesson as completed
   async completeLesson(lessonId: string, timeSpent: number): Promise<any> {
-    const response = await api.put(`/learning/lessons/${lessonId}/complete`, { timeSpent });
-    return response.data.data;
+    await offlineCacheService.markOfflineLessonCompleted(lessonId);
+    try {
+      const response = await api.put(`/learning/lessons/${lessonId}/complete`, { timeSpent });
+      return response.data.data;
+    } catch (e) {
+      console.log('Backend unreachable, marked lesson completed in offline cache');
+      return { success: true };
+    }
   },
 
   // Mark lesson as incomplete
   async markLessonIncomplete(lessonId: string): Promise<any> {
-    const response = await api.put(`/learning/lessons/${lessonId}/incomplete`);
-    return response.data.data;
+    await offlineCacheService.markOfflineLessonIncomplete(lessonId);
+    try {
+      const response = await api.put(`/learning/lessons/${lessonId}/incomplete`);
+      return response.data.data;
+    } catch (e) {
+      return { success: true };
+    }
   },
 
   // Get persisted lesson conversation (history + conversationId)
