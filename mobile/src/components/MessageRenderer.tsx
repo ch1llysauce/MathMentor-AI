@@ -33,6 +33,14 @@ function toSubscript(s: string): string {
   return `_${s}`;
 }
 
+function replaceSubscriptDigits(str: string): string {
+  if (!str) return '';
+  return str.replace(/(?<![a-zA-Z0-9_\\])\b([a-zA-Z])([0-9]+)\b/g, (match, letter, digits) => {
+    const sub = digits.split('').map((d: string) => SUB_DIGITS[d] || d).join('');
+    return `${letter}${sub}`;
+  });
+}
+
 const SUP_DIGITS: Record<string, string> = {
   '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴',
   '5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹',
@@ -73,6 +81,7 @@ const BARE_LATEX_MAP: [RegExp, string | ((...args: string[]) => string)][] = [
   [/\\log_([0-9a-zA-Z])/g, (_: string, base: string) => `log${toSubscript(base)}`],
   [/_\{([^}]+)\}/g, (_: string, sub: string) => toSubscript(sub)],
   [/_([0-9a-zA-Z])/g, (_: string, d: string)   => toSubscript(d)],
+  [/(?<![a-zA-Z0-9_\\])\b([a-zA-Z])([0-9]+)\b/g, (_: string, v: string, d: string) => `${v}${toSubscript(d)}`],
 
   // Inverse functions & negative powers: f^(-1), f^-1, f^{-1}, f^{( - 1)} -> f⁻¹
   [/([a-zA-Z0-9_])\^?\s*\(\s*-\s*([0-9a-zA-Z]+)\s*\)/g, (_, fn, exp) => `${fn}${toSuperscript('-' + exp)}`],
@@ -134,12 +143,12 @@ function normalizeMathInText(rawText: string): string {
   let str = String(rawText);
 
   if (/\$[^\$\n]+?\$|\\\([\s\S]*?\\\)/.test(str)) {
-    return str;
+    return replaceSubscriptDigits(str);
   }
 
   const mathTriggerRegex = /[\^±√=]|\blog_?[0-9a-zA-Z]*|\b[a-zA-Z0-9_()]+\s*\/\s*[a-zA-Z0-9_()]+\b/i;
   if (!mathTriggerRegex.test(str)) {
-    return str;
+    return replaceSubscriptDigits(str);
   }
 
   const formatFormulaOnly = (expr: string) => {
@@ -155,27 +164,26 @@ function normalizeMathInText(rawText: string): string {
     s = s.replace(/×/g, '\\times ').replace(/÷/g, '\\div ');
     s = s.replace(/\^?\\?(degree|degrees|circ)\b/gi, '^{\\circ}').replace(/°/g, '^{\\circ}');
 
+    // Single-letter variable subscripts: x1 -> x_{1}, y1 -> y_{1}, x2 -> x_{2}, y2 -> y_{2}
+    s = s.replace(/(?<![a-zA-Z0-9_\\])\b([a-zA-Z])([0-9]+)\b/g, '$1_{$2}');
+
     s = s.replace(/√\s*\(\s*\(\s*([^)]+)\s*\)\s*\)/g, '\\sqrt{$1}');
     s = s.replace(/√\s*\(\s*([^)]+)\s*\)/g, '\\sqrt{$1}');
     s = s.replace(/√\s*([a-zA-Z0-9_]+)/g, '\\sqrt{$1}');
 
-    s = s.replace(/\(\s*-b\s*\\pm\s*\\sqrt\{([^}]+)\}\s*\)\s*\/\s*(\(?\s*\d*[a-zA-Z0-9^]+\s*\)?)/g, '\\frac{-b \\pm \\sqrt{$1}}{$2}');
+    s = s.replace(/\(\s*-b\s*\\pm\s*\\sqrt\{([^}]+)\}\s*\)\s*\/\s*\(?\s*([a-zA-Z0-9^]+)\s*\)?/g, '\\frac{-b \\pm \\sqrt{$1}}{$2}');
     s = s.replace(/\\sqrt\{\s*\(?\s*([^/]+?)\s*\/\s*([^)]+?)\s*\)?\s*\}/g, '\\sqrt{\\frac{$1}{$2}}');
 
-    const parenFracRegex = /\(\s*((?:[^{}()]+|\([^()]*\))+?)\s*\/\s*((?:[^{}()]+|\([^()]*\))+?)\s*\)/g;
-    s = s.replace(parenFracRegex, (match, num, den) => {
+    s = s.replace(/\(\s*([a-zA-Z0-9_+\-*()\s]+?)\s*\/\s*([a-zA-Z0-9_+\-*()\s]+?)\s*\)/g, (match, num, den) => {
       let n = num.trim();
       let d = den.trim();
       if (n.startsWith('(') && n.endsWith(')')) n = n.slice(1, -1).trim();
       return `\\frac{${n}}{${d}}`;
     });
 
-    const unparenFracRegex = /(\b[a-zA-Z0-9_]+(?:\([^()]*\))?)\s*\/\s*(\b[a-zA-Z0-9_]+(?:\([^()]*\))?)/g;
-    s = s.replace(unparenFracRegex, '\\frac{$1}{$2}');
-    // Clean up stray closing parenthesis directly following \frac{...}{...}
+    s = s.replace(/(\b[a-zA-Z0-9_]+(?:\([^()]*\))?)\s*\/\s*(\b[a-zA-Z0-9_]+(?:\([^()]*\))?)/g, '\\frac{$1}{$2}');
     s = s.replace(/(\\frac\s*\{[^{}]*\}\s*\{[^}]+\})\)/g, (m, p1) => p1);
 
-    // Wrap fractions adjacent to whole numbers in parens: 2\frac{1}{3} or 2 1/3 -> 2\left(\frac{1}{3}\right)
     s = s.replace(/(\b\d+)\s*\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1\\left(\\frac{$2}{$3}\\right)');
     s = s.replace(/(\b\d+)\s+([a-zA-Z0-9_]+)\s*\/\s*([a-zA-Z0-9_]+)/g, '$1\\left(\\frac{$2}{$3}\\right)');
     s = s.replace(/\\left\(\\left\(/g, '\\left(').replace(/\\right\)\\right\)/g, '\\right)');
@@ -184,13 +192,6 @@ function normalizeMathInText(rawText: string): string {
 
     s = s.replace(/\blog_?([0-9a-zA-Z]+)\s*\(([^)]+)\)/gi, '\\log_{$1}($2)');
     s = s.replace(/\blog_?([0-9a-zA-Z]+)\s+([0-9a-zA-Z]+)/gi, '\\log_{$1}{$2}');
-    // Format inverse functions and negative exponents: f^(-1) -> f^{-1}, f^-1 -> f^{-1}
-    s = s.replace(/([a-zA-Z0-9_])\^?\s*\(\s*-\s*([0-9a-zA-Z]+)\s*\)/g, '$1^{-$2}');
-    s = s.replace(/([a-zA-Z0-9_])\^?\s*\{\s*\(?\s*-\s*([0-9a-zA-Z]+)\s*\)?\s*\}/g, '$1^{-$2}');
-    s = s.replace(/([a-zA-Z0-9_])\^\s*-\s*([0-9a-zA-Z]+)/g, '$1^{-$2}');
-
-    s = s.replace(/([a-zA-Z0-9_)]+)\^([a-zA-Z0-9_]+)/g, '$1^{$2}');
-
     let openCount = (s.match(/\(/g) || []).length;
     let closeCount = (s.match(/\)/g) || []).length;
     while (closeCount > openCount && s.endsWith(')')) {
@@ -202,35 +203,29 @@ function normalizeMathInText(rawText: string): string {
     return `$${s}$` + punct;
   };
 
-  const isProseWord = (word: string) => {
-    const w = word.toLowerCase().trim();
-    if (!w || w.length < 2) return false;
-    if (/^log_?[0-9a-zA-Z]*$/i.test(w)) return false;
-    const mathKeywords = new Set([
-      'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'log', 'ln', 'lim', 'det',
-      'min', 'max', 'ax', 'bx', 'cx', 'dx', 'ex', 'fx', 'gx', 'hx', 'pm'
-    ]);
-    return !mathKeywords.has(w);
-  };
+  const mathKeywords = new Set(['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'log', 'ln', 'lim', 'det', 'min', 'max']);
 
-  return str.replace(/((?:\([^)]+\)|[a-zA-Z0-9_]|\s|[+\-*/=^±√().,°%\[\]{}]){1,})/g, (match) => {
-    const trimmed = match.trim();
-    if (!trimmed) return match;
+  const lines = str.split('\n');
+  const processedLines = lines.map((line) => {
+    const isMathFormula = /[\^±√=]|\b[a-zA-Z0-9_()]+\s*\/\s*[a-zA-Z0-9_()]+\b/i.test(line);
+    const words = line.match(/\b[a-zA-Z]{3,}\b/g) || [];
+    const proseWords = words.filter(w => !mathKeywords.has(w.toLowerCase()));
 
-    const words = trimmed.match(/\b[a-zA-Z]{2,}\b/g) || [];
-    const proseWords = words.filter(isProseWord);
+    if (isMathFormula && proseWords.length === 0) {
+      return formatFormulaOnly(line);
+    }
 
-    if (proseWords.length > 0) {
+    let formattedLine = line.replace(/(\b[a-zA-Z0-9_()]+\s*=\s*[a-zA-Z0-9_()+\-*/\s]+\b)/g, (match) => {
+      if (/[\^±√=+\-*/]/i.test(match)) {
+        return formatFormulaOnly(match);
+      }
       return match;
-    }
+    });
 
-    const hasMathIndicator = /[\^±√=]|\blog_?[0-9a-zA-Z]*|\b[a-zA-Z0-9_]+\s*[+\-*/=]\s*[a-zA-Z0-9_]+\b|\([a-zA-Z0-9^+\-*/\s]+\)\s*\(/i.test(trimmed);
-    if (hasMathIndicator) {
-      return formatFormulaOnly(trimmed);
-    }
-
-    return match;
+    return replaceSubscriptDigits(formattedLine);
   });
+
+  return processedLines.join('\n');
 }
 
 // ─── Block types ──────────────────────────────────────────────────────────────
@@ -416,7 +411,7 @@ function InlineText({
             </Text>
           );
         }
-        return <Text key={i}>{p.value}</Text>;
+        return <Text key={i}>{replaceSubscriptDigits(p.value)}</Text>;
       })}
     </Text>
   );

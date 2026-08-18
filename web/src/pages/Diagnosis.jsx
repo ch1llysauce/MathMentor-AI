@@ -212,6 +212,7 @@ function SubtopicBreakdownCard({ st, getScoreColor, primaryColor }) {
 
 // ─── Timeline Chart ───────────────────────────────────────────────────────────
 function TimelineChart({ data }) {
+  const { primaryColor } = useTheme();
   if (!data || data.length === 0) {
     return <p className="text-sm text-gray-400 text-center py-8">No timeline data available</p>;
   }
@@ -253,7 +254,7 @@ function TimelineChart({ data }) {
               {data.map((point, i) => {
                 const pct = Math.min(Math.max(point.score, 0), 100);
                 const barH = (pct / 100) * (chartH - 24); // 24 = label space
-                const color = pct >= 70 ? '#4b41e1' : pct >= 40 ? '#f59e0b' : '#ef4444';
+                const color = pct >= 100 ? (primaryColor || '#4b41e1') : pct >= 70 ? '#00a472' : pct >= 40 ? '#f59e0b' : '#ef4444';
                 return (
                   <div key={i} className="flex flex-col items-center gap-1" style={{ minWidth: `${barW}px` }}>
                     <div className="flex flex-col justify-end flex-1 w-full px-1">
@@ -649,9 +650,10 @@ const SUBTOPIC_KEY_MAP = {
   'Simple Applications': 'simpleApplications',
 };
 
-function getScoreColor(score) {
-  if (score >= 80) return '#00a472';
-  if (score >= 60) return '#f59e0b';
+function getScoreColor(score, primaryColor) {
+  if (score >= 100) return primaryColor || '#4b41e1';
+  if (score >= 70) return '#00a472';
+  if (score >= 40) return '#f59e0b';
   return '#ef4444';
 }
 
@@ -814,7 +816,7 @@ function TopicDetailScreen({ topic, latestDiag, onBack, onPractice }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function Diagnosis() {
   const navigate = useNavigate();
-  const { themeGradient } = useTheme();
+  const { themeGradient, primaryColor } = useTheme();
   const [view, setView]           = useState('menu');
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -1094,24 +1096,25 @@ export default function Diagnosis() {
           </div>
           
           {/* ── Mastery Timeline section ── */}
-          <div className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-100 pb-4">
+          <div className="bg-white dark:bg-[#18181b] border border-gray-200 dark:border-gray-800 rounded-3xl p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-100 dark:border-gray-800 pb-4">
               <div>
-                <h2 className="text-xl font-extrabold text-gray-900">Mastery Timeline</h2>
-                <p className="text-xs font-medium text-gray-500 mt-1">Tracking your overall growth over time</p>
+                <h2 className="text-xl font-extrabold text-gray-900 dark:text-gray-100">Mastery Timeline</h2>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">Tracking your overall growth over time</p>
               </div>
               
               {/* Period selector */}
-              <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+              <div className="flex bg-gray-100 dark:bg-gray-800/80 rounded-xl p-1 gap-1">
                 {PERIODS.map(({ id, label }) => (
                   <button
                     key={id}
                     onClick={() => setSelectedPeriod(id)}
                     className={`px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-200 ${
                       selectedPeriod === id
-                        ? 'bg-white text-[#4b41e1] shadow-sm ring-1 ring-black/5'
-                        : 'text-gray-500 hover:text-gray-900'
+                        ? 'bg-white dark:bg-gray-900 shadow-sm ring-1 ring-black/5'
+                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-gray-100'
                     }`}
+                    style={selectedPeriod === id ? { color: primaryColor || '#4b41e1' } : {}}
                   >
                     {label}
                   </button>

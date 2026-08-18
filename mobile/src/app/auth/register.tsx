@@ -23,7 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function RegisterScreen() {
   const router = useRouter();
   const { register, loginWithToken } = useAuth();
-  const { darkMode } = useTheme();
+  const { darkMode, primaryColor } = useTheme();
   const insets = useSafeAreaInsets();
 
   const D = {
@@ -35,7 +35,6 @@ export default function RegisterScreen() {
     placeholder: darkMode ? '#71717a' : '#75777d',
     inputBg: darkMode ? '#27272a' : '#f2f4f6',
     inputBorder: darkMode ? '#3f3f46' : '#c5c6cd',
-    glow: darkMode ? 'rgba(75, 65, 225, 0.18)' : 'rgba(75, 65, 225, 0.08)',
   };
 
   const params = useLocalSearchParams<{
@@ -55,28 +54,30 @@ export default function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [profileImage, setProfileImage] = useState<string>(params.googlePhoto ?? '');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleRegister = async () => {
+    setErrorMessage(null);
     if (!displayName.trim()) {
-      Alert.alert('Error', 'Please enter a display name');
+      setErrorMessage('Please enter a display name');
       return;
     }
 
     if (!isGoogleFlow) {
       if (!email || !password || !confirmPassword) {
-        Alert.alert('Error', 'Please fill in all fields');
+        setErrorMessage('Please fill in all fields');
         return;
       }
       if (password !== confirmPassword) {
-        Alert.alert('Error', 'Passwords do not match');
+        setErrorMessage('Passwords do not match');
         return;
       }
       if (password.length < 8) {
-        Alert.alert('Error', 'Password must be at least 8 characters');
+        setErrorMessage('Password must be at least 8 characters');
         return;
       }
       if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-        Alert.alert('Error', 'Password needs at least one uppercase, one lowercase, and one number');
+        setErrorMessage('Password needs at least one uppercase, one lowercase, and one number');
         return;
       }
     }
@@ -95,7 +96,7 @@ export default function RegisterScreen() {
           setLoading(false);
           router.replace('/(tabs)/dashboard');
         } else {
-          Alert.alert('Registration Failed', data.message || 'Registration failed');
+          setErrorMessage(data.message || 'Registration failed');
           setLoading(false);
         }
         return;
@@ -106,11 +107,11 @@ export default function RegisterScreen() {
         setLoading(false);
         router.replace('/(tabs)/dashboard');
       } else {
-        Alert.alert('Registration Failed', response.message || 'Registration failed');
+        setErrorMessage(response.message || 'Registration failed');
         setLoading(false);
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Registration failed');
+      setErrorMessage(error.message || 'Registration failed');
       setLoading(false);
     }
   };
@@ -118,8 +119,8 @@ export default function RegisterScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: D.bg }]}>
       <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={D.bg} />
-      <View style={[styles.ambientGlow, styles.glowTopLeft, { backgroundColor: D.glow }]} pointerEvents="none" />
-      <View style={[styles.ambientGlow, styles.glowBottomRight, { backgroundColor: D.glow }]} pointerEvents="none" />
+      <View style={[styles.ambientGlow, styles.glowTopLeft, { backgroundColor: primaryColor, opacity: darkMode ? 0.25 : 0.12 }]} pointerEvents="none" />
+      <View style={[styles.ambientGlow, styles.glowBottomRight, { backgroundColor: primaryColor, opacity: darkMode ? 0.25 : 0.12 }]} pointerEvents="none" />
 
       {/* Slim top bar */}
       <View style={styles.topBar}>
@@ -138,7 +139,7 @@ export default function RegisterScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={[styles.formCard, { backgroundColor: D.card, borderColor: D.border, shadowColor: darkMode ? '#000' : '#4b41e1' }]}>
+        <View style={[styles.formCard, { backgroundColor: D.card, borderColor: D.border, shadowColor: primaryColor }]}>
           {/* Title */}
           <View style={styles.cardHeader}>
             <Text style={[styles.cardTitle, { color: D.text }]}>
@@ -148,6 +149,13 @@ export default function RegisterScreen() {
               <Text style={[styles.cardSubtitle, { color: D.textLight }]}>Signing up as {params.googleEmail}</Text>
             )}
           </View>
+
+          {errorMessage ? (
+            <View style={[styles.errorBanner, { backgroundColor: darkMode ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2', borderColor: darkMode ? 'rgba(239, 68, 68, 0.3)' : '#fecaca' }]}>
+              <Ionicons name="alert-circle-outline" size={18} color={darkMode ? '#fca5a5' : '#b91c1c'} />
+              <Text style={[styles.errorBannerText, { color: darkMode ? '#fca5a5' : '#b91c1c' }]}>{errorMessage}</Text>
+            </View>
+          ) : null}
 
           {/* Avatar */}
           <View style={styles.avatarRow}>
@@ -234,7 +242,7 @@ export default function RegisterScreen() {
 
           {/* Submit */}
           <TouchableOpacity
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+            style={[styles.submitButton, { backgroundColor: primaryColor, shadowColor: primaryColor }, loading && styles.submitButtonDisabled]}
             onPress={handleRegister}
             disabled={loading}
             activeOpacity={0.9}
@@ -253,7 +261,7 @@ export default function RegisterScreen() {
           <TouchableOpacity style={styles.backToLogin} onPress={() => router.back()} disabled={loading} activeOpacity={0.7}>
             <Text style={[styles.backToLoginText, { color: D.textLight }]}>
               Already have an account?{' '}
-              <Text style={[styles.backToLoginBold, { color: darkMode ? '#a5b4fc' : '#4b41e1' }]}>Sign In</Text>
+              <Text style={[styles.backToLoginBold, { color: primaryColor }]}>Sign In</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -288,6 +296,24 @@ const styles = StyleSheet.create({
   cardHeader: { gap: 2 },
   cardTitle: { fontSize: 22, fontWeight: '700', color: '#091426', letterSpacing: -0.4 },
   cardSubtitle: { fontSize: 13, color: '#45474c' },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    marginTop: 4,
+  },
+  errorBannerText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#b91c1c',
+    flex: 1,
+  },
   avatarRow: { alignItems: 'center', paddingVertical: 4 },
   inputGroup: { gap: 4 },
   label: {

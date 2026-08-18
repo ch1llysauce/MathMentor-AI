@@ -332,13 +332,37 @@ export default function DashboardScreen() {
             <Text style={[styles.welcomeSubtitle, { color: D.textLight }]}>Ready to solve some problems today?</Text>
           </View>
           <View style={styles.actionButtons}>
-            <View style={[styles.primaryButton, styles.primaryButtonDisabled]}>
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                {
+                  backgroundColor: primaryColor,
+                  shadowColor: primaryColor,
+                },
+              ]}
+              onPress={() => router.push('/(tabs)/tutor')}
+              activeOpacity={0.85}
+            >
               <Ionicons name="school" size={20} color="#ffffff" />
               <Text style={styles.primaryButtonText}>Resume Tutoring</Text>
-            </View>
-            <TouchableOpacity style={[styles.primaryButton, { backgroundColor: D.secondaryBtnBg }]} onPress={handleDiagnosticPress}>
-              <Ionicons name="analytics" size={20} color={D.secondaryBtnText} />
-              <Text style={[styles.primaryButtonText, { color: D.secondaryBtnText }]}>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                {
+                  backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.08)' : `${primaryColor}18`,
+                  borderColor: `${primaryColor}40`,
+                  borderWidth: 1,
+                  shadowOpacity: 0,
+                  elevation: 0,
+                },
+              ]}
+              onPress={handleDiagnosticPress}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="analytics" size={20} color={darkMode ? (primaryColor === '#4b41e1' ? '#a5b4fc' : primaryColor) : primaryColor} />
+              <Text style={[styles.primaryButtonText, { color: darkMode ? (primaryColor === '#4b41e1' ? '#a5b4fc' : primaryColor) : primaryColor }]}>
                 {diagnosticDone ? 'Diagnostic' : 'Take Diagnostic'}
               </Text>
             </TouchableOpacity>

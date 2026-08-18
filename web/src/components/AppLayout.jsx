@@ -23,7 +23,7 @@ const navItems = [
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
-  const { darkMode, toggleDarkMode } = useTheme();
+  const { darkMode, toggleDarkMode, primaryColor } = useTheme();
   const { activeSession, clearActiveSession } = useActiveSession();
   const navigate = useNavigate();
   const location = useLocation();
@@ -262,7 +262,8 @@ export default function AppLayout() {
           <button
             type="button"
             onClick={() => setCalcOpen(true)}
-            className="fixed bottom-6 right-6 z-40 w-12 h-12 bg-[#4b41e1] hover:bg-[#3b32c6] text-white rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center cursor-pointer group"
+            className="fixed bottom-20 right-6 z-30 w-12 h-12 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center cursor-pointer group"
+            style={{ backgroundColor: primaryColor || '#4b41e1' }}
             title="Scientific Calculator"
             aria-label="Scientific Calculator"
           >

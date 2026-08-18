@@ -33,7 +33,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
     isDaily?: string;
   }>();
   const router = useRouter();
-  const { darkMode } = useTheme();
+  const { darkMode, primaryColor } = useTheme();
   const todayKey = new Date().toISOString().slice(0, 10);
 
   const PR = {
@@ -44,9 +44,9 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
     textLight: darkMode ? '#a0a0a0' : Colors.textLight,
     card: darkMode ? '#1a1a1a' : Colors.white,
     surface: darkMode ? '#2e2e2e' : Colors.surfaceContainer,
-    chipBg: darkMode ? '#312e81' : Colors.secondary + '20',
-    chipText: darkMode ? '#a5b4fc' : Colors.secondary,
-    primary: darkMode ? '#818cf8' : '#4b41e1',
+    chipBg: primaryColor ? `${primaryColor}20` : (darkMode ? '#312e81' : Colors.secondary + '20'),
+    chipText: primaryColor || (darkMode ? '#a5b4fc' : Colors.secondary),
+    primary: primaryColor || (darkMode ? '#818cf8' : '#4b41e1'),
     footer: darkMode ? '#0a0a0a' : Colors.white,
     backIconBg: darkMode ? '#2a2a2a' : Colors.surface,
     backIconColor: darkMode ? '#f0f0f0' : '#091426',

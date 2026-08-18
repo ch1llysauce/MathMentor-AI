@@ -11,6 +11,8 @@ try {
   // Not available in this build (e.g. Expo Go)
 }
 
+import { useTheme } from '@/context/ThemeContext';
+
 interface AvatarPickerProps {
   /** Current image URI or base64 data URI. Pass null/empty string for initials fallback. */
   imageUri?: string | null;
@@ -21,7 +23,7 @@ interface AvatarPickerProps {
   /** Size of the avatar circle in px. Defaults to 100. */
   size?: number;
   disabled?: boolean;
-  /** Label text color. Defaults to #4b41e1. */
+  /** Label text color. Defaults to primaryColor. */
   textColor?: string;
 }
 
@@ -33,6 +35,8 @@ export default function AvatarPicker({
   disabled = false,
   textColor,
 }: AvatarPickerProps) {
+  const { primaryColor } = useTheme();
+
   const handlePick = async () => {
     if (!ImagePicker) {
       Alert.alert(
@@ -78,7 +82,7 @@ export default function AvatarPicker({
           activeOpacity={disabled ? 1 : 0.8}
           style={[
             styles.avatar,
-            { width: size, height: size, borderRadius: size / 2 },
+            { width: size, height: size, borderRadius: size / 2, backgroundColor: primaryColor, borderColor: `${primaryColor}30` },
           ]}
         >
           {imageUri ? (
@@ -106,6 +110,7 @@ export default function AvatarPicker({
                 borderRadius: badgeSize / 2,
                 bottom: 2,
                 right: 2,
+                backgroundColor: primaryColor,
               },
             ]}
           >

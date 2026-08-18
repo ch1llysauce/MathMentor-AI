@@ -23,12 +23,14 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '@/context/ThemeContext';
 
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onUseResult: (value: string) => void;
+  onUseResult?: (value: string) => void;
   darkMode: boolean;
+  showUseResult?: boolean;
 }
 
 type AngleMode = 'DEG' | 'RAD';
@@ -108,7 +110,8 @@ function safeEval(expr: string, mode: AngleMode, lastAns: string = '0'): string 
   }
 }
 
-export default function ScientificCalculator({ visible, onClose, onUseResult, darkMode }: Props) {
+export default function ScientificCalculator({ visible, onClose, onUseResult, darkMode, showUseResult }: Props) {
+  const { primaryColor } = useTheme();
   const [display, setDisplay] = useState('0');
   const [expression, setExpression] = useState('');
   const [angleMode, setAngleMode] = useState<AngleMode>('DEG');
@@ -124,12 +127,12 @@ export default function ScientificCalculator({ visible, onClose, onUseResult, da
     numBg:       darkMode ? '#2a2a2a' : '#ffffff',
     numText:     darkMode ? '#f0f0f0' : '#091426',
     opBg:        darkMode ? '#312e81' : '#e2dfff',
-    opText:      darkMode ? '#a5b4fc' : '#4b41e1',
+    opText:      darkMode ? '#a5b4fc' : (primaryColor || '#4b41e1'),
     fnBg:        darkMode ? '#1e2a3a' : '#e8f4ff',
     fnText:      darkMode ? '#7dd3fc' : '#0369a1',
     ansBg:       darkMode ? '#3e2d14' : '#fef3c7',
     ansText:     darkMode ? '#fcd34d' : '#d97706',
-    eqBg:        '#4b41e1',
+    eqBg:        primaryColor || '#4b41e1',
     eqText:      '#ffffff',
     clearBg:     darkMode ? '#3a1a1a' : '#fee2e2',
     clearText:   '#ef4444',
@@ -202,7 +205,7 @@ export default function ScientificCalculator({ visible, onClose, onUseResult, da
   };
 
   const useResult = () => {
-    if (display !== 'Error' && display !== '0') {
+    if (display !== 'Error' && display !== '0' && onUseResult) {
       onUseResult(display);
       onClose();
     }
@@ -234,6 +237,8 @@ export default function ScientificCalculator({ visible, onClose, onUseResult, da
     <Btn label={label} onPress={() => append(val ?? label)} bg={C.opBg}  fg={C.opText}  />;
   const Fn   = (label: string, fn?: string) =>
     <Btn label={label} onPress={() => appendFn(fn ?? label)} bg={C.fnBg} fg={C.fnText}  />;
+
+  const isShouldShowUseResult = showUseResult ?? (!!onUseResult);
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -321,14 +326,16 @@ export default function ScientificCalculator({ visible, onClose, onUseResult, da
           </View>
 
           {/* Use Result */}
-          <TouchableOpacity
-            style={[styles.useBtn, display === 'Error' && styles.useBtnDisabled]}
-            onPress={useResult}
-            disabled={display === 'Error'}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.useBtnText}>Use Result  ({display})</Text>
-          </TouchableOpacity>
+          {isShouldShowUseResult && (
+            <TouchableOpacity
+              style={[styles.useBtn, { backgroundColor: primaryColor || '#4b41e1' }, display === 'Error' && styles.useBtnDisabled]}
+              onPress={useResult}
+              disabled={display === 'Error'}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.useBtnText}>Use Result  ({display})</Text>
+            </TouchableOpacity>
+          )}
 
         </View>
       </KeyboardAvoidingView>

@@ -10,7 +10,7 @@ import MessageRenderer from '@/components/MessageRenderer';
 
 export default function TutorScreen() {
   const { user } = useAuth();
-  const { darkMode } = useTheme();
+  const { darkMode, primaryColor } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
 
   const T = {
@@ -19,7 +19,7 @@ export default function TutorScreen() {
     border: darkMode ? '#2e2e2e' : Colors.borderLight,
     text: darkMode ? '#f0f0f0' : Colors.text,
     textLight: darkMode ? '#a0a0a0' : Colors.textLight,
-    iconContainerBg: darkMode ? '#312e81' : '#e2dfff',
+    iconContainerBg: primaryColor ? `${primaryColor}20` : (darkMode ? '#312e81' : '#e2dfff'),
     clearBtnBg: darkMode ? '#1a1a1a' : Colors.surface,
     clearBtnIcon: darkMode ? '#f0f0f0' : '#091426',
     aiBubbleBg: darkMode ? '#1a1a1a' : Colors.white,
@@ -27,7 +27,7 @@ export default function TutorScreen() {
     inputFieldBg: darkMode ? '#2a2a2a' : Colors.surface,
     inputText: darkMode ? '#f0f0f0' : Colors.text,
     quickCardBg: darkMode ? '#1a1a1a' : Colors.white,
-    quickIconBg: darkMode ? '#312e81' : '#e2dfff',
+    quickIconBg: primaryColor ? `${primaryColor}20` : (darkMode ? '#312e81' : '#e2dfff'),
     placeholder: darkMode ? '#666666' : '#b0b3b8',
     modalBg: darkMode ? '#18181b' : '#ffffff',
   };
@@ -173,13 +173,13 @@ export default function TutorScreen() {
     return (
       <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.aiBubble]}>
         {!isUser && (
-          <View style={styles.aiAvatar}>
+          <View style={[styles.aiAvatar, { backgroundColor: primaryColor || '#4b41e1' }]}>
             <Ionicons name="sparkles" size={16} color="#ffffff" />
           </View>
         )}
         <View style={[
           styles.messageContent,
-          isUser ? styles.userContent : [styles.aiContent, { backgroundColor: T.aiBubbleBg }]
+          isUser ? [styles.userContent, { backgroundColor: primaryColor || '#4b41e1' }] : [styles.aiContent, { backgroundColor: T.aiBubbleBg }]
         ]}>
           <MessageRenderer
             content={message.content}
@@ -198,7 +198,7 @@ export default function TutorScreen() {
       <View style={[styles.header, { backgroundColor: T.headerBg, borderBottomColor: T.border }]}>
         <View style={styles.headerLeft}>
           <View style={[styles.headerIconContainer, { backgroundColor: T.iconContainerBg }]}>
-            <Ionicons name="sparkles" size={24} color="#4b41e1" />
+            <Ionicons name="sparkles" size={24} color={primaryColor || '#4b41e1'} />
           </View>
           <View>
             <Text style={[styles.headerTitle, { color: T.text }]}>AI Tutor</Text>
@@ -231,11 +231,11 @@ export default function TutorScreen() {
 
         {isLoading && (
           <View style={styles.loadingBubble}>
-            <View style={styles.aiAvatar}>
+            <View style={[styles.aiAvatar, { backgroundColor: primaryColor || '#4b41e1' }]}>
               <Ionicons name="sparkles" size={16} color="#ffffff" />
             </View>
             <View style={[styles.loadingContent, { backgroundColor: T.aiBubbleBg }]}>
-              <ActivityIndicator size="small" color="#4b41e1" />
+              <ActivityIndicator size="small" color={primaryColor || '#4b41e1'} />
               <Text style={[styles.loadingText, { color: T.textLight }]}>Thinking...</Text>
             </View>
           </View>
@@ -253,7 +253,7 @@ export default function TutorScreen() {
                   onPress={() => handleSendMessage(action.message)}
                 >
                   <View style={[styles.quickActionIcon, { backgroundColor: T.quickIconBg }]}>
-                    <Ionicons name={action.icon as any} size={20} color="#4b41e1" />
+                    <Ionicons name={action.icon as any} size={20} color={primaryColor || '#4b41e1'} />
                   </View>
                   <Text style={[styles.quickActionLabel, { color: T.text }]}>{action.label}</Text>
                 </TouchableOpacity>
@@ -284,7 +284,7 @@ export default function TutorScreen() {
             }}
           />
           <TouchableOpacity
-            style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
+            style={[styles.sendButton, { backgroundColor: primaryColor || '#4b41e1' }, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
             onPress={() => handleSendMessage()}
             disabled={!inputText.trim() || isLoading}
           >

@@ -38,9 +38,10 @@ const SUBTOPIC_KEY_MAP: Record<string, string> = {
   'Simple Applications': 'simpleApplications',
 };
 
-function getScoreColor(score: number) {
-  if (score >= 80) return '#00a472';
-  if (score >= 60) return '#f59e0b';
+function getScoreColor(score: number, primaryColor?: string) {
+  if (score >= 100) return primaryColor || '#4b41e1';
+  if (score >= 70) return '#00a472';
+  if (score >= 40) return '#f59e0b';
   return '#ef4444';
 }
 
@@ -54,7 +55,7 @@ function getScoreLabel(score: number): string {
 export default function TopicDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { darkMode } = useTheme();
+  const { darkMode, primaryColor } = useTheme();
 
   const TD = {
     bg: darkMode ? '#0a0a0a' : '#f7f9fb',
@@ -133,7 +134,7 @@ export default function TopicDetailScreen() {
             strokeWidth={10}
             topic={topic}
             subtitle={getScoreLabel(score)}
-            color={topic === 'Algebra' ? '#2563eb' : topic === 'Geometry' ? '#00a472' : topic === 'Trigonometry' ? '#f59e0b' : getScoreColor(score)}
+            color={topic === 'Algebra' ? '#2563eb' : topic === 'Geometry' ? '#00a472' : topic === 'Trigonometry' ? '#f59e0b' : getScoreColor(score, primaryColor)}
           />
           <View style={styles.statsRow}>
             <View style={[styles.statBox, { backgroundColor: darkMode ? '#1e1b4b' : '#f3e8ff' }]}>
@@ -158,14 +159,14 @@ export default function TopicDetailScreen() {
             <View style={styles.subtopicHeader}>
               <Text style={[styles.subtopicName, { color: TD.text }]}>{st.name}</Text>
               {st.score !== null ? (
-                <Text style={[styles.subtopicScore, { color: getScoreColor(st.score) }]}>{st.score}%</Text>
+                <Text style={[styles.subtopicScore, { color: getScoreColor(st.score, primaryColor) }]}>{st.score}%</Text>
               ) : (
                 <Text style={[styles.subtopicNoData, { color: TD.textLight }]}>Not tested</Text>
               )}
             </View>
             {st.score !== null ? (
               <View style={[styles.progressBarContainer, { backgroundColor: TD.surface }]}>
-                <View style={[styles.progressBar, { width: `${st.score}%`, backgroundColor: getScoreColor(st.score) }]} />
+                <View style={[styles.progressBar, { width: `${st.score}%`, backgroundColor: getScoreColor(st.score, primaryColor) }]} />
               </View>
             ) : (
               <View style={[styles.progressBarContainer, { backgroundColor: TD.surface, opacity: 0.3 }]}>

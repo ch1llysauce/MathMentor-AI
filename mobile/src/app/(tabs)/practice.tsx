@@ -10,6 +10,7 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/colors';
 import diagnosticService from '@/services/diagnosticService';
 import { lessonService } from '@/services/lessonService';
@@ -36,22 +37,41 @@ interface Topic {
   subtopics: string[];
 }
 
+const blendColors = (baseHex: string, tintHex: string, amount: number) => {
+  const c1 = baseHex.replace('#', '');
+  const c2 = tintHex.replace('#', '');
+  
+  const r1 = parseInt(c1.substring(0, 2), 16) || 0;
+  const g1 = parseInt(c1.substring(2, 4), 16) || 0;
+  const b1 = parseInt(c1.substring(4, 6), 16) || 0;
+  
+  const r2 = parseInt(c2.substring(0, 2), 16) || 0;
+  const g2 = parseInt(c2.substring(2, 4), 16) || 0;
+  const b2 = parseInt(c2.substring(4, 6), 16) || 0;
+
+  const r = Math.round(r1 * (1 - amount) + r2 * amount);
+  const g = Math.round(g1 * (1 - amount) + g2 * amount);
+  const b = Math.round(b1 * (1 - amount) + b2 * amount);
+
+  return `rgb(${r}, ${g}, ${b})`;
+};
+
 export default function PracticeScreen() {
   const router = useRouter();
-  const { darkMode } = useTheme();
+  const { darkMode, primaryColor } = useTheme();
 
   const P = {
     bg: darkMode ? '#0a0a0a' : Colors.background,
     card: darkMode ? '#1a1a1a' : Colors.white,
     text: darkMode ? '#f0f0f0' : Colors.text,
     textLight: darkMode ? '#a0a0a0' : Colors.textLight,
-    primary: darkMode ? '#a5b4fc' : Colors.primary,
-    secondary: darkMode ? '#a5b4fc' : Colors.secondary,
+    primary: primaryColor || (darkMode ? '#a5b4fc' : Colors.primary),
+    secondary: primaryColor || (darkMode ? '#a5b4fc' : Colors.secondary),
     border: darkMode ? '#2e2e2e' : Colors.border,
     surface: darkMode ? '#242424' : Colors.surfaceContainer,
     chipBg: darkMode ? '#1a1a1a' : Colors.white,
-    chipActiveBg: darkMode ? '#312e81' : Colors.primary,
-    chipActiveText: darkMode ? '#a5b4fc' : Colors.white,
+    chipActiveBg: primaryColor || (darkMode ? '#312e81' : Colors.primary),
+    chipActiveText: '#ffffff',
     inputBg: darkMode ? '#1a1a1a' : Colors.white,
     tagBg: darkMode ? '#2e2e2e' : Colors.surfaceContainer,
   };
@@ -373,72 +393,92 @@ export default function PracticeScreen() {
           ) : (
             filteredTopics.map((topic) => {
               const masteryInfo = getMasteryLabel(topic.mastery);
+              const cardGradientColors: [string, string] = [
+                P.card,
+                blendColors(P.card, topic.color, darkMode ? 0.22 : 0.08)
+              ];
+              const circleGradientColors: [string, string] = [
+                blendColors(P.card, topic.color, darkMode ? 0.35 : 0.18),
+                blendColors(P.card, topic.color, darkMode ? 0.12 : 0.05)
+              ];
+
               return (
                 <TouchableOpacity
                   key={topic.id}
-                  style={[styles.topicCard, { backgroundColor: P.card }]}
                   onPress={() => handleTopicPress(topic)}
-                  activeOpacity={0.7}
+                  activeOpacity={0.8}
                 >
-                  {/* Topic Header */}
-                  <View style={styles.topicHeader}>
-                    <View style={[styles.topicIcon, { backgroundColor: topic.color + '20' }]}>
-                      <Ionicons name={topic.icon as any} size={28} color={topic.color} />
-                    </View>
-                    
-                    <View style={styles.topicInfo}>
-                      <Text style={[styles.topicName, { color: P.text }]}>{topic.name}</Text>
-                      <View style={styles.topicMeta}>
-                        <View style={styles.metaItem}>
-                          <Ionicons name="book-outline" size={14} color={P.textLight} />
-                          <Text style={[styles.metaText, { color: P.textLight }]}>{topic.lessons} lessons</Text>
+                  <LinearGradient
+                    colors={cardGradientColors}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[styles.topicCard, { borderColor: blendColors(P.card, topic.color, darkMode ? 0.40 : 0.25), borderWidth: 1 }]}
+                  >
+                    {/* Topic Header */}
+                    <View style={styles.topicHeader}>
+                      <LinearGradient
+                        colors={circleGradientColors}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={[styles.topicIcon, { borderColor: blendColors(P.card, topic.color, darkMode ? 0.45 : 0.30), borderWidth: 1 }]}
+                      >
+                        <Ionicons name={topic.icon as any} size={30} color={topic.color} />
+                      </LinearGradient>
+                      
+                      <View style={styles.topicInfo}>
+                        <Text style={[styles.topicName, { color: P.text }]}>{topic.name}</Text>
+                        <View style={styles.topicMeta}>
+                          <View style={styles.metaItem}>
+                            <Ionicons name="book-outline" size={14} color={P.textLight} />
+                            <Text style={[styles.metaText, { color: P.textLight }]}>{topic.lessons} lessons</Text>
+                          </View>
                         </View>
                       </View>
+                      
+                      <Ionicons name="chevron-forward" size={20} color={P.textLight} />
                     </View>
-                    
-                    <Ionicons name="chevron-forward" size={20} color={P.textLight} />
-                  </View>
 
-                  {/* Progress Bar */}
-                  <View style={styles.progressSection}>
-                    <View style={styles.progressHeader}>
-                      <Text style={[styles.progressLabel, { color: P.textLight }]}>Mastery Level</Text>
-                      <View style={styles.masteryBadge}>
-                        <Text style={[styles.masteryText, { color: masteryInfo.color }]}>
-                          {masteryInfo.label}
-                        </Text>
-                        <Text style={[styles.masteryPercent, { color: P.text }]}>{topic.mastery}%</Text>
+                    {/* Progress Bar */}
+                    <View style={styles.progressSection}>
+                      <View style={styles.progressHeader}>
+                        <Text style={[styles.progressLabel, { color: P.textLight }]}>Mastery Level</Text>
+                        <View style={styles.masteryBadge}>
+                          <Text style={[styles.masteryText, { color: masteryInfo.color }]}>
+                            {masteryInfo.label}
+                          </Text>
+                          <Text style={[styles.masteryPercent, { color: P.text }]}>{topic.mastery}%</Text>
+                        </View>
+                      </View>
+                      <View style={[styles.progressBarContainer, { backgroundColor: P.surface }]}>
+                        <View 
+                          style={[
+                            styles.progressBar,
+                            { 
+                              width: `${topic.mastery}%`,
+                              backgroundColor: masteryInfo.color
+                            }
+                          ]} 
+                        />
                       </View>
                     </View>
-                    <View style={[styles.progressBarContainer, { backgroundColor: P.surface }]}>
-                      <View 
-                        style={[
-                          styles.progressBar,
-                          { 
-                            width: `${topic.mastery}%`,
-                            backgroundColor: masteryInfo.color
-                          }
-                        ]} 
-                      />
-                    </View>
-                  </View>
 
-                  {/* Subtopics */}
-                  <View style={[styles.subtopicsSection, { borderTopColor: P.surface }]}>
-                    <Text style={[styles.subtopicsLabel, { color: P.text }]}>Key Subtopics:</Text>
-                    <View style={styles.subtopicsContainer}>
-                      {topic.subtopics.slice(0, 3).map((subtopic, index) => (
-                        <View key={index} style={[styles.subtopicTag, { backgroundColor: P.tagBg }]}>
-                          <Text style={[styles.subtopicText, { color: P.text }]}>{subtopic}</Text>
-                        </View>
-                      ))}
-                      {topic.subtopics.length > 3 && (
-                        <View style={[styles.subtopicTag, { backgroundColor: P.tagBg }]}>
-                          <Text style={[styles.subtopicText, { color: P.text }]}>+{topic.subtopics.length - 3}</Text>
-                        </View>
-                      )}
+                    {/* Subtopics */}
+                    <View style={[styles.subtopicsSection, { borderTopColor: P.surface }]}>
+                      <Text style={[styles.subtopicsLabel, { color: P.text }]}>Key Subtopics:</Text>
+                      <View style={styles.subtopicsContainer}>
+                        {topic.subtopics.slice(0, 3).map((subtopic, index) => (
+                          <View key={index} style={[styles.subtopicTag, { backgroundColor: P.tagBg }]}>
+                            <Text style={[styles.subtopicText, { color: P.text }]}>{subtopic}</Text>
+                          </View>
+                        ))}
+                        {topic.subtopics.length > 3 && (
+                          <View style={[styles.subtopicTag, { backgroundColor: P.tagBg }]}>
+                            <Text style={[styles.subtopicText, { color: P.text }]}>+{topic.subtopics.length - 3}</Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
-                  </View>
+                  </LinearGradient>
                 </TouchableOpacity>
               );
             })
@@ -449,49 +489,78 @@ export default function PracticeScreen() {
         <View style={styles.quickActions}>
           <Text style={[styles.quickActionsTitle, { color: P.text }]}>Quick Actions</Text>
 
-          <TouchableOpacity
-            style={[styles.actionCard, { backgroundColor: P.card }, dailyDone && styles.actionCardDone]}
-            onPress={dailyDone ? undefined : handleDailyChallenge}
-            activeOpacity={dailyDone ? 1 : 0.7}
-            disabled={dailyDone}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: dailyDone ? '#d1fae5' : '#fef3c7' }]}>
-              <Ionicons
-                name={dailyDone ? 'checkmark-circle' : 'trophy'}
-                size={24}
-                color={dailyDone ? '#00a472' : '#f59e0b'}
-              />
-            </View>
-            <View style={styles.actionContent}>
-              <View style={styles.actionTitleRow}>
-                <Text style={[styles.actionTitle, { color: P.text }]}>Daily Challenge</Text>
-                {dailyDone && dailyScore && (
-                  <View style={styles.scoreBadge}>
-                    <Text style={styles.scoreBadgeText}>
-                      {dailyScore.score}/{dailyScore.total}
+          {(() => {
+            const actionColor = dailyDone ? '#00a472' : '#f59e0b';
+            const actionCardColors: [string, string] = [
+              P.card,
+              blendColors(P.card, actionColor, darkMode ? 0.22 : 0.08)
+            ];
+            const actionCircleColors: [string, string] = [
+              blendColors(P.card, actionColor, darkMode ? 0.35 : 0.18),
+              blendColors(P.card, actionColor, darkMode ? 0.12 : 0.05)
+            ];
+
+            return (
+              <TouchableOpacity
+                onPress={dailyDone ? undefined : handleDailyChallenge}
+                activeOpacity={dailyDone ? 1 : 0.8}
+                disabled={dailyDone}
+              >
+                <LinearGradient
+                  colors={actionCardColors}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[
+                    styles.actionCard,
+                    { borderColor: blendColors(P.card, actionColor, darkMode ? 0.40 : 0.25), borderWidth: 1 },
+                    dailyDone && styles.actionCardDone,
+                  ]}
+                >
+                  <LinearGradient
+                    colors={actionCircleColors}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[styles.actionIcon, { borderColor: blendColors(P.card, actionColor, darkMode ? 0.45 : 0.30), borderWidth: 1 }]}
+                  >
+                    <Ionicons
+                      name={dailyDone ? 'checkmark-circle' : 'trophy'}
+                      size={26}
+                      color={actionColor}
+                    />
+                  </LinearGradient>
+                  <View style={styles.actionContent}>
+                    <View style={styles.actionTitleRow}>
+                      <Text style={[styles.actionTitle, { color: P.text }]}>Daily Challenge</Text>
+                      {dailyDone && dailyScore && (
+                        <View style={styles.scoreBadge}>
+                          <Text style={styles.scoreBadgeText}>
+                            {dailyScore.score}/{dailyScore.total}
+                          </Text>
+                        </View>
+                      )}
+                      {dailyDone && !dailyScore && (
+                        <View style={styles.doneBadge}>
+                          <Text style={styles.doneBadgeText}>Done ✓</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.actionSubtitle, { color: P.textLight }]}>
+                      {dailyDone
+                        ? dailyScore
+                          ? `Score: ${dailyScore.score}/${dailyScore.total} · Come back tomorrow!`
+                          : 'Come back tomorrow for a new challenge!'
+                        : `Today: ${dailyTopicLabel} — 10 mixed problems`}
                     </Text>
                   </View>
-                )}
-                {dailyDone && !dailyScore && (
-                  <View style={styles.doneBadge}>
-                    <Text style={styles.doneBadgeText}>Done ✓</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={[styles.actionSubtitle, { color: P.textLight }]}>
-                {dailyDone
-                  ? dailyScore
-                    ? `Score: ${dailyScore.score}/${dailyScore.total} · Come back tomorrow!`
-                    : 'Come back tomorrow for a new challenge!'
-                  : `Today: ${dailyTopicLabel} — 10 mixed problems`}
-              </Text>
-            </View>
-            {dailyDone ? (
-              <Ionicons name="lock-closed" size={18} color="#00a472" />
-            ) : (
-              <Ionicons name="chevron-forward" size={20} color={P.textLight} />
-            )}
-          </TouchableOpacity>
+                  {dailyDone ? (
+                    <Ionicons name="lock-closed" size={18} color="#00a472" />
+                  ) : (
+                    <Ionicons name="chevron-forward" size={20} color={P.textLight} />
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            );
+          })()}
         </View>
 
         <View style={{ height: 24 }} />
@@ -600,7 +669,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   topicCard: {
-    backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -616,9 +684,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   topicIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
@@ -723,7 +791,6 @@ const styles = StyleSheet.create({
   actionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -768,9 +835,9 @@ const styles = StyleSheet.create({
     color: '#00a472',
   },
   actionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,

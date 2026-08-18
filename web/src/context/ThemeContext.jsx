@@ -142,8 +142,8 @@ export const ThemeProvider = ({ children }) => {
         border-color: var(--accent-primary) !important;
       }
 
-      /* Gradient Backgrounds */
-      .bg-gradient-to-br, .bg-gradient-to-r, .bg-gradient-to-l, .bg-gradient-to-t, .bg-gradient-to-b {
+      /* Specific Accent Gradient utility */
+      .bg-theme-accent-gradient {
         background-image: var(--accent-gradient) !important;
       }
     `;

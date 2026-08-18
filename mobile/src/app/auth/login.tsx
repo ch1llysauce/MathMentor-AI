@@ -47,7 +47,7 @@ const GoogleLogo = ({ size = 20 }: { size?: number }) => (
 export default function LoginScreen() {
   const router = useRouter();
   const { login, validate2FA, loginWithGoogle } = useAuth();
-  const { darkMode } = useTheme();
+  const { darkMode, primaryColor } = useTheme();
   const insets = useSafeAreaInsets();
 
   const D = {
@@ -62,7 +62,6 @@ export default function LoginScreen() {
     divider: darkMode ? '#27272a' : '#e0e3e5',
     btnSecondary: darkMode ? '#312e81' : '#e2dfff',
     btnSecondaryText: darkMode ? '#a5b4fc' : '#3323cc',
-    glow: darkMode ? 'rgba(75, 65, 225, 0.18)' : 'rgba(75, 65, 225, 0.08)',
     modalBg: darkMode ? '#18181b' : '#ffffff',
   };
 
@@ -70,6 +69,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [twoFAModalVisible, setTwoFAModalVisible] = useState(false);
   const [twoFAUserId, setTwoFAUserId] = useState('');
@@ -77,16 +77,17 @@ export default function LoginScreen() {
   const [twoFALoading, setTwoFALoading] = useState(false);
 
   const handleLogin = async () => {
+    setErrorMessage(null);
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
 
     if (!trimmedEmail || !trimmedPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+      setErrorMessage('Please fill in all fields');
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedEmail)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      setErrorMessage('Please enter a valid email address');
       return;
     }
 
@@ -102,21 +103,22 @@ export default function LoginScreen() {
       if (response.success) {
         setTimeout(() => router.replace('/(tabs)/dashboard'), 200);
       } else {
-        Alert.alert('Login Failed', response.message || 'Invalid credentials');
+        setErrorMessage(response.message || 'Invalid credentials');
         setLoading(false);
       }
     } catch (error: any) {
       const status = error.response?.status;
       if (status === 429) {
-        Alert.alert('Too Many Attempts', error.message || 'Too many login attempts. Please try again in 15 minutes.');
+        setErrorMessage(error.message || 'Too many login attempts. Please try again in 15 minutes.');
       } else {
-        Alert.alert('Login Failed', 'Incorrect email or password.');
+        setErrorMessage(error.message || 'Incorrect email or password.');
       }
       setLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
+    setErrorMessage(null);
     setLoading(true);
     try {
       const response = await loginWithGoogle();
@@ -144,7 +146,7 @@ export default function LoginScreen() {
         error.message?.includes('not a native build') ||
         error.message?.includes('native binary')
       ) {
-        Alert.alert('Native Build Required', 'Google Sign-In requires a native build. Please run "npx expo run:android".');
+        setErrorMessage('Google Sign-In requires a native build. Please run "npx expo run:android".');
         setLoading(false);
         return;
       }
@@ -152,7 +154,7 @@ export default function LoginScreen() {
         setLoading(false);
         return;
       }
-      Alert.alert('Google Sign-In Failed', error.message || error.code || 'Unknown error');
+      setErrorMessage(error.message || error.code || 'Google Sign-In failed');
     } finally {
       setLoading(false);
     }
@@ -188,8 +190,8 @@ export default function LoginScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: D.bg }]}>
       <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={D.bg} />
-      <View style={[styles.ambientGlow, styles.glowTopLeft, { backgroundColor: D.glow }]} pointerEvents="none" />
-      <View style={[styles.ambientGlow, styles.glowBottomRight, { backgroundColor: D.glow }]} pointerEvents="none" />
+      <View style={[styles.ambientGlow, styles.glowTopLeft, { backgroundColor: primaryColor, opacity: darkMode ? 0.25 : 0.12 }]} pointerEvents="none" />
+      <View style={[styles.ambientGlow, styles.glowBottomRight, { backgroundColor: primaryColor, opacity: darkMode ? 0.25 : 0.12 }]} pointerEvents="none" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -205,11 +207,18 @@ export default function LoginScreen() {
 
       {/* Form Card — fills remaining space, centered vertically */}
       <View style={styles.body}>
-        <View style={[styles.formCard, { backgroundColor: D.card, borderColor: D.border, shadowColor: darkMode ? '#000' : '#4b41e1' }]}>
+        <View style={[styles.formCard, { backgroundColor: D.card, borderColor: D.border, shadowColor: primaryColor }]}>
           <View style={styles.formHeader}>
             <Text style={[styles.welcomeTitle, { color: D.text }]}>Welcome back</Text>
             <Text style={[styles.welcomeSubtitle, { color: D.textLight }]}>Access your personalized tutor dashboard.</Text>
           </View>
+
+          {errorMessage ? (
+            <View style={[styles.errorBanner, { backgroundColor: darkMode ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2', borderColor: darkMode ? 'rgba(239, 68, 68, 0.3)' : '#fecaca' }]}>
+              <Ionicons name="alert-circle-outline" size={18} color={darkMode ? '#fca5a5' : '#b91c1c'} />
+              <Text style={[styles.errorBannerText, { color: darkMode ? '#fca5a5' : '#b91c1c' }]}>{errorMessage}</Text>
+            </View>
+          ) : null}
 
           <View style={styles.form}>
             {/* Email */}
@@ -256,14 +265,14 @@ export default function LoginScreen() {
             <View style={styles.optionsRow}>
               <TouchableOpacity></TouchableOpacity>
               <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/auth/forgot-password')}>
-                <Text style={[styles.forgotPassword, { color: darkMode ? '#a5b4fc' : '#4b41e1' }]}>Forgot Password?</Text>
+                <Text style={[styles.forgotPassword, { color: primaryColor }]}>Forgot Password?</Text>
               </TouchableOpacity>
             </View>
 
             {/* Buttons */}
             <View style={styles.buttonContainer}>
               <TouchableOpacity
-                style={[styles.signInButton, loading && styles.buttonDisabled]}
+                style={[styles.signInButton, { backgroundColor: primaryColor, shadowColor: primaryColor }, loading && styles.buttonDisabled]}
                 onPress={handleLogin}
                 disabled={loading}
                 activeOpacity={0.9}
@@ -293,7 +302,7 @@ export default function LoginScreen() {
                 disabled={loading}
                 activeOpacity={0.9}
               >
-                <Text style={[styles.createAccountButtonText, { color: darkMode ? '#a5b4fc' : '#3323cc' }]}>Create Account</Text>
+                <Text style={[styles.createAccountButtonText, { color: primaryColor }]}>Create Account</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -334,8 +343,8 @@ export default function LoginScreen() {
           />
           <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 24) + 8, backgroundColor: D.modalBg }]}>
             <View style={[styles.modalHandle]} />
-            <View style={[styles.modalIconContainer, { backgroundColor: darkMode ? 'rgba(75, 65, 225, 0.15)' : 'rgba(75, 65, 225, 0.1)' }]}>
-              <Ionicons name="shield-checkmark" size={40} color="#4b41e1" />
+            <View style={[styles.modalIconContainer, { backgroundColor: `${primaryColor}20` }]}>
+              <Ionicons name="shield-checkmark" size={40} color={primaryColor} />
             </View>
             <Text style={[styles.modalTitle, { color: D.text }]}>Two-Factor Authentication</Text>
             <Text style={[styles.modalSubtitle, { color: D.textLight }]}>Enter the 6-digit code from your authenticator app</Text>
@@ -351,7 +360,7 @@ export default function LoginScreen() {
               autoFocus
             />
             <TouchableOpacity
-              style={[styles.verifyButton, twoFALoading && styles.buttonDisabled]}
+              style={[styles.verifyButton, { backgroundColor: primaryColor, shadowColor: primaryColor }, twoFALoading && styles.buttonDisabled]}
               onPress={handle2FASubmit}
               disabled={twoFALoading}
               activeOpacity={0.9}
@@ -391,9 +400,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06, shadowRadius: 24, elevation: 4,
     borderWidth: 1, borderColor: '#e2e8f0',
   },
-  formHeader: { marginBottom: 24 },
+  formHeader: { marginBottom: 20 },
   welcomeTitle: { fontSize: 20, fontWeight: '600', color: '#091426', marginBottom: 4, lineHeight: 28 },
   welcomeSubtitle: { fontSize: 14, color: '#45474c', lineHeight: 20 },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  errorBannerText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#b91c1c',
+    flex: 1,
+  },
   form: { gap: 16 },
   inputGroup: { gap: 6 },
   label: { fontSize: 14, fontWeight: '500', color: '#45474c', letterSpacing: 0.3, marginLeft: 4, lineHeight: 20 },

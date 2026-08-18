@@ -13,11 +13,20 @@ import {
 } from 'react-icons/io5';
 import { learningApi } from '../../services/api';
 import MathText from '../../components/MathText';
+import { useTheme } from '../../context/ThemeContext';
+
+const TOPIC_COLORS = {
+  Algebra: '#2563eb',
+  Geometry: '#00a472',
+  Trigonometry: '#f59e0b',
+};
 
 export default function LessonScreen() {
   const { lessonId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { primaryColor, darkMode } = useTheme();
+  const activePrimary = primaryColor || '#7c3aed';
   const { topicName, mastery, lessonTitle: initTitle } = location.state ?? {};
 
   const [lesson, setLesson]         = useState(null);
@@ -27,6 +36,9 @@ export default function LessonScreen() {
   const [completing, setCompleting] = useState(false);
   const [activeLessonId, setActiveLessonId] = useState(lessonId);
   const startTimeRef = useRef(Date.now());
+
+  const topicColor = TOPIC_COLORS[lesson?.topic] || activePrimary;
+  const baseBg = darkMode ? '#0b0f17' : '#f8fafc';
 
   const fetchLesson = async (id) => {
     setLoading(true);
@@ -93,7 +105,7 @@ export default function LessonScreen() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: activePrimary, borderTopColor: 'transparent' }} />
         <p className="text-sm text-gray-400">Loading lesson…</p>
       </div>
     );
@@ -103,13 +115,18 @@ export default function LessonScreen() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4">
         <p className="text-gray-500">Lesson not found.</p>
-        <button onClick={() => navigate('/practice')} className="text-purple-600 font-medium">← Back to Practice</button>
+        <button onClick={() => navigate('/practice')} style={{ color: activePrimary }} className="font-medium">← Back to Practice</button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div
+      className="flex flex-col min-h-full transition-colors duration-300"
+      style={{
+        background: `linear-gradient(180deg, ${topicColor}${darkMode ? '1F' : '0E'} 0%, ${baseBg} 500px)`
+      }}
+    >
       {/* Header */}
       <div className="bg-white dark:bg-[#1a2333] border-b border-gray-100 dark:border-[#2d3748] px-4 py-3 flex items-center gap-3 sticky top-0 z-10 shadow-2xs">
         <button
@@ -119,7 +136,7 @@ export default function LessonScreen() {
           <IoArrowBackOutline size={20} />
         </button>
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold truncate uppercase tracking-wider">{lesson.topic} · {lesson.subtopic}</p>
+          <p style={{ color: activePrimary }} className="text-xs font-semibold truncate uppercase tracking-wider">{lesson.topic} · {lesson.subtopic}</p>
           <p className="text-sm font-extrabold text-gray-900 dark:text-white truncate">{lesson.title}</p>
         </div>
         {/* Lesson chat button */}
@@ -127,7 +144,11 @@ export default function LessonScreen() {
           onClick={() => navigate(`/practice/lesson-chat/${lesson._id}`, {
             state: { lessonTitle: lesson.title, topic: lesson.topic, subtopic: lesson.subtopic }
           })}
-          className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-950/60 flex items-center justify-center text-purple-600 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/60 transition-colors shrink-0 cursor-pointer"
+          style={{
+            backgroundColor: `${activePrimary}18`,
+            color: activePrimary
+          }}
+          className="w-9 h-9 rounded-full flex items-center justify-center transition-colors shrink-0 cursor-pointer"
           title="Ask AI Tutor about this lesson"
         >
           <IoChatbubbleEllipsesOutline size={20} />
@@ -139,10 +160,10 @@ export default function LessonScreen() {
         {/* Info badges */}
         <div className="bg-white dark:bg-[#1a2333] border border-gray-100 dark:border-[#2d3748] rounded-3xl p-5 shadow-2xs mb-6">
           <div className="flex flex-wrap gap-2 mb-3">
-            <span className="inline-flex items-center gap-1.5 bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-800/40 text-purple-700 dark:text-purple-300 text-xs font-bold px-3 py-1.5 rounded-xl">
+            <span style={{ backgroundColor: `${activePrimary}15`, borderColor: `${activePrimary}30`, color: activePrimary }} className="inline-flex items-center gap-1.5 border text-xs font-bold px-3 py-1.5 rounded-xl">
               <IoTrendingUpOutline size={14} /> {lesson.difficulty}
             </span>
-            <span className="inline-flex items-center gap-1.5 bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-800/40 text-purple-700 dark:text-purple-300 text-xs font-bold px-3 py-1.5 rounded-xl">
+            <span style={{ backgroundColor: `${activePrimary}15`, borderColor: `${activePrimary}30`, color: activePrimary }} className="inline-flex items-center gap-1.5 border text-xs font-bold px-3 py-1.5 rounded-xl">
               <IoTimeOutline size={14} /> {lesson.estimatedTime} min
             </span>
             {isCompleted && (
@@ -228,7 +249,8 @@ export default function LessonScreen() {
           <button
             onClick={() => goTo(currentIndex - 1)}
             disabled={currentIndex === 0 || lessonList.length === 0}
-            className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs font-bold bg-gray-100 dark:bg-[#252f40] hover:bg-purple-50 dark:hover:bg-[#2d3748] text-purple-600 dark:text-purple-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer border border-gray-200 dark:border-[#374151]"
+            style={{ color: (currentIndex === 0 || lessonList.length === 0) ? undefined : activePrimary }}
+            className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs font-bold bg-gray-100 dark:bg-[#252f40] hover:bg-opacity-80 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer border border-gray-200 dark:border-[#374151]"
           >
             <IoArrowBackOutline size={16} />
             <span className="hidden sm:inline">Previous</span>
@@ -240,8 +262,8 @@ export default function LessonScreen() {
               onClick={handleToggleComplete}
               disabled={completing}
               style={{
-                backgroundColor: isCompleted ? '#27272a' : '#7c3aed',
-                borderColor: isCompleted ? '#3f3f46' : 'transparent',
+                backgroundColor: isCompleted ? (darkMode ? '#374151' : '#64748b') : activePrimary,
+                borderColor: isCompleted ? (darkMode ? '#4b5563' : '#9ca3af') : 'transparent',
                 color: '#ffffff'
               }}
               className="w-full max-w-xs flex items-center justify-center gap-2 font-bold text-xs sm:text-sm py-2.5 px-3 sm:px-4 rounded-xl transition-all disabled:opacity-60 shadow-md cursor-pointer border hover:opacity-90 active:scale-[0.98]"
@@ -249,7 +271,7 @@ export default function LessonScreen() {
               {completing ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : isCompleted ? (
-                <><IoCloseCircleOutline size={18} className="text-red-400" /> Mark as Incomplete</>
+                <><IoCloseCircleOutline size={18} className="text-red-300" /> Mark as Incomplete</>
               ) : (
                 <><IoCheckmarkCircleOutline size={18} className="text-white" /> Mark as Complete</>
               )}
@@ -264,7 +286,8 @@ export default function LessonScreen() {
           <button
             onClick={() => goTo(currentIndex + 1)}
             disabled={currentIndex >= lessonList.length - 1 || lessonList.length === 0}
-            className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs font-bold bg-gray-100 dark:bg-[#252f40] hover:bg-purple-50 dark:hover:bg-[#2d3748] text-purple-600 dark:text-purple-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer border border-gray-200 dark:border-[#374151]"
+            style={{ color: (currentIndex >= lessonList.length - 1 || lessonList.length === 0) ? undefined : activePrimary }}
+            className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs font-bold bg-gray-100 dark:bg-[#252f40] hover:bg-opacity-80 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer border border-gray-200 dark:border-[#374151]"
           >
             <span className="hidden sm:inline">Next</span>
             <IoArrowForwardOutline size={16} />

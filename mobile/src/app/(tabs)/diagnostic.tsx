@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/colors';
 import { MasteryRing } from '@/components/MasteryRing';
 import { WeakAreaCard } from '@/components/WeakAreaCard';
@@ -28,7 +29,7 @@ const _diagCache = diagCache;
 
 export default function DiagnosticScreen() {
   const router = useRouter();
-  const { darkMode } = useTheme();
+  const { darkMode, primaryColor, gradientColors } = useTheme();
 
   const DX = {
     bg: darkMode ? '#0a0a0a' : Colors.background,
@@ -36,19 +37,19 @@ export default function DiagnosticScreen() {
     text: darkMode ? '#f0f0f0' : Colors.primary,
     textBody: darkMode ? '#f0f0f0' : Colors.text,
     textLight: darkMode ? '#a0a0a0' : Colors.textLight,
-    secondary: darkMode ? '#a5b4fc' : Colors.secondary,
+    secondary: primaryColor || (darkMode ? '#a5b4fc' : Colors.secondary),
     surface: darkMode ? '#242424' : Colors.surfaceContainerLow,
     border: darkMode ? '#2e2e2e' : Colors.border,
-    badgeBg: darkMode ? '#312e81' : Colors.secondaryFixed,
-    badgeText: darkMode ? '#a5b4fc' : Colors.onSecondaryFixedVariant,
+    badgeBg: primaryColor ? `${primaryColor}20` : (darkMode ? '#312e81' : Colors.secondaryFixed),
+    badgeText: primaryColor || (darkMode ? '#a5b4fc' : Colors.onSecondaryFixedVariant),
     recBg: darkMode ? '#1e1e2e' : Colors.surfaceContainerLow,
-    recBorder: darkMode ? '#a5b4fc' : Colors.secondary,
+    recBorder: primaryColor || (darkMode ? '#a5b4fc' : Colors.secondary),
     ctaBg: darkMode ? '#1a1a2e' : Colors.primary,
-    ctaBtn: darkMode ? '#4b41e1' : Colors.secondary,
+    ctaBtn: primaryColor || (darkMode ? '#4b41e1' : Colors.secondary),
     periodBg: darkMode ? '#242424' : Colors.surfaceContainerLow,
     periodActiveBg: darkMode ? '#1a1a1a' : Colors.white,
     periodText: darkMode ? '#a0a0a0' : Colors.textLight,
-    periodActiveText: darkMode ? '#f0f0f0' : Colors.primary,
+    periodActiveText: primaryColor || (darkMode ? '#f0f0f0' : Colors.primary),
   };
   const [diagnostic, setDiagnostic] = useState<DiagnosticResult | null>(_diagCache.diagnostic);
   const [timelineData, setTimelineData] = useState<any[]>(_diagCache.timelineData);
@@ -196,7 +197,7 @@ export default function DiagnosticScreen() {
             Complete a diagnostic test to unlock personalized learning paths and track your progress
           </Text>
           <TouchableOpacity
-            style={[styles.startButton, { backgroundColor: '#4b41e1' }]}
+            style={[styles.startButton, { backgroundColor: primaryColor || '#4b41e1' }]}
             onPress={handleStartDiagnostic}
             activeOpacity={0.8}
           >
@@ -365,7 +366,12 @@ export default function DiagnosticScreen() {
           )}
 
           {/* CTA Card (Ready for a challenge?) */}
-          <View style={[styles.ctaCard, { backgroundColor: darkMode ? '#2e1065' : '#4c1d95' }]}>
+          <LinearGradient
+            colors={gradientColors || ['#4b41e1', '#3d33d0', '#2b1fb8']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.ctaCard}
+          >
             <View style={styles.ctaIconBadge}>
               <Ionicons name="school-outline" size={24} color="#ffffff" />
             </View>
@@ -378,9 +384,9 @@ export default function DiagnosticScreen() {
               onPress={handleStartDiagnostic}
               activeOpacity={0.8}
             >
-              <Text style={[styles.ctaButtonText, { color: darkMode ? '#2e1065' : '#4c1d95' }]}>RETAKE DIAGNOSTIC</Text>
+              <Text style={[styles.ctaButtonText, { color: primaryColor || '#111827' }]}>RETAKE DIAGNOSTIC</Text>
             </TouchableOpacity>
-          </View>
+          </LinearGradient>
         </View>
 
         {/* View Diagnostic History Button */}

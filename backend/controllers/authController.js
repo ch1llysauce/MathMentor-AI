@@ -530,8 +530,8 @@ export const exportUserData = asyncHandler(async (req, res) => {
             const topicKey = p.topic ? p.topic.toLowerCase() : '';
             const diagTopicScore = latestDiag?.topicScores?.[topicKey]?.score
                 ?? (p.topic === 'Algebra' ? latestDiag?.algebraScore
-                : p.topic === 'Geometry' ? latestDiag?.geometryScore
-                : p.topic === 'Trigonometry' ? latestDiag?.trigonometryScore : null);
+                    : p.topic === 'Geometry' ? latestDiag?.geometryScore
+                        : p.topic === 'Trigonometry' ? latestDiag?.trigonometryScore : null);
 
             // Real dynamic lessons completed count for this topic/subtopic
             const subtopicKey = `${p.topic}||${p.subtopic}`;
@@ -1138,7 +1138,7 @@ export const submitFeedback = asyncHandler(async (req, res) => {
                 subject: `[MathMentor AI Feedback] New feedback from ${name}`,
                 html: `
                     <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; border: 1px solid #e0e3e5; padding: 24px; border-radius: 16px;">
-                        <h2 style="color: #4b41e1; margin-top: 0;">New User Feedback Received 📣</h2>
+                        <h2 style="color: #4b41e1; margin-top: 0;">New User Feedback Received!</h2>
                         <p><strong>From:</strong> ${name} (&lt;${email}&gt;)</p>
                         <p><strong>Platform:</strong> ${platform.toUpperCase()}</p>
                         <p><strong>Submitted At:</strong> ${new Date().toLocaleString()}</p>

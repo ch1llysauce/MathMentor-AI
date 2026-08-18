@@ -2,11 +2,37 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/colors';
 import { lessonService } from '@/services/lessonService';
 import { Lesson } from '@/types/lesson';
 import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 import MessageRenderer from '@/components/MessageRenderer';
+
+const TOPIC_COLORS: Record<string, string> = {
+  Algebra: '#2563eb',
+  Geometry: '#00a472',
+  Trigonometry: '#f59e0b',
+};
+
+const blendColors = (baseHex: string, tintHex: string, amount: number) => {
+  const c1 = baseHex.replace('#', '');
+  const c2 = tintHex.replace('#', '');
+  
+  const r1 = parseInt(c1.substring(0, 2), 16) || 0;
+  const g1 = parseInt(c1.substring(2, 4), 16) || 0;
+  const b1 = parseInt(c1.substring(4, 6), 16) || 0;
+  
+  const r2 = parseInt(c2.substring(0, 2), 16) || 0;
+  const g2 = parseInt(c2.substring(2, 4), 16) || 0;
+  const b2 = parseInt(c2.substring(4, 6), 16) || 0;
+
+  const r = Math.round(r1 * (1 - amount) + r2 * amount);
+  const g = Math.round(g1 * (1 - amount) + g2 * amount);
+  const b = Math.round(b1 * (1 - amount) + b2 * amount);
+
+  return `rgb(${r}, ${g}, ${b})`;
+};
 
 export default function LessonScreen() {
   const params = useLocalSearchParams<{
@@ -15,7 +41,8 @@ export default function LessonScreen() {
     mastery?: string;
   }>();
   const router = useRouter();
-  const { darkMode } = useTheme();
+  const { darkMode, primaryColor } = useTheme();
+  const activePrimary = primaryColor || (darkMode ? '#a5b4fc' : '#4b41e1');
 
   // Use local state for the active lessonId so prev/next swaps content
   // in-place without triggering a navigation transition.
@@ -29,11 +56,11 @@ export default function LessonScreen() {
     border: darkMode ? '#2e2e2e' : Colors.borderLight,
     text: darkMode ? '#f0f0f0' : Colors.text,
     textLight: darkMode ? '#a0a0a0' : Colors.textLight,
-    primary: darkMode ? '#a5b4fc' : '#4b41e1',
+    primary: activePrimary,
     card: darkMode ? '#1a1a1a' : Colors.white,
     surface: darkMode ? '#2a2a2a' : Colors.surface,
-    badgeBg: darkMode ? '#312e81' : '#e2dfff',
-    badgeText: darkMode ? '#a5b4fc' : '#4b41e1',
+    badgeBg: darkMode ? `${activePrimary}30` : `${activePrimary}18`,
+    badgeText: activePrimary,
     footer: darkMode ? '#0a0a0a' : Colors.white,
     navBtnBg: darkMode ? '#2e2e2e' : Colors.surfaceContainer,
     exampleBg: darkMode ? '#2d2a00' : '#fef3c7',
@@ -174,9 +201,19 @@ export default function LessonScreen() {
   }
 
   const isCompleted = lesson.userProgress?.status === 'completed';
+  const topicColor = TOPIC_COLORS[lesson?.topic || ''] || activePrimary;
+  const bgGradientColors: readonly [string, string] = [
+    blendColors(L.bg, topicColor, darkMode ? 0.16 : 0.06),
+    L.bg,
+  ];
 
   return (
-    <View style={[styles.container, { backgroundColor: L.bg }]}>
+    <LinearGradient
+      colors={bgGradientColors}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 0.5 }}
+      style={styles.container}
+    >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: L.header, borderBottomColor: L.border }]}>
         <TouchableOpacity style={[styles.backIcon, { backgroundColor: L.surface }]} onPress={() => router.replace({
@@ -303,7 +340,11 @@ export default function LessonScreen() {
       {/* Footer */}
       <View style={[styles.footer, { backgroundColor: L.footer }]}>
         <TouchableOpacity
-          style={[styles.completeButton, completing && styles.completeButtonDisabled, isCompleted && styles.incompleteButton]}
+          style={[
+            styles.completeButton,
+            { backgroundColor: isCompleted ? (darkMode ? '#374151' : '#64748b') : activePrimary },
+            completing && styles.completeButtonDisabled,
+          ]}
           onPress={handleCompleteLesson}
           disabled={completing}
         >
@@ -342,7 +383,7 @@ export default function LessonScreen() {
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 

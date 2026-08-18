@@ -53,9 +53,15 @@ function Message({ msg }) {
 
 export default function TutorAI() {
   const { user } = useAuth();
+  const userId = user?.id || user?._id || 'guest';
+  const firstName = user?.displayName ? user.displayName.split(' ')[0] : 'there';
+
+  const messagesKey = `mathmentor_tutor_messages_${userId}`;
+  const convIdKey   = `mathmentor_tutor_conv_id_${userId}`;
+
   const [messages, setMessages] = useState(() => {
     try {
-      const saved = sessionStorage.getItem('mathmentor_tutor_messages');
+      const saved = sessionStorage.getItem(`mathmentor_tutor_messages_${userId}`);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -67,7 +73,7 @@ export default function TutorAI() {
   const [loading, setLoading]               = useState(false);
   const [conversationId, setConversationId] = useState(() => {
     try {
-      return sessionStorage.getItem('mathmentor_tutor_conv_id') || null;
+      return sessionStorage.getItem(`mathmentor_tutor_conv_id_${userId}`) || null;
     } catch {
       return null;
     }
@@ -77,39 +83,63 @@ export default function TutorAI() {
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
 
-  const firstName = user?.displayName ? user.displayName.split(' ')[0] : 'there';
-
+  // Clean legacy un-scoped session keys if present
   useEffect(() => {
-    setMessages((prev) => {
-      if (prev.length > 0) return prev;
-      return [{
-        id: 'welcome',
-        role: 'assistant',
-        content: `Hello, ${firstName}! 👋 I'm **MathMentor AI**, your personal mathematics tutor. Ask me anything about **Algebra**, **Geometry**, or **Trigonometry**!`,
-        timestamp: new Date().toISOString(),
-      }];
-    });
-  }, [firstName]);
+    try {
+      sessionStorage.removeItem('mathmentor_tutor_messages');
+      sessionStorage.removeItem('mathmentor_tutor_conv_id');
+    } catch { /* ignore */ }
+  }, []);
+
+  // When active user changes, switch to user-scoped chat history
+  useEffect(() => {
+    try {
+      const savedMsgs = sessionStorage.getItem(messagesKey);
+      if (savedMsgs) {
+        const parsed = JSON.parse(savedMsgs);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+        } else {
+          setMessages([{
+            id: 'welcome',
+            role: 'assistant',
+            content: `Hello, ${firstName}! 👋 I'm **MathMentor AI**, your personal mathematics tutor. Ask me anything about **Algebra**, **Geometry**, or **Trigonometry**!`,
+            timestamp: new Date().toISOString(),
+          }]);
+        }
+      } else {
+        setMessages([{
+          id: 'welcome',
+          role: 'assistant',
+          content: `Hello, ${firstName}! 👋 I'm **MathMentor AI**, your personal mathematics tutor. Ask me anything about **Algebra**, **Geometry**, or **Trigonometry**!`,
+          timestamp: new Date().toISOString(),
+        }]);
+      }
+
+      const savedConv = sessionStorage.getItem(convIdKey);
+      setConversationId(savedConv || null);
+    } catch { /* ignore */ }
+  }, [userId, firstName, messagesKey, convIdKey]);
 
   useEffect(() => {
     if (messages.length > 0) {
       try {
-        sessionStorage.setItem('mathmentor_tutor_messages', JSON.stringify(messages));
+        sessionStorage.setItem(messagesKey, JSON.stringify(messages));
       } catch { /* ignore */ }
     }
-  }, [messages]);
+  }, [messages, messagesKey]);
 
   useEffect(() => {
     if (conversationId) {
       try {
-        sessionStorage.setItem('mathmentor_tutor_conv_id', conversationId);
+        sessionStorage.setItem(convIdKey, conversationId);
       } catch { /* ignore */ }
     } else {
       try {
-        sessionStorage.removeItem('mathmentor_tutor_conv_id');
+        sessionStorage.removeItem(convIdKey);
       } catch { /* ignore */ }
     }
-  }, [conversationId]);
+  }, [conversationId, convIdKey]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -149,8 +179,8 @@ export default function TutorAI() {
       try { await tutorApi.clearConversation({ conversationId }); } catch { /* ignore */ }
     }
     try {
-      sessionStorage.removeItem('mathmentor_tutor_messages');
-      sessionStorage.removeItem('mathmentor_tutor_conv_id');
+      sessionStorage.removeItem(messagesKey);
+      sessionStorage.removeItem(convIdKey);
     } catch { /* ignore */ }
     setConversationId(null);
     const welcome = {

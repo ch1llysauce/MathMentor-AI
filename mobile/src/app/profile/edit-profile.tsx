@@ -131,9 +131,6 @@ export default function EditProfileScreen() {
           profileImage,
           bannerTheme,
         });
-        if (bannerChanged) {
-          await setAccentTheme(bannerTheme);
-        }
       }
 
       let passwordChanged = false;
@@ -241,8 +238,8 @@ export default function EditProfileScreen() {
                     key={theme.id}
                     style={[
                       styles.presetItem,
-                      { borderColor: isSelected ? '#4b41e1' : EP.border },
-                      isSelected && styles.presetItemSelected,
+                      { borderColor: isSelected ? theme.primaryColor : EP.border },
+                      isSelected && { backgroundColor: darkMode ? `${theme.primaryColor}25` : `${theme.primaryColor}12` },
                     ]}
                     onPress={() => setBannerTheme(theme.id)}
                     activeOpacity={0.8}

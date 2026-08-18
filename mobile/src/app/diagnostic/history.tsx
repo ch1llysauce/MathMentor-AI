@@ -16,7 +16,7 @@ import { useTheme } from '@/context/ThemeContext';
 
 export default function DiagnosticHistoryScreen() {
   const router = useRouter();
-  const { darkMode } = useTheme();
+  const { darkMode, primaryColor } = useTheme();
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,6 +39,7 @@ export default function DiagnosticHistoryScreen() {
   };
 
   const getScoreColor = (score: number) => {
+    if (score >= 100) return primaryColor || '#4b41e1';
     if (score >= 70) return '#00a472';
     if (score >= 40) return '#f59e0b';
     return '#ef4444';

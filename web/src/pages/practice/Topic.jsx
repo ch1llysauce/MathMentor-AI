@@ -32,13 +32,15 @@ const PRACTICE_SETS = [
 ];
 
 const diffColor = (d) =>
-  d === 'Easy' ? 'text-emerald-600 bg-emerald-50' :
-    d === 'Hard' ? 'text-red-500 bg-red-50' :
-      'text-yellow-600 bg-yellow-50';
+  d === 'Easy' ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60' :
+    d === 'Hard' ? 'text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800/60' :
+      'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60';
 
 function LessonCard({ lesson, index, locked, done, navigate, topicName, mastery }) {
-  const { primaryColor } = useTheme();
+  const { darkMode, primaryColor } = useTheme();
   const [hovered, setHovered] = useState(false);
+  const cardBase = darkMode ? '#1a2333' : '#ffffff';
+  const topicColor = TOPIC_META[topicName]?.color || primaryColor || '#2563eb';
 
   return (
     <button
@@ -49,9 +51,14 @@ function LessonCard({ lesson, index, locked, done, navigate, topicName, mastery 
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        borderColor: !locked && hovered ? `${primaryColor}60` : undefined,
+        background: !locked && hovered
+          ? `linear-gradient(135deg, ${cardBase} 0%, ${topicColor}28 100%)`
+          : !locked
+            ? `linear-gradient(135deg, ${cardBase} 0%, ${topicColor}14 100%)`
+            : undefined,
+        borderColor: !locked && hovered ? `${topicColor}60` : darkMode ? '#2d3748' : undefined,
         transform: !locked && hovered ? 'translateY(-2px)' : 'none',
-        boxShadow: !locked && hovered ? '0 4px 12px rgba(0,0,0,0.05)' : undefined,
+        boxShadow: !locked && hovered ? `0 4px 14px ${topicColor}25` : undefined,
       }}
       className={`w-full bg-white dark:bg-[#1a2333] border rounded-2xl p-4 shadow-2xs flex items-center gap-3.5 text-left transition-all ${
         locked
@@ -61,17 +68,19 @@ function LessonCard({ lesson, index, locked, done, navigate, topicName, mastery 
     >
       {/* Lesson Icon */}
       <div
-        className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-transform ${
+        className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-transform border ${
           done
-            ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border-emerald-200/60'
             : locked
-              ? 'bg-gray-100 text-gray-400'
-              : 'border'
+              ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 border-transparent'
+              : ''
         }`}
         style={{
-          backgroundColor: !done && !locked ? `${primaryColor}18` : undefined,
-          color: !done && !locked ? primaryColor : undefined,
-          borderColor: !done && !locked ? `${primaryColor}30` : undefined,
+          background: !done && !locked
+            ? `linear-gradient(135deg, ${topicColor}30 0%, ${topicColor}10 100%)`
+            : undefined,
+          color: !done && !locked ? topicColor : undefined,
+          borderColor: !done && !locked ? `${topicColor}45` : undefined,
         }}
       >
         {done ? (
@@ -101,10 +110,11 @@ function LessonCard({ lesson, index, locked, done, navigate, topicName, mastery 
 
       {!locked && (
         <div
-          className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors"
+          className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+            hovered ? 'text-white' : 'bg-gray-100 dark:bg-[#252f40] text-gray-400 dark:text-gray-300'
+          }`}
           style={{
-            backgroundColor: hovered ? primaryColor : '#f7f9fb',
-            color: hovered ? '#ffffff' : '#9ca3af',
+            backgroundColor: hovered ? primaryColor : undefined,
           }}
         >
           <IoChevronForwardOutline size={16} />
@@ -155,10 +165,11 @@ function PracticeSetCard({ set, navigate, topicName, meta }) {
         </div>
       </div>
       <div
-        className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors"
+        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+          hovered ? 'text-white' : 'bg-gray-100 dark:bg-[#252f40] text-gray-400 dark:text-gray-300'
+        }`}
         style={{
-          backgroundColor: hovered ? primaryColor : '#f7f9fb',
-          color: hovered ? '#ffffff' : '#9ca3af',
+          backgroundColor: hovered ? primaryColor : undefined,
         }}
       >
         <IoChevronForwardOutline size={18} />
@@ -330,7 +341,7 @@ export default function TopicScreen() {
             </div>
 
             {/* Stats Card */}
-            <div className="flex items-center justify-center gap-4 sm:gap-6 bg-gray-50/80 dark:bg-gray-800/80 p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shrink-0 min-w-[280px] sm:min-w-[320px]">
+            <div className="flex items-center justify-center gap-4 sm:gap-6 bg-gray-50/80 dark:bg-[#252f40] p-4 sm:p-5 rounded-2xl border border-gray-200/80 dark:border-[#2d3748] shrink-0 min-w-[280px] sm:min-w-[320px]">
               {/* Mastery Stat */}
               <div className="flex-1 flex flex-col items-center justify-center text-center">
                 <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white leading-none mb-1">
@@ -351,7 +362,7 @@ export default function TopicScreen() {
                 <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white leading-none mb-1">
                   {loading ? '—' : `${completedTotal}/${lessons.length}`}
                 </p>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">
                   Lessons Done
                 </p>
               </div>

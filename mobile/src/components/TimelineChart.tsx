@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Colors } from '@/constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 
 interface TimelineDataPoint {
   date: string;
@@ -22,6 +23,7 @@ export const TimelineChart: React.FC<TimelineChartProps> = ({
   data,
   height = 256,
 }) => {
+  const { primaryColor } = useTheme();
   // Height used for the bar area (date labels already sit inside the 40 px bottom padding)
   const chartHeight = height - 40;
 
@@ -82,10 +84,17 @@ export const TimelineChart: React.FC<TimelineChartProps> = ({
             <View style={[styles.barsContainer, { paddingBottom: 40 }]}>
               {data.map((point, index) => {
                 const barHeightPct = Math.min(point.score, 100);
+                const getBarColor = (score: number) => {
+                  if (score >= 100) return primaryColor || Colors.secondary;
+                  if (score >= 70) return '#00a472';
+                  if (score >= 40) return '#f59e0b';
+                  return '#ef4444';
+                };
+                const barColor = getBarColor(point.score);
                 return (
                   <View key={index} style={styles.barWrapper}>
                     <View style={styles.barContainer}>
-                      <View style={[styles.bar, { height: `${barHeightPct}%` }]} />
+                      <View style={[styles.bar, { height: `${barHeightPct}%`, backgroundColor: barColor }]} />
                     </View>
                     <Text style={styles.dateLabel}>{point.date}</Text>
                   </View>

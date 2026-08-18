@@ -37,6 +37,15 @@ function InlineMath({ math }) {
   return <span ref={ref} className="katex-inline inline-block px-0.5" />;
 }
 
+const SUB_DIGITS = { '0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉' };
+function replaceSubscriptDigits(str) {
+  if (!str) return '';
+  return str.replace(/(?<![a-zA-Z0-9_\\])\b([a-zA-Z])([0-9]+)\b/g, (match, letter, digits) => {
+    const sub = digits.split('').map(d => SUB_DIGITS[d] || d).join('');
+    return `${letter}${sub}`;
+  });
+}
+
 /**
  * Automatically isolates pure math expressions (equations, exponents, roots, fractions)
  * into standard LaTeX $...$ delimiters while preserving English prose text as normal text.
@@ -45,15 +54,14 @@ function normalizeMathInText(rawText) {
   if (!rawText) return '';
   let str = String(rawText);
 
-  // If text already contains KaTeX math delimiters ($...$ or \(...\)), return as is
+  // If text already contains KaTeX math delimiters ($...$ or \(...\)), return with subscript digits applied to non-math parts
   if (/\$[^\$\n]+?\$|\\\([\s\S]*?\\\)/.test(str)) {
-    return str;
+    return replaceSubscriptDigits(str);
   }
 
-  // Math trigger regex
   const mathTriggerRegex = /[\^±√=]|\blog_?[0-9a-zA-Z]*|\b[a-zA-Z0-9_()]+\s*\/\s*[a-zA-Z0-9_()]+\b/i;
   if (!mathTriggerRegex.test(str)) {
-    return str;
+    return replaceSubscriptDigits(str);
   }
 
   const formatFormulaOnly = (expr) => {
@@ -70,53 +78,42 @@ function normalizeMathInText(rawText) {
     s = s.replace(/×/g, '\\times ').replace(/÷/g, '\\div ');
     s = s.replace(/\^?\\?(degree|degrees|circ)\b/gi, '^{\\circ}').replace(/°/g, '^{\\circ}');
 
+    // Single-letter variable subscripts: x1 -> x_{1}, y1 -> y_{1}, x2 -> x_{2}, y2 -> y_{2}
+    s = s.replace(/(?<![a-zA-Z0-9_\\])\b([a-zA-Z])([0-9]+)\b/g, '$1_{$2}');
+
     // Roots: √((...)) or √( ... ) or √...
     s = s.replace(/√\s*\(\s*\(\s*([^)]+)\s*\)\s*\)/g, '\\sqrt{$1}');
     s = s.replace(/√\s*\(\s*([^)]+)\s*\)/g, '\\sqrt{$1}');
     s = s.replace(/√\s*([a-zA-Z0-9_]+)/g, '\\sqrt{$1}');
 
-    // Quadratic formula fraction: (-b \pm \sqrt{...}) / 2a
-    s = s.replace(/\(\s*-b\s*\\pm\s*\\sqrt\{([^}]+)\}\s*\)\s*\/\s*(\(?\s*\d*[a-zA-Z0-9^]+\s*\)?)/g, '\\frac{-b \\pm \\sqrt{$1}}{$2}');
-    
-    // Fractions inside \sqrt: \sqrt{(A) / B} -> \sqrt{\frac{A}{B}}
+    s = s.replace(/\(\s*-b\s*\\pm\s*\\sqrt\{([^}]+)\}\s*\)\s*\/\s*\(?\s*([a-zA-Z0-9^]+)\s*\)?/g, '\\frac{-b \\pm \\sqrt{$1}}{$2}');
     s = s.replace(/\\sqrt\{\s*\(?\s*([^/]+?)\s*\/\s*([^)]+?)\s*\)?\s*\}/g, '\\sqrt{\\frac{$1}{$2}}');
 
-    // Simple parenthesized fractions & function-aware fractions
-    const parenFracRegex = /\(\s*((?:[^{}()]+|\([^()]*\))+?)\s*\/\s*((?:[^{}()]+|\([^()]*\))+?)\s*\)/g;
-    s = s.replace(parenFracRegex, (match, num, den) => {
+    // Simple non-recursive fraction regex
+    s = s.replace(/\(\s*([a-zA-Z0-9_+\-*()\s]+?)\s*\/\s*([a-zA-Z0-9_+\-*()\s]+?)\s*\)/g, (match, num, den) => {
       let n = num.trim();
       let d = den.trim();
       if (n.startsWith('(') && n.endsWith(')')) n = n.slice(1, -1).trim();
       return `\\frac{${n}}{${d}}`;
     });
 
-    const unparenFracRegex = /(\b[a-zA-Z0-9_]+(?:\([^()]*\))?)\s*\/\s*(\b[a-zA-Z0-9_]+(?:\([^()]*\))?)/g;
-    s = s.replace(unparenFracRegex, '\\frac{$1}{$2}');
-
-    // Clean up stray closing parenthesis directly following \frac{...}{...}
+    s = s.replace(/(\b[a-zA-Z0-9_]+(?:\([^()]*\))?)\s*\/\s*(\b[a-zA-Z0-9_]+(?:\([^()]*\))?)/g, '\\frac{$1}{$2}');
     s = s.replace(/(\\frac\s*\{[^{}]*\}\s*\{[^}]+\})\)/g, (m, p1) => p1);
 
-    // Wrap fractions adjacent to whole numbers in parens: 2\frac{1}{3} or 2 1/3 -> 2\left(\frac{1}{3}\right)
     s = s.replace(/(\b\d+)\s*\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1\\left(\\frac{$2}{$3}\\right)');
     s = s.replace(/(\b\d+)\s+([a-zA-Z0-9_]+)\s*\/\s*([a-zA-Z0-9_]+)/g, '$1\\left(\\frac{$2}{$3}\\right)');
-    // Remove potential double parens if already wrapped
     s = s.replace(/\\left\(\\left\(/g, '\\left(').replace(/\\right\)\\right\)/g, '\\right)');
 
-    // Format trig functions safely
     s = s.replace(/(?<!\\)\b(sin|cos|tan|asin|acos|atan|csc|sec|cot)\b/g, (m) => '\\' + m);
 
-    // Logarithms with bases: log2(16) -> \log_{2}(16), log_b(x) -> \log_{b}(x), log10(x) -> \log_{10}(x)
     s = s.replace(/\blog_?([0-9a-zA-Z]+)\s*\(([^)]+)\)/gi, '\\log_{$1}($2)');
     s = s.replace(/\blog_?([0-9a-zA-Z]+)\s+([0-9a-zA-Z]+)/gi, '\\log_{$1}{$2}');
-    // Inverse functions & negative exponents: f^(-1) -> f^{-1}, f^-1 -> f^{-1}
     s = s.replace(/([a-zA-Z0-9_])\^?\s*\(\s*-\s*([0-9a-zA-Z]+)\s*\)/g, '$1^{-$2}');
     s = s.replace(/([a-zA-Z0-9_])\^?\s*\{\s*\(?\s*-\s*([0-9a-zA-Z]+)\s*\)?\s*\}/g, '$1^{-$2}');
     s = s.replace(/([a-zA-Z0-9_])\^\s*-\s*([0-9a-zA-Z]+)/g, '$1^{-$2}');
 
-    // Exponents: ax^2 -> ax^{2}, b^2 -> b^{2}, 4a^2 -> 4a^{2}
     s = s.replace(/([a-zA-Z0-9_)]+)\^([a-zA-Z0-9_]+)/g, '$1^{$2}');
 
-    // Trim any unbalanced closing parens from the end of formula
     let openCount = (s.match(/\(/g) || []).length;
     let closeCount = (s.match(/\)/g) || []).length;
     while (closeCount > openCount && s.endsWith(')')) {
@@ -128,42 +125,30 @@ function normalizeMathInText(rawText) {
     return `$${s}$` + punct;
   };
 
-  // Helper to check if a word is English prose (not a math symbol/function)
-  const isProseWord = (word) => {
-    const w = word.toLowerCase().trim();
-    if (!w || w.length < 2) return false;
-    if (/^log_?[0-9a-zA-Z]*$/i.test(w)) return false;
-    const mathKeywords = new Set([
-      'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'log', 'ln', 'lim', 'det',
-      'min', 'max', 'ax', 'bx', 'cx', 'dx', 'ex', 'fx', 'gx', 'hx', 'pm'
-    ]);
-    return !mathKeywords.has(w);
-  };
+  const mathKeywords = new Set(['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'log', 'ln', 'lim', 'det', 'min', 'max']);
 
-  // Replace equations/formulas embedded inside prose text without touching English words
-  // Match candidate math formulas (containing variables, numbers, operators, =, ^, √, ±, parens, decimals, degrees)
-  return str.replace(/((?:\([^)]+\)|[a-zA-Z0-9_]|\s|[+\-*/=^±√().,°%\[\]{}]){1,})/g, (match) => {
-    const trimmed = match.trim();
-    if (!trimmed) return match;
+  // Line by line non-backtracking parsing
+  const lines = str.split('\n');
+  const processedLines = lines.map((line) => {
+    const isMathFormula = /[\^±√=]|\b[a-zA-Z0-9_()]+\s*\/\s*[a-zA-Z0-9_()]+\b/i.test(line);
+    const words = line.match(/\b[a-zA-Z]{3,}\b/g) || [];
+    const proseWords = words.filter(w => !mathKeywords.has(w.toLowerCase()));
 
-    // Extract all words of 2+ letters
-    const words = trimmed.match(/\b[a-zA-Z]{2,}\b/g) || [];
-    const proseWords = words.filter(isProseWord);
+    if (isMathFormula && proseWords.length === 0) {
+      return formatFormulaOnly(line);
+    }
 
-    // If candidate math block contains prose words (like "Solve", "the", "equation", "by", "factoring", "or", "is"),
-    // do NOT wrap the whole block in LaTeX!
-    if (proseWords.length > 0) {
+    let formattedLine = line.replace(/(\b[a-zA-Z0-9_()]+\s*=\s*[a-zA-Z0-9_()+\-*/\s]+\b)/g, (match) => {
+      if (/[\^±√=+\-*/]/i.test(match)) {
+        return formatFormulaOnly(match);
+      }
       return match;
-    }
+    });
 
-    // Must contain active math indicators (=, ^, √, ±, log, or math operators between terms)
-    const hasMathIndicator = /[\^±√=]|\blog_?[0-9a-zA-Z]*|\b[a-zA-Z0-9_]+\s*[+\-*/=]\s*[a-zA-Z0-9_]+\b|\([a-zA-Z0-9^+\-*/\s]+\)\s*\(/i.test(trimmed);
-    if (hasMathIndicator) {
-      return formatFormulaOnly(trimmed);
-    }
-
-    return match;
+    return replaceSubscriptDigits(formattedLine);
   });
+
+  return processedLines.join('\n');
 }
 
 /**

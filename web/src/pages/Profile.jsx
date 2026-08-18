@@ -23,7 +23,7 @@ import { useTheme } from '../context/ThemeContext';
 import { authApi } from '../services/api';
 import SignOutModal from '../components/SignOutModal';
 
-function MenuCardItem({ icon: Icon, title, description, badgeText, badgeColor = 'bg-[#f2f4f6] text-[#45474c]', onClick }) {
+function MenuCardItem({ icon: Icon, title, description, badgeText, badgeColor = 'bg-[#f2f4f6] dark:bg-emerald-950/60 text-[#45474c] dark:text-emerald-300 border dark:border-emerald-800/60', onClick }) {
   const { primaryColor } = useTheme();
   const [hovered, setHovered] = useState(false);
   return (
@@ -32,11 +32,11 @@ function MenuCardItem({ icon: Icon, title, description, badgeText, badgeColor = 
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        borderColor: hovered ? `${primaryColor}60` : '#e0e3e5',
+        borderColor: hovered ? `${primaryColor}60` : undefined,
         transform: hovered ? 'translateY(-2px)' : 'none',
         boxShadow: hovered ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
       }}
-      className="w-full flex items-center justify-between p-4 bg-white dark:bg-[#1a2333] rounded-2xl border transition-all text-left cursor-pointer group"
+      className="w-full flex items-center justify-between p-4 bg-white dark:bg-[#1a2333] rounded-2xl border border-gray-200 dark:border-[#2d3748] transition-all text-left cursor-pointer group"
     >
       <div className="flex items-center gap-3.5">
         <div
@@ -48,7 +48,7 @@ function MenuCardItem({ icon: Icon, title, description, badgeText, badgeColor = 
         <div>
           <div className="flex items-center gap-2">
             <p
-              className="text-base font-bold dark:text-white transition-colors"
+              className="text-base font-bold text-gray-900 dark:text-white transition-colors"
               style={{ color: hovered ? primaryColor : undefined }}
             >
               {title}
@@ -63,10 +63,11 @@ function MenuCardItem({ icon: Icon, title, description, badgeText, badgeColor = 
         </div>
       </div>
       <div
-        className="w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0"
+        className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0 ${
+          hovered ? 'text-white' : 'bg-gray-100 dark:bg-[#252f40] text-[#75777d] dark:text-gray-300'
+        }`}
         style={{
-          backgroundColor: hovered ? primaryColor : '#f7f9fb',
-          color: hovered ? '#ffffff' : '#75777d',
+          backgroundColor: hovered ? primaryColor : undefined,
         }}
       >
         <IoChevronForwardOutline size={16} />
@@ -76,15 +77,15 @@ function MenuCardItem({ icon: Icon, title, description, badgeText, badgeColor = 
 }
 
 const BANNER_GRADIENTS = {
-  indigo: 'from-[#4b41e1] via-[#3d33d0] to-[#2b1fb8]',
-  emerald: 'from-[#00a472] via-[#008f63] to-[#00704d]',
-  sunset: 'from-[#f59e0b] via-[#ea580c] to-[#dc2626]',
-  ocean: 'from-[#0284c7] via-[#2563eb] to-[#4f46e5]',
-  midnight: 'from-[#1e293b] via-[#0f172a] to-[#020617]',
-  amethyst: 'from-[#9333ea] via-[#7c3aed] to-[#4c1d95]',
-  rose: 'from-[#f43f5e] via-[#e11d48] to-[#9f1239]',
-  aurora: 'from-[#06b6d4] via-[#0d9488] to-[#115e59]',
-  unicorn: 'from-[#ec4899] via-[#8b5cf6] to-[#3b82f6]',
+  indigo: 'linear-gradient(135deg, #4b41e1 0%, #3d33d0 50%, #2b1fb8 100%)',
+  emerald: 'linear-gradient(135deg, #00a472 0%, #008f63 50%, #00704d 100%)',
+  sunset: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 50%, #dc2626 100%)',
+  ocean: 'linear-gradient(135deg, #0284c7 0%, #2563eb 50%, #4f46e5 100%)',
+  midnight: 'linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #020617 100%)',
+  amethyst: 'linear-gradient(135deg, #9333ea 0%, #7c3aed 50%, #4c1d95 100%)',
+  rose: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 50%, #9f1239 100%)',
+  aurora: 'linear-gradient(135deg, #06b6d4 0%, #0d9488 50%, #115e59 100%)',
+  unicorn: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #3b82f6 100%)',
 };
 
 export default function Profile() {
@@ -185,7 +186,10 @@ export default function Profile() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Hero User Identity Card */}
         <div className="lg:col-span-1 space-y-6">
-          <div className={`bg-gradient-to-br ${BANNER_GRADIENTS[user?.bannerTheme || 'indigo']} rounded-3xl p-6 text-white shadow-xl relative overflow-hidden transition-all duration-300`}>
+          <div
+            className="rounded-3xl p-6 text-white shadow-xl relative overflow-hidden transition-all duration-300"
+            style={{ background: BANNER_GRADIENTS[user?.bannerTheme || 'indigo'] ?? BANNER_GRADIENTS.indigo }}
+          >
             {/* Background Accent Graphic */}
             <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-white/10 rounded-full blur-xl pointer-events-none" />
 

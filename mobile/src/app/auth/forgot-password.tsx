@@ -14,7 +14,7 @@ type Step = 'email' | 'otp' | 'password';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const { darkMode } = useTheme();
+  const { darkMode, primaryColor } = useTheme();
 
   const D = {
     bg: darkMode ? '#09090b' : '#f7f9fb',
@@ -25,7 +25,6 @@ export default function ForgotPasswordScreen() {
     placeholder: darkMode ? '#71717a' : '#75777d',
     inputBg: darkMode ? '#27272a' : '#f2f4f6',
     inputBorder: darkMode ? '#3f3f46' : '#c5c6cd',
-    glow: darkMode ? 'rgba(75, 65, 225, 0.18)' : 'rgba(75, 65, 225, 0.08)',
     stepDot: darkMode ? '#27272a' : '#e2e8f0',
     stepLine: darkMode ? '#27272a' : '#e2e8f0',
   };
@@ -165,8 +164,8 @@ export default function ForgotPasswordScreen() {
   return (
     <View style={[styles.container, { backgroundColor: D.bg }]}>
       <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={D.bg} />
-      <View style={[styles.ambientGlow, styles.glowTopLeft, { backgroundColor: D.glow }]} pointerEvents="none" />
-      <View style={[styles.ambientGlow, styles.glowBottomRight, { backgroundColor: D.glow }]} pointerEvents="none" />
+      <View style={[styles.ambientGlow, styles.glowTopLeft, { backgroundColor: primaryColor, opacity: darkMode ? 0.25 : 0.12 }]} pointerEvents="none" />
+      <View style={[styles.ambientGlow, styles.glowBottomRight, { backgroundColor: primaryColor, opacity: darkMode ? 0.25 : 0.12 }]} pointerEvents="none" />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -191,7 +190,7 @@ export default function ForgotPasswordScreen() {
           <View style={styles.stepIndicator}>
             {(['email', 'otp', 'password'] as Step[]).map((s, i) => (
               <View key={s} style={styles.stepRow}>
-                <View style={[styles.stepDot, step === s && styles.stepDotActive, i < ['email', 'otp', 'password'].indexOf(step) && styles.stepDotDone, { backgroundColor: step === s ? '#4b41e1' : i < ['email', 'otp', 'password'].indexOf(step) ? '#00a472' : D.stepDot }]}>
+                <View style={[styles.stepDot, step === s && styles.stepDotActive, i < ['email', 'otp', 'password'].indexOf(step) && styles.stepDotDone, { backgroundColor: step === s ? primaryColor : i < ['email', 'otp', 'password'].indexOf(step) ? '#00a472' : D.stepDot }]}>
                   {i < ['email', 'otp', 'password'].indexOf(step)
                     ? <Ionicons name="checkmark" size={12} color="#fff" />
                     : <Text style={[styles.stepNum, step === s && styles.stepNumActive, { color: step === s ? '#fff' : D.textLight }]}>{i + 1}</Text>}
@@ -202,12 +201,12 @@ export default function ForgotPasswordScreen() {
           </View>
 
           {/* Card */}
-          <View style={[styles.card, { backgroundColor: D.card, borderColor: D.border, shadowColor: darkMode ? '#000' : '#4b41e1' }]}>
-            <View style={[styles.iconContainer, { backgroundColor: darkMode ? 'rgba(75,65,225,0.15)' : 'rgba(75,65,225,0.1)' }]}>
+          <View style={[styles.card, { backgroundColor: D.card, borderColor: D.border, shadowColor: primaryColor }]}>
+            <View style={[styles.iconContainer, { backgroundColor: `${primaryColor}20` }]}>
               <Ionicons
                 name={step === 'email' ? 'mail-outline' : step === 'otp' ? 'keypad-outline' : 'lock-closed-outline'}
                 size={28}
-                color="#4b41e1"
+                color={primaryColor}
               />
             </View>
             <Text style={[styles.title, { color: D.text }]}>{current.title}</Text>
@@ -233,7 +232,7 @@ export default function ForgotPasswordScreen() {
                     />
                   </View>
                 </View>
-                <TouchableOpacity style={[styles.btn, loading && styles.btnDisabled]} onPress={handleSendOtp} disabled={loading}>
+                <TouchableOpacity style={[styles.btn, { backgroundColor: primaryColor, shadowColor: primaryColor }, loading && styles.btnDisabled]} onPress={handleSendOtp} disabled={loading}>
                   {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Send Reset Code</Text>}
                 </TouchableOpacity>
               </>
@@ -253,7 +252,7 @@ export default function ForgotPasswordScreen() {
                   textAlign="center"
                   editable={!loading}
                 />
-                <TouchableOpacity style={[styles.btn, loading && styles.btnDisabled]} onPress={handleVerifyOtp} disabled={loading}>
+                <TouchableOpacity style={[styles.btn, { backgroundColor: primaryColor, shadowColor: primaryColor }, loading && styles.btnDisabled]} onPress={handleVerifyOtp} disabled={loading}>
                   {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Verify Code</Text>}
                 </TouchableOpacity>
 
@@ -272,7 +271,7 @@ export default function ForgotPasswordScreen() {
                     onPress={handleSendOtp}
                     disabled={loading || resendCooldown > 0}
                   >
-                    <Text style={[styles.resendText, resendCooldown > 0 && styles.resendTextDisabled]}>
+                    <Text style={[styles.resendText, { color: primaryColor }, resendCooldown > 0 && styles.resendTextDisabled]}>
                       {resendCooldown > 0
                         ? `Resend code (${Math.floor(resendCooldown)}s)`
                         : "Didn't receive it? Resend code"}
@@ -323,7 +322,7 @@ export default function ForgotPasswordScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
-                <TouchableOpacity style={[styles.btn, loading && styles.btnDisabled]} onPress={handleResetPassword} disabled={loading}>
+                <TouchableOpacity style={[styles.btn, { backgroundColor: primaryColor, shadowColor: primaryColor }, loading && styles.btnDisabled]} onPress={handleResetPassword} disabled={loading}>
                   {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Reset Password</Text>}
                 </TouchableOpacity>
               </>

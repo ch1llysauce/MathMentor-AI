@@ -59,13 +59,13 @@ export default function Settings() {
       <div className="flex items-center gap-4 mb-6">
         <button
           onClick={() => navigate('/profile')}
-          className="w-10 h-10 rounded-full bg-[#f2f4f6] hover:bg-[#e2e8f0] text-[#091426] flex items-center justify-center transition-colors cursor-pointer"
+          className="w-10 h-10 rounded-full bg-[#f2f4f6] dark:bg-gray-800 hover:bg-[#e2e8f0] dark:hover:bg-gray-700 text-[#091426] dark:text-white flex items-center justify-center transition-colors cursor-pointer"
         >
           <IoArrowBack size={20} />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-[#091426] tracking-tight">Settings</h1>
-          <p className="text-xs text-[#75777d]">Manage app preferences and display themes</p>
+          <h1 className="text-2xl font-bold text-[#091426] dark:text-white tracking-tight">Settings</h1>
+          <p className="text-xs text-[#75777d] dark:text-gray-400">Manage app preferences and display themes</p>
         </div>
       </div>
 
@@ -75,16 +75,16 @@ export default function Settings() {
         <div className="space-y-6">
           {/* Appearance */}
           <div>
-            <h2 className="text-sm font-semibold text-[#45474c] uppercase tracking-wider mb-2 ml-1">Appearance</h2>
-            <div className="bg-white rounded-2xl shadow-sm border border-[#e0e3e5] overflow-hidden">
+            <h2 className="text-sm font-semibold text-[#45474c] dark:text-gray-300 uppercase tracking-wider mb-2 ml-1">Appearance</h2>
+            <div className="bg-white dark:bg-[#1a2333] rounded-2xl shadow-sm border border-[#e0e3e5] dark:border-[#2d3748] overflow-hidden">
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[rgba(75,65,225,0.1)] flex items-center justify-center text-[#4b41e1]">
                     <IoMoonOutline size={20} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[#091426]">Dark Mode</p>
-                    <p className="text-xs text-[#75777d]">Use dark theme throughout the app</p>
+                    <p className="text-sm font-semibold text-[#091426] dark:text-white">Dark Mode</p>
+                    <p className="text-xs text-[#75777d] dark:text-gray-400">Use dark theme throughout the app</p>
                   </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -94,19 +94,19 @@ export default function Settings() {
                     onChange={toggleDarkMode}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-[#e0e3e5] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4b41e1]"></div>
+                  <div className="w-11 h-6 bg-[#e0e3e5] dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4b41e1]"></div>
                 </label>
               </div>
 
               {/* Accent Color Scheme */}
-              <div className="p-4 border-t border-[#f2f4f6]">
+              <div className="p-4 border-t border-[#f2f4f6] dark:border-[#2d3748]">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-[rgba(33,150,243,0.1)] flex items-center justify-center text-[#2196f3]">
                     <IoColorPaletteOutline size={20} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[#091426]">Accent Color Scheme</p>
-                    <p className="text-xs text-[#75777d]">Set app accent colors based on preset themes</p>
+                    <p className="text-sm font-semibold text-[#091426] dark:text-white">Accent Color Scheme</p>
+                    <p className="text-xs text-[#75777d] dark:text-gray-400">Set app accent colors based on preset themes</p>
                   </div>
                 </div>
 
@@ -122,7 +122,7 @@ export default function Settings() {
                           showToast(`Accent theme set to ${theme.name}`);
                         }}
                         className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-xs ${
-                          isSelected ? 'ring-2 ring-offset-2 ring-[#091426]' : 'hover:scale-105'
+                          isSelected ? 'ring-2 ring-offset-2 ring-[#091426] dark:ring-white' : 'hover:scale-105'
                         }`}
                         style={{ backgroundColor: theme.color }}
                         title={theme.name}
@@ -141,18 +141,18 @@ export default function Settings() {
         <div className="space-y-6">
           {/* Mobile App */}
           <div>
-            <h2 className="text-sm font-semibold text-[#45474c] uppercase tracking-wider mb-2 ml-1">Mobile Application</h2>
-            <div className="bg-white rounded-2xl shadow-sm border border-[#e0e3e5] p-5 space-y-3">
+            <h2 className="text-sm font-semibold text-[#45474c] dark:text-gray-300 uppercase tracking-wider mb-2 ml-1">Mobile Application</h2>
+            <div className="bg-white dark:bg-[#1a2333] rounded-2xl shadow-sm border border-[#e0e3e5] dark:border-[#2d3748] p-5 space-y-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                   <IoLogoAndroid size={22} />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-[#091426]">MathMentor AI for Android</p>
-                  <p className="text-xs text-[#75777d]">Native mobile app version (.apk)</p>
+                  <p className="text-sm font-bold text-[#091426] dark:text-white">MathMentor AI for Android</p>
+                  <p className="text-xs text-[#75777d] dark:text-gray-400">Native mobile app version (.apk)</p>
                 </div>
               </div>
-              <p className="text-xs text-[#75777d] leading-relaxed">
+              <p className="text-xs text-[#75777d] dark:text-gray-400 leading-relaxed">
                 Take MathMentor AI on the go! Practice anytime, anywhere with offline support and fluid touch interactions.
               </p>
               <a
@@ -168,19 +168,19 @@ export default function Settings() {
 
           {/* System Preferences */}
           <div>
-            <h2 className="text-sm font-semibold text-[#45474c] uppercase tracking-wider mb-2 ml-1">System Preferences</h2>
-            <div className="bg-white rounded-2xl shadow-sm border border-[#e0e3e5] overflow-hidden divide-y divide-[#f2f4f6]">
+            <h2 className="text-sm font-semibold text-[#45474c] dark:text-gray-300 uppercase tracking-wider mb-2 ml-1">System Preferences</h2>
+            <div className="bg-white dark:bg-[#1a2333] rounded-2xl shadow-sm border border-[#e0e3e5] dark:border-[#2d3748] overflow-hidden divide-y divide-[#f2f4f6] dark:divide-[#2d3748]">
               <button
                 onClick={() => setShowResetModal(true)}
-                className="w-full flex items-center justify-between p-4 hover:bg-[#f7f9fb] transition-colors text-left cursor-pointer"
+                className="w-full flex items-center justify-between p-4 hover:bg-[#f7f9fb] dark:hover:bg-[#252f40] transition-colors text-left cursor-pointer"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[rgba(255,152,0,0.1)] flex items-center justify-center text-[#ff9800]">
                     <IoRefreshOutline size={20} />
                   </div>
-                  <span className="text-sm font-semibold text-[#091426]">Reset Settings</span>
+                  <span className="text-sm font-semibold text-[#091426] dark:text-white">Reset Settings</span>
                 </div>
-                <IoChevronForwardOutline size={18} className="text-[#75777d]" />
+                <IoChevronForwardOutline size={18} className="text-[#75777d] dark:text-gray-400" />
               </button>
             </div>
           </div>

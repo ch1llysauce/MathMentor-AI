@@ -71,10 +71,22 @@ export default function TabsLayout() {
         const isInsideCircle = dist < 48;
         setIsHoveringDropZone(isInsideCircle);
 
-        Animated.event(
-          [null, { dx: pan.x, dy: pan.y }],
-          { useNativeDriver: false }
-        )(evt, gestureState);
+        // Clamp chathead within screen boundaries while dragging
+        const { width: currentW, height: currentH } = Dimensions.get('window');
+        const MARGIN_X = 12;
+        const MIN_X = MARGIN_X;
+        const MAX_X = currentW - 48 - MARGIN_X;
+        const MIN_Y = 48; // below status bar
+        const MAX_Y = currentH - 48 - 85; // above bottom navigation tab bar
+
+        const rawX = (pan.x as any)._offset + gestureState.dx;
+        const rawY = (pan.y as any)._offset + gestureState.dy;
+
+        const clampedX = Math.max(MIN_X, Math.min(MAX_X, rawX));
+        const clampedY = Math.max(MIN_Y, Math.min(MAX_Y, rawY));
+
+        pan.x.setValue(clampedX - (pan.x as any)._offset);
+        pan.y.setValue(clampedY - (pan.y as any)._offset);
       },
       onPanResponderRelease: (_, gestureState) => {
         setIsDragging(false);
@@ -97,6 +109,30 @@ export default function TabsLayout() {
         if (dist < 48) {
           setFabDismissed(true);
           setShowDismissModal(true);
+          return;
+        }
+
+        // 3. Smooth spring / snap back inside safe screen boundaries if released past bounds
+        const currentX = (pan.x as any)._value;
+        const currentY = (pan.y as any)._value;
+
+        const { width: currentW, height: currentH } = Dimensions.get('window');
+        const MARGIN_X = 12;
+        const MIN_X = MARGIN_X;
+        const MAX_X = currentW - 48 - MARGIN_X;
+        const MIN_Y = 48;
+        const MAX_Y = currentH - 48 - 85;
+
+        const finalX = Math.max(MIN_X, Math.min(MAX_X, currentX));
+        const finalY = Math.max(MIN_Y, Math.min(MAX_Y, currentY));
+
+        if (finalX !== currentX || finalY !== currentY) {
+          Animated.spring(pan, {
+            toValue: { x: finalX, y: finalY },
+            useNativeDriver: false,
+            friction: 7,
+            tension: 40,
+          }).start();
         }
       },
     })
@@ -195,7 +231,7 @@ export default function TabsLayout() {
           ]}
           {...panResponder.panHandlers}
         >
-          <View style={styles.fabInner}>
+          <View style={[styles.fabInner, { backgroundColor: primaryColor || '#4b41e1', shadowColor: primaryColor || '#4b41e1' }]}>
             <Ionicons name="calculator" size={24} color="#ffffff" />
           </View>
         </Animated.View>
@@ -204,8 +240,8 @@ export default function TabsLayout() {
       <ScientificCalculator
         visible={calcVisible}
         onClose={() => setCalcVisible(false)}
-        onUseResult={() => {}}
         darkMode={darkMode}
+        showUseResult={false}
       />
 
       {/* Custom Notification Modal when Chathead is Dismissed */}
@@ -221,12 +257,12 @@ export default function TabsLayout() {
               style={[
                 styles.modalIconBox,
                 {
-                  backgroundColor: darkMode ? 'rgba(165, 180, 252, 0.15)' : 'rgba(75, 65, 225, 0.1)',
-                  borderColor: darkMode ? 'rgba(165, 180, 252, 0.3)' : 'rgba(75, 65, 225, 0.2)',
+                  backgroundColor: `${primaryColor || '#4b41e1'}20`,
+                  borderColor: `${primaryColor || '#4b41e1'}40`,
                 },
               ]}
             >
-              <Ionicons name="calculator-outline" size={32} color={darkMode ? '#a5b4fc' : '#4b41e1'} />
+              <Ionicons name="calculator-outline" size={32} color={primaryColor || '#4b41e1'} />
             </View>
 
             <RNText style={[styles.modalTitle, { color: darkMode ? '#ffffff' : '#111827' }]}>
@@ -239,7 +275,7 @@ export default function TabsLayout() {
 
             <TouchableOpacity
               onPress={() => setShowDismissModal(false)}
-              style={styles.modalConfirmBtn}
+              style={[styles.modalConfirmBtn, { backgroundColor: primaryColor || '#4b41e1', shadowColor: primaryColor || '#4b41e1' }]}
               activeOpacity={0.8}
             >
               <RNText style={styles.modalConfirmBtnText}>Got It</RNText>

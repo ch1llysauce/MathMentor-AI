@@ -26,13 +26,15 @@ const TOPIC_META = {
 
 const DAILY_TOPICS = ['Algebra', 'Geometry', 'Trigonometry'];
 
-function PracticeTopicCard({ topic, navigate, masteryLabel }) {
-  const { primaryColor } = useTheme();
+export function PracticeTopicCard({ topic, navigate, masteryLabel }) {
+  const { darkMode, primaryColor } = useTheme();
   const [hovered, setHovered] = useState(false);
   const meta = TOPIC_META[topic.name] ?? { color: primaryColor, bg: `${primaryColor}18`, Icon: IoBookOutline };
   const TopicIcon = meta.Icon;
   const ml = masteryLabel(topic.mastery);
   const barColor = topic.mastery >= 80 ? '#00a472' : topic.mastery >= 60 ? '#f59e0b' : '#ef4444';
+
+  const cardBase = darkMode ? '#1a2333' : '#ffffff';
 
   return (
     <button
@@ -40,21 +42,30 @@ function PracticeTopicCard({ topic, navigate, masteryLabel }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        borderColor: hovered ? `${primaryColor}60` : undefined,
+        background: hovered
+          ? `linear-gradient(135deg, ${cardBase} 0%, ${meta.color}22 100%)`
+          : `linear-gradient(135deg, ${cardBase} 0%, ${meta.color}0E 100%)`,
+        borderColor: hovered ? `${meta.color}50` : darkMode ? '#2d3748' : `${meta.color}25`,
         transform: hovered ? 'translateY(-2px)' : 'none',
-        boxShadow: hovered ? '0 4px 12px rgba(0,0,0,0.05)' : undefined,
+        boxShadow: hovered ? `0 6px 20px ${meta.color}20` : undefined,
       }}
-      className="w-full bg-white dark:bg-[#1a2333] border border-gray-100 dark:border-[#2d3748] rounded-3xl p-5 sm:p-6 shadow-2xs text-left transition-all flex flex-col group cursor-pointer"
+      className="w-full bg-white dark:bg-[#1a2333] border rounded-3xl p-5 sm:p-6 shadow-2xs text-left transition-all flex flex-col group cursor-pointer"
     >
       {/* Header */}
       <div className="flex items-center gap-4 mb-4">
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs" style={{ backgroundColor: meta.bg }}>
-          <TopicIcon size={28} style={{ color: meta.color }} />
+        <div
+          className="w-16 h-16 rounded-full flex items-center justify-center shrink-0 shadow-2xs border transition-transform duration-300 group-hover:scale-105"
+          style={{
+            background: `linear-gradient(135deg, ${meta.color}2E 0%, ${meta.color}0E 100%)`,
+            borderColor: `${meta.color}38`,
+          }}
+        >
+          <TopicIcon size={30} style={{ color: meta.color }} />
         </div>
         <div className="flex-1 min-w-0">
           <p
             className="text-lg font-bold text-gray-900 dark:text-white transition-colors"
-            style={{ color: hovered ? primaryColor : undefined }}
+            style={{ color: hovered ? meta.color : undefined }}
           >
             {topic.name}
           </p>
@@ -68,10 +79,11 @@ function PracticeTopicCard({ topic, navigate, masteryLabel }) {
           </div>
         </div>
         <div
-          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors"
+          className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all ${
+            hovered ? 'text-white shadow-md' : 'bg-gray-100 dark:bg-[#252f40] text-gray-400 dark:text-gray-300'
+          }`}
           style={{
-            backgroundColor: hovered ? primaryColor : '#f7f9fb',
-            color: hovered ? '#ffffff' : '#9ca3af',
+            backgroundColor: hovered ? meta.color : undefined,
           }}
         >
           <IoChevronForwardOutline size={18} />
@@ -101,10 +113,10 @@ function PracticeTopicCard({ topic, navigate, masteryLabel }) {
           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Key Subtopics:</p>
           <div className="flex flex-wrap gap-1.5">
             {topic.subtopics.slice(0, 3).map((s) => (
-              <span key={s} className="text-xs bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300 px-2.5 py-1 rounded-xl truncate max-w-[140px] font-medium">{s}</span>
+              <span key={s} className="text-xs bg-gray-100/80 dark:bg-[#252f40] border border-gray-200/80 dark:border-[#2d3748] text-gray-700 dark:text-gray-300 px-2.5 py-1 rounded-xl truncate max-w-[140px] font-medium">{s}</span>
             ))}
             {topic.subtopics.length > 3 && (
-              <span className="text-xs bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 px-2.5 py-1 rounded-xl shrink-0 font-medium">+{topic.subtopics.length - 3}</span>
+              <span className="text-xs bg-gray-100/80 dark:bg-[#252f40] border border-gray-200/80 dark:border-[#2d3748] text-gray-600 dark:text-gray-400 px-2.5 py-1 rounded-xl shrink-0 font-medium">+{topic.subtopics.length - 3}</span>
             )}
           </div>
         </div>
@@ -115,7 +127,8 @@ function PracticeTopicCard({ topic, navigate, masteryLabel }) {
 
 export default function PracticeIndex() {
   const navigate = useNavigate();
-  const { primaryColor } = useTheme();
+  const { darkMode, primaryColor } = useTheme();
+  const cardBase = darkMode ? '#1a2333' : '#ffffff';
 
   const [topics, setTopics]          = useState([]);
   const [loading, setLoading]        = useState(true);
@@ -211,9 +224,9 @@ export default function PracticeIndex() {
   }, []);
 
   const masteryLabel = (m) =>
-    m >= 80 ? { label: 'Expert',     color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' } :
-    m >= 60 ? { label: 'Proficient', color: 'text-yellow-600',  bg: 'bg-yellow-50 border-yellow-100'  } :
-              { label: 'Learning',   color: 'text-red-500',      bg: 'bg-red-50 border-red-100'        };
+    m >= 80 ? { label: 'Expert',     color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800/60' } :
+    m >= 60 ? { label: 'Proficient', color: 'text-amber-700 dark:text-amber-300',     bg: 'bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800/60'     } :
+              { label: 'Learning',   color: 'text-red-700 dark:text-red-300',         bg: 'bg-red-50 dark:bg-red-950/60 border-red-200 dark:border-red-800/60'             };
 
   const filteredTopics = topics.filter((t) => {
     const matchSearch = t.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -319,17 +332,31 @@ export default function PracticeIndex() {
           onMouseEnter={() => setDailyHovered(true)}
           onMouseLeave={() => setDailyHovered(false)}
           style={{
-            borderColor: !dailyDone && dailyHovered ? `${primaryColor}60` : undefined,
+            background: dailyDone
+              ? `linear-gradient(135deg, ${darkMode ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.06)'} 0%, ${cardBase} 100%)`
+              : dailyHovered
+                ? `linear-gradient(135deg, ${cardBase} 0%, rgba(245,158,11,0.20) 100%)`
+                : `linear-gradient(135deg, ${cardBase} 0%, rgba(245,158,11,0.08) 100%)`,
+            borderColor: dailyDone ? '#10b98150' : dailyHovered ? '#f59e0b60' : darkMode ? '#2d3748' : '#f59e0b30',
             transform: !dailyDone && dailyHovered ? 'translateY(-2px)' : 'none',
           }}
           className={`w-full bg-white dark:bg-[#1a2333] border rounded-2xl p-4 text-left flex items-center gap-4 shadow-2xs transition-all ${
-            dailyDone ? 'border-emerald-300 bg-emerald-50/30 cursor-default' : 'border-gray-100 dark:border-gray-700 cursor-pointer'
+            dailyDone ? 'cursor-default' : 'cursor-pointer'
           }`}
         >
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs ${dailyDone ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>
+          <div
+            className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 shadow-2xs border"
+            style={{
+              background: dailyDone
+                ? 'linear-gradient(135deg, rgba(16,185,129,0.3) 0%, rgba(16,185,129,0.1) 100%)'
+                : 'linear-gradient(135deg, rgba(245,158,11,0.3) 0%, rgba(245,158,11,0.1) 100%)',
+              borderColor: dailyDone ? '#10b98140' : '#f59e0b40',
+              color: dailyDone ? '#10b981' : '#f59e0b',
+            }}
+          >
             {dailyDone
-              ? <IoCheckmarkCircle size={26} />
-              : <IoTrophyOutline size={26} />
+              ? <IoCheckmarkCircle size={28} />
+              : <IoTrophyOutline size={28} />
             }
           </div>
           <div className="flex-1 min-w-0">

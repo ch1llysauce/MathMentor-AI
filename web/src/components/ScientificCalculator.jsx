@@ -12,6 +12,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useTheme } from '../context/ThemeContext';
 
 // ─── Safe expression evaluator ────────────────────────────────────────────────
 function safeEval(expr, mode, lastAns = '0') {
@@ -89,13 +90,14 @@ function safeEval(expr, mode, lastAns = '0') {
 }
 
 // ─── Button component ─────────────────────────────────────────────────────────
-function Btn({ label, onClick, className }) {
+function Btn({ label, onClick, className, style }) {
   const isLong = typeof label === 'string' && label.length >= 4;
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex-1 h-11 rounded-xl ${isLong ? 'text-[11px] px-0.5' : 'text-xs sm:text-sm'} font-semibold active:scale-95 transition-transform ${className}`}
+      style={style}
+      className={`flex-1 h-9 sm:h-11 rounded-xl ${isLong ? 'text-[10px] sm:text-[11px] px-0.5' : 'text-xs sm:text-sm'} font-semibold active:scale-95 transition-transform ${className}`}
     >
       {label}
     </button>
@@ -104,6 +106,7 @@ function Btn({ label, onClick, className }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function ScientificCalculator({ isOpen, visible, onClose, onUseResult }) {
+  const { primaryColor } = useTheme();
   const isVisible = Boolean(isOpen ?? visible);
   const [display,        setDisplay]        = useState('0');
   const [expression,     setExpression]     = useState('');
@@ -191,12 +194,13 @@ export default function ScientificCalculator({ isOpen, visible, onClose, onUseRe
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-md bg-gray-50 dark:bg-[#1a2333] border-t sm:border border-gray-200 dark:border-[#2d3748] rounded-t-3xl sm:rounded-3xl shadow-2xl pb-6 overflow-hidden animate-in slide-in-from-bottom duration-200 sm:zoom-in-95">
+      <div className="w-full max-w-md bg-gray-50 dark:bg-[#1a2333] border border-gray-200 dark:border-[#2d3748] rounded-3xl shadow-2xl pb-4 my-auto max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
 
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200 dark:border-[#2d3748]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-[#2d3748] shrink-0">
           <span className="text-base font-bold text-gray-900 dark:text-white">Scientific Calculator</span>
           <div className="flex items-center gap-2">
             <button
@@ -216,65 +220,69 @@ export default function ScientificCalculator({ isOpen, visible, onClose, onUseRe
           </div>
         </div>
 
-        <div className="mx-4 mt-3 mb-2 bg-white dark:bg-[#0d131f] border border-gray-200 dark:border-[#2d3748] rounded-2xl px-4 py-3 min-h-[72px] flex flex-col justify-end shadow-inner">
-          <p className="text-xs text-gray-400 dark:text-gray-400 text-right truncate">{expression || ' '}</p>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white text-right truncate">{display}</p>
+        {/* Inner Scrollable Body */}
+        <div className="overflow-y-auto flex-1 px-1 py-1">
+          <div className="mx-3 mt-2 mb-2 bg-white dark:bg-[#0d131f] border border-gray-200 dark:border-[#2d3748] rounded-2xl px-4 py-2.5 min-h-[64px] flex flex-col justify-end shadow-inner">
+            <p className="text-xs text-gray-400 dark:text-gray-400 text-right truncate">{expression || ' '}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white text-right truncate">{display}</p>
+          </div>
+
+          {/* Format Helper Hint Banner - Only visible when log_b is present in expression */}
+          {expression.includes('log_b') && (
+            <div className="mx-3 mb-2 px-3 py-1.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/40 flex items-center justify-between text-[11px] text-blue-700 dark:text-blue-300 animate-in fade-in duration-150">
+              <span className="font-medium">Format: <strong className="font-bold">log_b(value, base)</strong></span>
+              <span className="text-blue-500 dark:text-blue-400">e.g. log_b(8, 2) = 3</span>
+            </div>
+          )}
+
+          <div className="px-3 space-y-1.5">
+            <div className="flex gap-1.5">
+              {fn('sin')}{fn('cos')}{fn('tan')}{fn('asin')}{fn('acos')}{fn('atan')}
+            </div>
+
+            <div className="flex gap-1.5">
+              {fn('√')}{fn('∛')}
+              <Btn label="x²" onClick={() => append('²')} className="flex-1 h-9 sm:h-11 rounded-xl text-xs sm:text-sm font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 cursor-pointer" />
+              <Btn label="xʸ" onClick={() => append('^')} className="flex-1 h-9 sm:h-11 rounded-xl text-xs sm:text-sm font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 cursor-pointer" />
+              {fn('log')}{fn('ln')}{fn('log_b')}
+            </div>
+
+            <div className="flex gap-1.5">
+              <Btn label="π"   onClick={() => append('π')} className="flex-1 h-9 sm:h-11 rounded-xl text-xs sm:text-sm font-semibold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 cursor-pointer" />
+              <Btn label="e"   onClick={() => append('e')} className="flex-1 h-9 sm:h-11 rounded-xl text-xs sm:text-sm font-semibold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 cursor-pointer" />
+              <Btn label=","   onClick={() => append(',')} className="flex-1 h-9 sm:h-11 rounded-xl text-xs sm:text-sm font-semibold bg-white dark:bg-[#252f40] border border-gray-100 dark:border-[#374151] text-gray-900 dark:text-white shadow-xs cursor-pointer" />
+              <Btn label="Ans" onClick={() => append('Ans')} className="flex-1 h-9 sm:h-11 rounded-xl text-xs sm:text-sm font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 cursor-pointer" />
+              <Btn label="("   onClick={() => append('(')} className="flex-1 h-9 sm:h-11 rounded-xl text-xs sm:text-sm font-semibold bg-white dark:bg-[#252f40] border border-gray-100 dark:border-[#374151] text-gray-900 dark:text-white shadow-xs cursor-pointer" />
+              <Btn label=")"   onClick={() => append(')')} className="flex-1 h-9 sm:h-11 rounded-xl text-xs sm:text-sm font-semibold bg-white dark:bg-[#252f40] border border-gray-100 dark:border-[#374151] text-gray-900 dark:text-white shadow-xs cursor-pointer" />
+              <Btn label="⌫"   onClick={backspace}         className="flex-1 h-9 sm:h-11 rounded-xl text-xs sm:text-sm font-semibold bg-red-50 dark:bg-red-950/50 text-red-500 dark:text-red-300 cursor-pointer" />
+              <Btn label="AC"  onClick={clear}             className="flex-1 h-9 sm:h-11 rounded-xl text-xs sm:text-sm font-semibold bg-red-50 dark:bg-red-950/50 text-red-500 dark:text-red-300 cursor-pointer" />
+            </div>
+
+            <div className="flex gap-1.5">{num('7')}{num('8')}{num('9')}{op('÷')}</div>
+            <div className="flex gap-1.5">{num('4')}{num('5')}{num('6')}{op('×')}</div>
+            <div className="flex gap-1.5">{num('1')}{num('2')}{num('3')}{op('-')}</div>
+            <div className="flex gap-1.5">
+              {num('0')}{num('.')}
+              <Btn label="=" onClick={calculate} className="flex-1 h-9 sm:h-11 rounded-xl text-sm font-bold text-white cursor-pointer" style={{ backgroundColor: primaryColor || '#4b41e1' }} />
+              {op('+')}
+            </div>
+          </div>
+
+          {/* Use Result */}
+          {onUseResult && (
+            <div className="px-3 mt-2.5 pb-2">
+              <button
+                type="button"
+                onClick={useResult}
+                disabled={display === 'Error'}
+                className="w-full h-11 sm:h-12 rounded-2xl text-white font-bold text-sm disabled:opacity-40 transition-colors cursor-pointer shadow-sm"
+                style={{ backgroundColor: primaryColor || '#4b41e1' }}
+              >
+                Use Result ({display})
+              </button>
+            </div>
+          )}
         </div>
-
-        {/* Format Helper Hint Banner - Only visible when log_b is present in expression */}
-        {expression.includes('log_b') && (
-          <div className="mx-4 mb-2.5 px-3 py-1.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/40 flex items-center justify-between text-[11px] text-blue-700 dark:text-blue-300 animate-in fade-in duration-150">
-            <span className="font-medium">Format: <strong className="font-bold">log_b(value, base)</strong></span>
-            <span className="text-blue-500 dark:text-blue-400">e.g. log_b(8, 2) = 3</span>
-          </div>
-        )}
-
-        <div className="px-3 space-y-1.5">
-          <div className="flex gap-1.5">
-            {fn('sin')}{fn('cos')}{fn('tan')}{fn('asin')}{fn('acos')}{fn('atan')}
-          </div>
-
-          <div className="flex gap-1.5">
-            {fn('√')}{fn('∛')}
-            <Btn label="x²" onClick={() => append('²')} className="flex-1 h-11 rounded-xl text-xs sm:text-sm font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 cursor-pointer" />
-            <Btn label="xʸ" onClick={() => append('^')} className="flex-1 h-11 rounded-xl text-xs sm:text-sm font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 cursor-pointer" />
-            {fn('log')}{fn('ln')}{fn('log_b')}
-          </div>
-
-          <div className="flex gap-1.5">
-            <Btn label="π"   onClick={() => append('π')} className="flex-1 h-11 rounded-xl text-xs sm:text-sm font-semibold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 cursor-pointer" />
-            <Btn label="e"   onClick={() => append('e')} className="flex-1 h-11 rounded-xl text-xs sm:text-sm font-semibold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 cursor-pointer" />
-            <Btn label=","   onClick={() => append(',')} className="flex-1 h-11 rounded-xl text-xs sm:text-sm font-semibold bg-white dark:bg-[#252f40] border border-gray-100 dark:border-[#374151] text-gray-900 dark:text-white shadow-xs cursor-pointer" />
-            <Btn label="Ans" onClick={() => append('Ans')} className="flex-1 h-11 rounded-xl text-xs sm:text-sm font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 cursor-pointer" />
-            <Btn label="("   onClick={() => append('(')} className="flex-1 h-11 rounded-xl text-xs sm:text-sm font-semibold bg-white dark:bg-[#252f40] border border-gray-100 dark:border-[#374151] text-gray-900 dark:text-white shadow-xs cursor-pointer" />
-            <Btn label=")"   onClick={() => append(')')} className="flex-1 h-11 rounded-xl text-xs sm:text-sm font-semibold bg-white dark:bg-[#252f40] border border-gray-100 dark:border-[#374151] text-gray-900 dark:text-white shadow-xs cursor-pointer" />
-            <Btn label="⌫"   onClick={backspace}         className="flex-1 h-11 rounded-xl text-xs sm:text-sm font-semibold bg-red-50 dark:bg-red-950/50 text-red-500 dark:text-red-300 cursor-pointer" />
-            <Btn label="AC"  onClick={clear}             className="flex-1 h-11 rounded-xl text-xs sm:text-sm font-semibold bg-red-50 dark:bg-red-950/50 text-red-500 dark:text-red-300 cursor-pointer" />
-          </div>
-
-          <div className="flex gap-1.5">{num('7')}{num('8')}{num('9')}{op('÷')}</div>
-          <div className="flex gap-1.5">{num('4')}{num('5')}{num('6')}{op('×')}</div>
-          <div className="flex gap-1.5">{num('1')}{num('2')}{num('3')}{op('-')}</div>
-          <div className="flex gap-1.5">
-            {num('0')}{num('.')}
-            <Btn label="=" onClick={calculate} className="flex-1 h-11 rounded-xl text-sm font-bold bg-purple-600 hover:bg-purple-700 text-white cursor-pointer" />
-            {op('+')}
-          </div>
-        </div>
-
-        {/* Use Result */}
-        {onUseResult && (
-          <div className="px-4 mt-3">
-            <button
-              type="button"
-              onClick={useResult}
-              disabled={display === 'Error'}
-              className="w-full h-12 rounded-2xl bg-purple-600 text-white font-bold text-sm hover:bg-purple-700 disabled:opacity-40 transition-colors cursor-pointer"
-            >
-              Use Result ({display})
-            </button>
-          </div>
-        )}
 
       </div>
     </div>

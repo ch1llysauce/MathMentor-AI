@@ -22,15 +22,15 @@ import { useTheme } from '../../context/ThemeContext';
 import { authApi } from '../../services/api';
 
 const BANNER_THEMES = [
-  { id: 'indigo', name: 'Indigo', gradient: 'from-[#4b41e1] via-[#3d33d0] to-[#2b1fb8]', bg: 'bg-[#4b41e1]' },
-  { id: 'emerald', name: 'Emerald', gradient: 'from-[#00a472] via-[#008f63] to-[#00704d]', bg: 'bg-[#00a472]' },
-  { id: 'sunset', name: 'Sunset', gradient: 'from-[#f59e0b] via-[#ea580c] to-[#dc2626]', bg: 'bg-[#ea580c]' },
-  { id: 'ocean', name: 'Ocean', gradient: 'from-[#0284c7] via-[#2563eb] to-[#4f46e5]', bg: 'bg-[#2563eb]' },
-  { id: 'midnight', name: 'Obsidian', gradient: 'from-[#1e293b] via-[#0f172a] to-[#020617]', bg: 'bg-[#0f172a]' },
-  { id: 'amethyst', name: 'Amethyst', gradient: 'from-[#9333ea] via-[#7c3aed] to-[#4c1d95]', bg: 'bg-[#7c3aed]' },
-  { id: 'rose', name: 'Rose', gradient: 'from-[#f43f5e] via-[#e11d48] to-[#9f1239]', bg: 'bg-[#e11d48]' },
-  { id: 'aurora', name: 'Aurora', gradient: 'from-[#06b6d4] via-[#0d9488] to-[#115e59]', bg: 'bg-[#0d9488]' },
-  { id: 'unicorn', name: 'Unicorn', gradient: 'from-[#ec4899] via-[#8b5cf6] to-[#3b82f6]', bg: 'bg-[#ec4899]' },
+  { id: 'indigo', name: 'Indigo', cssGradient: 'linear-gradient(135deg, #4b41e1 0%, #3d33d0 50%, #2b1fb8 100%)' },
+  { id: 'emerald', name: 'Emerald', cssGradient: 'linear-gradient(135deg, #00a472 0%, #008f63 50%, #00704d 100%)' },
+  { id: 'sunset', name: 'Sunset', cssGradient: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 50%, #dc2626 100%)' },
+  { id: 'ocean', name: 'Ocean', cssGradient: 'linear-gradient(135deg, #0284c7 0%, #2563eb 50%, #4f46e5 100%)' },
+  { id: 'midnight', name: 'Obsidian', cssGradient: 'linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #020617 100%)' },
+  { id: 'amethyst', name: 'Amethyst', cssGradient: 'linear-gradient(135deg, #9333ea 0%, #7c3aed 50%, #4c1d95 100%)' },
+  { id: 'rose', name: 'Rose', cssGradient: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 50%, #9f1239 100%)' },
+  { id: 'aurora', name: 'Aurora', cssGradient: 'linear-gradient(135deg, #06b6d4 0%, #0d9488 50%, #115e59 100%)' },
+  { id: 'unicorn', name: 'Unicorn', cssGradient: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #3b82f6 100%)' },
 ];
 
 export default function EditProfile() {
@@ -184,9 +184,6 @@ export default function EditProfile() {
         const updatedUser = payload.user || payload;
         if (updatedUser) {
           saveAuth(updatedUser, localStorage.getItem('token'));
-        }
-        if (bannerChanged) {
-          setAccentTheme(bannerTheme);
         }
         await refreshProfile();
       }
@@ -488,7 +485,10 @@ export default function EditProfile() {
         {/* Left Column: Avatar & Banner Theme Card (4 Columns on PC) */}
         <div className="lg:col-span-4 bg-white dark:bg-[#1a2333] border border-[#e0e3e5] dark:border-[#2d3748] rounded-3xl p-5 shadow-sm text-center flex flex-col items-center">
           {/* Live Hero Banner Preview Card */}
-          <div className={`w-full bg-gradient-to-br ${BANNER_THEMES.find(t => t.id === bannerTheme)?.gradient || BANNER_THEMES[0].gradient} rounded-2xl p-6 text-white shadow-md relative overflow-hidden transition-all duration-300 mb-5`}>
+          <div
+            className="w-full rounded-2xl p-6 text-white shadow-md relative overflow-hidden transition-all duration-300 mb-5"
+            style={{ background: BANNER_THEMES.find(t => t.id === bannerTheme)?.cssGradient || BANNER_THEMES[0].cssGradient }}
+          >
             <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
             <div className="relative group mx-auto mb-3 w-28 h-28">
               <div className="w-28 h-28 rounded-full border-4 border-white/40 shadow-md overflow-hidden bg-black/20 flex items-center justify-center">
@@ -540,7 +540,10 @@ export default function EditProfile() {
                         : 'border-[#e0e3e5] dark:border-[#2d3748] hover:border-[#4b41e1]/50'
                     }`}
                   >
-                    <div className={`w-full h-8 rounded-lg bg-gradient-to-br ${theme.gradient} shadow-xs relative flex items-center justify-center`}>
+                    <div
+                      className="w-full h-8 rounded-lg shadow-xs relative flex items-center justify-center"
+                      style={{ background: theme.cssGradient }}
+                    >
                       {isSelected && <IoCheckmarkCircleOutline size={16} className="text-white drop-shadow-sm" />}
                     </div>
                     <span className="text-[11px] font-medium text-[#091426] dark:text-white">

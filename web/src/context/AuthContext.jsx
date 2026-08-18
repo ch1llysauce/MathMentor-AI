@@ -30,14 +30,16 @@ export function AuthProvider({ children }) {
     setToken(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    try {
+      sessionStorage.clear();
+    } catch { /* ignore */ }
   };
 
   // Listen for session-revoked events from the API interceptor
   useEffect(() => {
     const handleSessionRevoked = () => {
       setSessionRevoked(true);
-      setUser(null);
-      setToken(null);
+      clearAuth();
     };
     window.addEventListener('session-revoked', handleSessionRevoked);
     return () => window.removeEventListener('session-revoked', handleSessionRevoked);

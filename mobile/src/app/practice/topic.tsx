@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/colors';
 import { lessonService } from '@/services/lessonService';
 import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
@@ -43,10 +44,35 @@ const PRACTICE_SETS: PracticeSet[] = [
   { id: 'mixed',        title: 'Mixed Review',               problems: 15, difficulty: 'Medium', completed: 0 },
 ];
 
+const TOPIC_COLORS: Record<string, string> = {
+  Algebra: '#2563eb',
+  Geometry: '#00a472',
+  Trigonometry: '#f59e0b',
+};
+
+const blendColors = (baseHex: string, tintHex: string, amount: number) => {
+  const c1 = baseHex.replace('#', '');
+  const c2 = tintHex.replace('#', '');
+  
+  const r1 = parseInt(c1.substring(0, 2), 16) || 0;
+  const g1 = parseInt(c1.substring(2, 4), 16) || 0;
+  const b1 = parseInt(c1.substring(4, 6), 16) || 0;
+  
+  const r2 = parseInt(c2.substring(0, 2), 16) || 0;
+  const g2 = parseInt(c2.substring(2, 4), 16) || 0;
+  const b2 = parseInt(c2.substring(4, 6), 16) || 0;
+
+  const r = Math.round(r1 * (1 - amount) + r2 * amount);
+  const g = Math.round(g1 * (1 - amount) + g2 * amount);
+  const b = Math.round(b1 * (1 - amount) + b2 * amount);
+
+  return `rgb(${r}, ${g}, ${b})`;
+};
+
 export default function TopicScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { darkMode } = useTheme();
+  const { darkMode, primaryColor } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
 
   const T = {
@@ -55,7 +81,7 @@ export default function TopicScreen() {
     border: darkMode ? '#2e2e2e' : '#e2e8f0',
     text: darkMode ? '#f0f0f0' : Colors.text,
     textLight: darkMode ? '#a0a0a0' : Colors.textLight,
-    primary: darkMode ? '#a5b4fc' : Colors.primary,
+    primary: primaryColor || (darkMode ? '#a5b4fc' : Colors.primary),
     card: darkMode ? '#1a1a1a' : Colors.white,
     surface: darkMode ? '#2e2e2e' : Colors.surfaceContainer,
     tabBg: darkMode ? '#242424' : Colors.surfaceContainerLow,
@@ -65,6 +91,7 @@ export default function TopicScreen() {
   const topicName = params.topicName as string;
   const mastery = parseInt(params.mastery as string) || 0;
   const subtopicFilterParam = (params.subtopicFilter as string) || '';
+  const topicColor = TOPIC_COLORS[topicName] || T.primary;
 
   const [selectedTab, setSelectedTab] = useState<TabType>('lessons');
   // Always start as loading when there's no cache so the unfiltered "All"
@@ -404,39 +431,86 @@ export default function TopicScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              filteredLessons.map((lesson, index) => (
-                <TouchableOpacity
-                  key={lesson.id}
-                  style={[styles.lessonCard, { backgroundColor: T.card }, lesson.locked && styles.lessonCardLocked]}
-                  onPress={() => handleLessonPress(lesson)}
-                  activeOpacity={lesson.locked ? 1 : 0.7}
-                  disabled={lesson.locked}
-                >
-                  <View style={[styles.lessonNumber, { backgroundColor: T.surface }]}>
-                    {lesson.completed ? (
-                      <Ionicons name="checkmark-circle" size={24} color="#00a472" />
-                    ) : lesson.locked ? (
-                      <Ionicons name="lock-closed" size={20} color={T.textLight} />
-                    ) : (
-                      <Text style={[styles.lessonNumberText, { color: T.primary }]}>{index + 1}</Text>
-                    )}
-                  </View>
+              filteredLessons.map((lesson, index) => {
+                const cardGradientColors: readonly [string, string] = lesson.completed
+                  ? [T.card, blendColors(T.card, '#00a472', darkMode ? 0.22 : 0.08)]
+                  : lesson.locked
+                    ? [darkMode ? '#161616' : '#f8fafc', darkMode ? '#161616' : '#f8fafc']
+                    : [T.card, blendColors(T.card, topicColor, darkMode ? 0.22 : 0.08)];
 
-                  <View style={styles.lessonContent}>
-                    <Text style={[styles.lessonTitle, { color: lesson.locked ? T.textLight : T.text }]}>
-                      {lesson.title}
-                    </Text>
-                    <View style={styles.lessonMeta}>
-                      <Ionicons name="time-outline" size={14} color={T.textLight} />
-                      <Text style={[styles.lessonDuration, { color: T.textLight }]}>{lesson.duration}</Text>
-                    </View>
-                  </View>
+                const circleGradientColors: readonly [string, string] = lesson.completed
+                  ? [blendColors(T.card, '#00a472', darkMode ? 0.35 : 0.18), blendColors(T.card, '#00a472', darkMode ? 0.12 : 0.05)]
+                  : lesson.locked
+                    ? [T.surface, T.surface]
+                    : [blendColors(T.card, topicColor, darkMode ? 0.35 : 0.18), blendColors(T.card, topicColor, darkMode ? 0.12 : 0.05)];
 
-                  {!lesson.locked && (
-                    <Ionicons name="chevron-forward" size={20} color={T.textLight} />
-                  )}
-                </TouchableOpacity>
-              ))
+                const borderColor = lesson.completed
+                  ? blendColors(T.card, '#00a472', darkMode ? 0.40 : 0.25)
+                  : lesson.locked
+                    ? T.border
+                    : blendColors(T.card, topicColor, darkMode ? 0.40 : 0.25);
+
+                return (
+                  <TouchableOpacity
+                    key={lesson.id}
+                    onPress={() => handleLessonPress(lesson)}
+                    activeOpacity={lesson.locked ? 1 : 0.7}
+                    disabled={lesson.locked}
+                  >
+                    <LinearGradient
+                      colors={cardGradientColors}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={[
+                        styles.lessonCard,
+                        { borderColor },
+                        lesson.locked && styles.lessonCardLocked
+                      ]}
+                    >
+                      <LinearGradient
+                        colors={circleGradientColors}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={[
+                          styles.lessonNumber,
+                          {
+                            borderColor: lesson.completed
+                              ? blendColors(T.card, '#00a472', darkMode ? 0.50 : 0.35)
+                              : lesson.locked
+                                ? 'transparent'
+                                : blendColors(T.card, topicColor, darkMode ? 0.50 : 0.35),
+                            borderWidth: 1,
+                          }
+                        ]}
+                      >
+                        {lesson.completed ? (
+                          <Ionicons name="checkmark-circle" size={24} color="#00a472" />
+                        ) : lesson.locked ? (
+                          <Ionicons name="lock-closed" size={20} color={T.textLight} />
+                        ) : (
+                          <Text style={[styles.lessonNumberText, { color: topicColor }]}>{index + 1}</Text>
+                        )}
+                      </LinearGradient>
+
+                      <View style={styles.lessonContent}>
+                        <Text style={[styles.lessonTitle, { color: lesson.locked ? T.textLight : T.text }]}>
+                          {lesson.title}
+                        </Text>
+                        <View style={styles.lessonMeta}>
+                          <Ionicons name="time-outline" size={14} color={T.textLight} />
+                          <Text style={[styles.lessonDuration, { color: T.textLight }]}>{lesson.duration}</Text>
+                        </View>
+                      </View>
+
+                      {!lesson.locked && (
+                        <View style={[styles.chevronCircle, { backgroundColor: darkMode ? '#252f40' : '#f2f4f6' }]}>
+                          <Ionicons name="chevron-forward" size={16} color={T.textLight} />
+                        </View>
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+                );
+              })
             )}
             {/* Next module recommendation banner — shown when current module is 100% done */}
             {activeModuleDone && nextIncompleteModule && (
@@ -634,26 +708,33 @@ const styles = StyleSheet.create({
   lessonCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
-    borderRadius: 16,
+    borderRadius: 20,
+    borderWidth: 1,
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   lessonCardLocked: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   lessonNumber: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: Colors.surfaceContainer,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: 14,
+  },
+  chevronCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
   },
   lessonNumberText: {
     fontSize: 16,

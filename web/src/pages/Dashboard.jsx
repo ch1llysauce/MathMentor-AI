@@ -197,18 +197,19 @@ export default function Dashboard() {
       {/* Action buttons */}
       <div className="flex gap-3 mb-6 w-full">
         <button
-          disabled
-          className="flex-1 flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 px-4 rounded-xl opacity-60 cursor-not-allowed"
+          onClick={() => navigate('/tutor')}
+          className="flex-1 flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 px-4 rounded-xl transition-all hover:opacity-90 shadow-sm"
           style={{ backgroundColor: primaryColor }}
         >
           <IoSchoolOutline size={18} /> Resume Tutoring
         </button>
         <Link
           to="/diagnosis"
-          className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold py-3 px-4 rounded-xl transition-colors hover:opacity-90"
+          className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold py-3 px-4 rounded-xl transition-colors hover:opacity-90 border"
           style={{
             backgroundColor: `${primaryColor}18`,
             color: primaryColor,
+            borderColor: `${primaryColor}40`,
           }}
         >
           <IoAnalyticsOutline size={18} />
