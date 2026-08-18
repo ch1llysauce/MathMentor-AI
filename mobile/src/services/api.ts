@@ -1,6 +1,19 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
+import * as Device from 'expo-device';
 import { API_BASE_URL } from '../constants/api';
 import { storage } from '../utils/storage';
+
+const getMobileDeviceName = () => {
+  const osName = Platform.OS === 'android' ? 'Android' : Platform.OS === 'ios' ? 'iOS' : 'Mobile';
+  const model = Device.modelName || Device.deviceName;
+  if (model) {
+    return `Mobile (${osName} - ${model})`;
+  }
+  return `Mobile (${osName})`;
+};
+
+const MOBILE_DEVICE_NAME = getMobileDeviceName();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -10,10 +23,13 @@ const api = axios.create({
   },
 });
 
-// Request interceptor - add token to headers
+// Request interceptor - add token and device metadata to headers
 api.interceptors.request.use(
   async (config) => {
     try {
+      config.headers['X-Client-Type'] = 'Mobile';
+      config.headers['X-Device-Name'] = MOBILE_DEVICE_NAME;
+
       const token = await storage.getItem('token');
       console.log('🔑 Token from storage:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
       if (token) {

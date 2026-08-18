@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { authService } from '../services/authService';
 import api, { setOnUnauthorizedCallback } from '../services/api';
 import { AUTH_ENDPOINTS } from '../constants/api';
@@ -37,6 +38,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setOnUnauthorizedCallback(null);
     };
   }, []);
+
+  // Real-time session verification (15s heartbeat + foreground app state check)
+  useEffect(() => {
+    if (!user) return;
+
+    // Check profile/session every 15 seconds
+    const interval = setInterval(() => {
+      authService.getProfile().catch(() => {});
+    }, 15000);
+
+    // Re-verify session as soon as the app moves back to the foreground
+    const handleAppStateChange = (nextState: AppStateStatus) => {
+      if (nextState === 'active') {
+        authService.getProfile().catch(() => {});
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      clearInterval(interval);
+      subscription.remove();
+    };
+  }, [user]);
 
   const checkAuth = async () => {
     try {

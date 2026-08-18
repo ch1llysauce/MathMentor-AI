@@ -8,10 +8,23 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach auth token to every request
+const getWebDeviceName = () => {
+  const ua = navigator.userAgent || '';
+  let os = 'Device';
+  if (/windows/i.test(ua)) os = 'Windows';
+  else if (/macintosh|mac os/i.test(ua)) os = 'Mac';
+  else if (/linux/i.test(ua)) os = 'Linux';
+  else if (/android/i.test(ua)) os = 'Android';
+  else if (/iphone|ipad|ipod/i.test(ua)) os = 'iOS';
+  return `Web (${os})`;
+};
+
+// Attach auth token and device metadata to every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  config.headers['X-Client-Type'] = 'Web';
+  config.headers['X-Device-Name'] = getWebDeviceName();
   return config;
 });
 

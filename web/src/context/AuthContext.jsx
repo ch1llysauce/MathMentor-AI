@@ -84,12 +84,28 @@ export function AuthProvider({ children }) {
     }
   }, [token]);
 
-  // Refresh profile once on mount if authenticated
+  // Periodic heartbeat & window focus listener to verify active session in real-time
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isAuthenticated) return;
+
+    // Check session on mount and when tab gains focus
+    refreshProfile();
+
+    const handleFocus = () => {
       refreshProfile();
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    };
+
+    // 15-second heartbeat poll to enforce real-time session revocation
+    const intervalId = setInterval(() => {
+      refreshProfile();
+    }, 15000);
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [isAuthenticated, refreshProfile]);
 
   return (
     <AuthContext.Provider value={{ user, token, isAuthenticated, loading, login, register, logout, refreshProfile, saveAuth }}>

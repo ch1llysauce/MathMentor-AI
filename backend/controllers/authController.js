@@ -28,15 +28,29 @@ const generateToken = (userId, tokenId) => {
 };
 
 /**
- * Parse device info from User-Agent header
+ * Parse device info from request headers or User-Agent
  */
-const parseDeviceInfo = (userAgent = "") => {
-    if (!userAgent) return "Unknown device";
-    if (/android/i.test(userAgent)) return "Android";
-    if (/iphone|ipad|ipod/i.test(userAgent)) return "iOS";
-    if (/windows/i.test(userAgent)) return "Windows";
-    if (/macintosh|mac os/i.test(userAgent)) return "Mac";
-    return "Unknown device";
+const parseDeviceInfo = (req) => {
+    if (!req) return "Unknown device";
+
+    // Handle legacy string parameter or Express req object
+    const userAgent = typeof req === "string" ? req : (req.headers?.["user-agent"] || "");
+    const customDeviceName = typeof req === "object" ? req.headers?.["x-device-name"] : null;
+    const clientType = typeof req === "object" ? req.headers?.["x-client-type"] : null;
+
+    if (customDeviceName) {
+        return customDeviceName;
+    }
+
+    let os = "Device";
+    if (/android/i.test(userAgent)) os = "Android";
+    else if (/iphone|ipad|ipod/i.test(userAgent)) os = "iOS";
+    else if (/windows/i.test(userAgent)) os = "Windows";
+    else if (/macintosh|mac os/i.test(userAgent)) os = "Mac";
+    else if (/linux/i.test(userAgent)) os = "Linux";
+
+    const type = clientType || (/mobile|android|iphone|ipad|okhttp/i.test(userAgent) ? "Mobile" : "Web");
+    return `${type} (${os})`;
 };
 
 /**
@@ -136,7 +150,7 @@ export const login = asyncHandler(async (req, res) => {
     await LoginSession.create({
         user: user._id,
         tokenId,
-        deviceInfo: parseDeviceInfo(req.headers["user-agent"]),
+        deviceInfo: parseDeviceInfo(req),
         ipAddress: req.ip || req.connection?.remoteAddress || "",
         lastActiveAt: new Date(),
     });
@@ -400,7 +414,7 @@ export const validate2FA = asyncHandler(async (req, res) => {
     await LoginSession.create({
         user: user._id,
         tokenId,
-        deviceInfo: parseDeviceInfo(req.headers["user-agent"]),
+        deviceInfo: parseDeviceInfo(req),
         ipAddress: req.ip || req.connection?.remoteAddress || "",
         lastActiveAt: new Date(),
     });
@@ -610,7 +624,7 @@ export const getSessions = asyncHandler(async (req, res) => {
         const newSession = await LoginSession.create({
             user: req.user._id,
             tokenId,
-            deviceInfo: parseDeviceInfo(req.headers["user-agent"]),
+            deviceInfo: parseDeviceInfo(req),
             ipAddress,
             location: resolveLocationFromIp(ipAddress),
             lastActiveAt: new Date(),
