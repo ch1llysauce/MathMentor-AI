@@ -32,6 +32,7 @@ export default function EditProfileScreen() {
   
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [profileImage, setProfileImage] = useState<string>(user?.profileImage || '');
+  const [bannerTheme, setBannerTheme] = useState<string>(user?.bannerTheme || 'indigo');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -44,9 +45,10 @@ export default function EditProfileScreen() {
   const hasChanges = useMemo(() => {
     const nameChanged = displayName.trim() !== (user?.displayName || '');
     const imageChanged = profileImage !== (user?.profileImage || '');
+    const bannerChanged = bannerTheme !== (user?.bannerTheme || 'indigo');
     const passwordStarted = currentPassword.length > 0 || newPassword.length > 0 || confirmPassword.length > 0;
-    return nameChanged || imageChanged || passwordStarted;
-  }, [displayName, profileImage, currentPassword, newPassword, confirmPassword, user?.displayName, user?.profileImage]);
+    return nameChanged || imageChanged || bannerChanged || passwordStarted;
+  }, [displayName, profileImage, bannerTheme, currentPassword, newPassword, confirmPassword, user?.displayName, user?.profileImage, user?.bannerTheme]);
 
   // Intercept Android hardware back button
   useFocusEffect(
@@ -95,13 +97,15 @@ export default function EditProfileScreen() {
 
     setIsSaving(true);
     try {
-      // Update display name and/or profile image if changed
+      // Update display name, profile image, or banner theme if changed
       const nameChanged = displayName.trim() !== user?.displayName;
       const imageChanged = profileImage !== (user?.profileImage || '');
-      if (nameChanged || imageChanged) {
+      const bannerChanged = bannerTheme !== (user?.bannerTheme || 'indigo');
+      if (nameChanged || imageChanged || bannerChanged) {
         await updateUser({
           displayName: displayName.trim(),
           profileImage,
+          bannerTheme,
         });
       }
 

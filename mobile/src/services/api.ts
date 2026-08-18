@@ -33,6 +33,12 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+let onUnauthorizedCallback: (() => void) | null = null;
+
+export const setOnUnauthorizedCallback = (cb: (() => void) | null) => {
+  onUnauthorizedCallback = cb;
+};
+
 // Response interceptor - handle errors with better messaging
 api.interceptors.response.use(
   (response) => {
@@ -59,7 +65,8 @@ api.interceptors.response.use(
      console.error(`❌ API Error: ${error.response.status} ${error.config.method?.toUpperCase()} ${error.config.url}`);
     console.error('Error response data:', JSON.stringify(error.response.data, null, 2));
     console.error('Request data:', error.config.data);
-    
+
+
     if (error.response?.status === 401) {
       // Token expired - clear storage
       try {
@@ -67,6 +74,9 @@ api.interceptors.response.use(
         await storage.removeItem('user');
       } catch (storageError) {
         console.warn('Error clearing storage:', storageError);
+      }
+      if (onUnauthorizedCallback) {
+        onUnauthorizedCallback();
       }
     }
 

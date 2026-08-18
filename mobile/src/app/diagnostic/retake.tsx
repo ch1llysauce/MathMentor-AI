@@ -446,7 +446,7 @@ export default function RetakeDiagnosticScreen() {
           <Ionicons name="analytics" size={52} color={RK.secondary} />
           <Text style={[styles.infoTitle, { color: RK.primary }]}>Update Your Knowledge Map</Text>
           <Text style={[styles.infoText, { color: RK.textLight }]}>
-            15 questions across Algebra, Geometry, and Trigonometry. Takes around 15–20 minutes.
+            9 questions across Algebra, Geometry, and Trigonometry. Takes around 5–10 minutes.
             Your personalised learning path will be updated when you finish.
           </Text>
         </View>
@@ -455,7 +455,7 @@ export default function RetakeDiagnosticScreen() {
         <View style={styles.expectSection}>
           <Text style={[styles.expectTitle, { color: RK.text }]}>What to expect</Text>
           {[
-            { icon: 'help-circle', color: '#4b41e1', title: '15 questions', sub: 'Balanced across all three topics' },
+            { icon: 'help-circle', color: '#4b41e1', title: '9 questions', sub: 'Balanced across all three topics (3 per topic)' },
             { icon: 'bulb', color: '#f59e0b', title: 'Hints available', sub: 'One hint per question if you need it' },
             { icon: 'stats-chart', color: '#00a472', title: 'Instant results', sub: 'Your knowledge map updates immediately' },
           ].map((item, i) => (

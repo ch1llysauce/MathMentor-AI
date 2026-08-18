@@ -9,15 +9,28 @@ import {
   IoEyeOffOutline,
   IoCameraOutline,
   IoCheckmarkCircleOutline,
+  IoCloseOutline,
+  IoAddOutline,
+  IoRemoveOutline,
 } from 'react-icons/io5';
 import { useAuth } from '../../context/AuthContext';
 import { authApi } from '../../services/api';
 
+const BANNER_THEMES = [
+  { id: 'indigo', name: 'Indigo', gradient: 'from-[#4b41e1] via-[#3d33d0] to-[#2b1fb8]', bg: 'bg-[#4b41e1]' },
+  { id: 'emerald', name: 'Emerald', gradient: 'from-[#00a472] via-[#008f63] to-[#00704d]', bg: 'bg-[#00a472]' },
+  { id: 'sunset', name: 'Sunset', gradient: 'from-[#f59e0b] via-[#ea580c] to-[#dc2626]', bg: 'bg-[#ea580c]' },
+  { id: 'ocean', name: 'Ocean', gradient: 'from-[#0284c7] via-[#2563eb] to-[#4f46e5]', bg: 'bg-[#2563eb]' },
+  { id: 'midnight', name: 'Obsidian', gradient: 'from-[#1e293b] via-[#0f172a] to-[#020617]', bg: 'bg-[#0f172a]' },
+  { id: 'amethyst', name: 'Amethyst', gradient: 'from-[#9333ea] via-[#7c3aed] to-[#4c1d95]', bg: 'bg-[#7c3aed]' },
+];
+
 export default function EditProfile() {
   const navigate = useNavigate();
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, saveAuth } = useAuth();
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [profileImage, setProfileImage] = useState(user?.profileImage || '');
+  const [bannerTheme, setBannerTheme] = useState(user?.bannerTheme || 'indigo');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -28,13 +41,33 @@ export default function EditProfile() {
   const [error, setError] = useState('');
   const [successToast, setSuccessToast] = useState('');
   const fileInputRef = useRef(null);
+  const rawImgRef = useRef(null);
+
+  // Image Cropper Modal State
+  const [cropModalSrc, setCropModalSrc] = useState(null);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  // Discard Confirmation Modal State
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
 
   const hasChanges = useMemo(() => {
     const nameChanged = displayName.trim() !== (user?.displayName || '');
     const imageChanged = profileImage !== (user?.profileImage || '');
+    const bannerChanged = bannerTheme !== (user?.bannerTheme || 'indigo');
     const passwordStarted = currentPassword.length > 0 || newPassword.length > 0 || confirmPassword.length > 0;
-    return nameChanged || imageChanged || passwordStarted;
-  }, [displayName, profileImage, currentPassword, newPassword, confirmPassword, user]);
+    return nameChanged || imageChanged || bannerChanged || passwordStarted;
+  }, [displayName, profileImage, bannerTheme, currentPassword, newPassword, confirmPassword, user]);
+
+  const handleCancel = () => {
+    if (hasChanges) {
+      setShowDiscardModal(true);
+    } else {
+      navigate('/profile');
+    }
+  };
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
@@ -45,34 +78,61 @@ export default function EditProfile() {
     }
     const reader = new FileReader();
     reader.onloadend = () => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_SIZE = 400;
-        let width = img.width;
-        let height = img.height;
-        if (width > height) {
-          if (width > MAX_SIZE) {
-            height = Math.round((height * MAX_SIZE) / width);
-            width = MAX_SIZE;
-          }
-        } else {
-          if (height > MAX_SIZE) {
-            width = Math.round((width * MAX_SIZE) / height);
-            height = MAX_SIZE;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
-        setProfileImage(compressedBase64);
-        setError('');
-      };
-      img.src = reader.result;
+      setCropModalSrc(reader.result);
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+      setError('');
     };
     reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    const clientX = e.clientX || e.touches?.[0]?.clientX || 0;
+    const clientY = e.clientY || e.touches?.[0]?.clientY || 0;
+    setDragStart({ x: clientX - pan.x, y: clientY - pan.y });
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    const clientX = e.clientX || e.touches?.[0]?.clientX || 0;
+    const clientY = e.clientY || e.touches?.[0]?.clientY || 0;
+    setPan({
+      x: clientX - dragStart.x,
+      y: clientY - dragStart.y,
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const applyCrop = () => {
+    const img = rawImgRef.current;
+    if (!img) return;
+
+    const CROP_SIZE = 400;
+    const canvas = document.createElement('canvas');
+    canvas.width = CROP_SIZE;
+    canvas.height = CROP_SIZE;
+    const ctx = canvas.getContext('2d');
+
+    const PREVIEW_SIZE = 280;
+    const minDim = Math.min(img.naturalWidth, img.naturalHeight);
+    const srcCropDiameter = minDim / zoom;
+
+    const scale = minDim / PREVIEW_SIZE;
+    const centerX = (img.naturalWidth / 2) - (pan.x * scale / zoom);
+    const centerY = (img.naturalHeight / 2) - (pan.y * scale / zoom);
+
+    const srcX = Math.max(0, Math.min(img.naturalWidth - srcCropDiameter, centerX - (srcCropDiameter / 2)));
+    const srcY = Math.max(0, Math.min(img.naturalHeight - srcCropDiameter, centerY - (srcCropDiameter / 2)));
+
+    ctx.drawImage(img, srcX, srcY, srcCropDiameter, srcCropDiameter, 0, 0, CROP_SIZE, CROP_SIZE);
+    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+    setProfileImage(compressedBase64);
+    setCropModalSrc(null);
   };
 
   const handleSave = async (e) => {
@@ -98,8 +158,14 @@ export default function EditProfile() {
     try {
       const nameChanged = displayName.trim() !== user?.displayName;
       const imageChanged = profileImage !== (user?.profileImage || '');
-      if (nameChanged || imageChanged) {
-        await authApi.updateProfile({ displayName: displayName.trim(), profileImage });
+      const bannerChanged = bannerTheme !== (user?.bannerTheme || 'indigo');
+      if (nameChanged || imageChanged || bannerChanged) {
+        const { data } = await authApi.updateProfile({ displayName: displayName.trim(), profileImage, bannerTheme });
+        const payload = data.data ?? data;
+        const updatedUser = payload.user || payload;
+        if (updatedUser) {
+          saveAuth(updatedUser, localStorage.getItem('token'));
+        }
         await refreshProfile();
       }
       if (newPassword && currentPassword) {
@@ -128,10 +194,140 @@ export default function EditProfile() {
         </div>
       )}
 
+      {/* Image Crop Modal */}
+      {cropModalSrc && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#1a2333] border border-[#e0e3e5] dark:border-[#2d3748] rounded-3xl p-6 max-w-md w-full shadow-2xl relative">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-[#091426] dark:text-white">Adjust & Crop Photo</h3>
+              <button
+                type="button"
+                onClick={() => setCropModalSrc(null)}
+                className="text-[#75777d] hover:text-[#091426] dark:hover:text-white p-1 rounded-lg"
+              >
+                <IoCloseOutline size={22} />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#75777d] dark:text-gray-400 mb-4">
+              Drag to reposition your photo and use the slider to zoom in or out.
+            </p>
+
+            {/* Crop Circle Frame */}
+            <div
+              className="relative w-[280px] h-[280px] mx-auto rounded-full overflow-hidden border-4 border-[#4b41e1] shadow-inner bg-black cursor-grab active:cursor-grabbing select-none"
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onTouchStart={handleMouseDown}
+              onTouchMove={handleMouseMove}
+              onTouchEnd={handleMouseUp}
+            >
+              <img
+                ref={rawImgRef}
+                src={cropModalSrc}
+                alt="Crop preview"
+                className="absolute top-1/2 left-1/2 max-w-none origin-center pointer-events-none transition-transform duration-75"
+                style={{
+                  transform: `translate(-50%, -50%) translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                  maxHeight: '280px',
+                }}
+              />
+            </div>
+
+            {/* Zoom Slider */}
+            <div className="mt-6 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setZoom((z) => Math.max(1, z - 0.2))}
+                className="p-1.5 rounded-lg bg-[#f2f4f6] dark:bg-[#252f40] text-[#091426] dark:text-white hover:bg-[#e0e3e5] dark:hover:bg-[#323f54]"
+              >
+                <IoRemoveOutline size={16} />
+              </button>
+              <input
+                type="range"
+                min="1"
+                max="3"
+                step="0.05"
+                value={zoom}
+                onChange={(e) => setZoom(parseFloat(e.target.value))}
+                className="flex-1 accent-[#4b41e1] cursor-pointer"
+              />
+              <button
+                type="button"
+                onClick={() => setZoom((z) => Math.min(3, z + 0.2))}
+                className="p-1.5 rounded-lg bg-[#f2f4f6] dark:bg-[#252f40] text-[#091426] dark:text-white hover:bg-[#e0e3e5] dark:hover:bg-[#323f54]"
+              >
+                <IoAddOutline size={16} />
+              </button>
+            </div>
+
+            {/* Actions */}
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setCropModalSrc(null)}
+                className="px-5 py-2.5 rounded-xl font-semibold text-xs bg-[#f2f4f6] dark:bg-[#252f40] text-[#45474c] dark:text-white hover:bg-[#e0e3e5] dark:hover:bg-[#323f54] transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={applyCrop}
+                className="px-6 py-2.5 rounded-xl font-bold text-xs bg-[#4b41e1] text-white hover:bg-[#3323cc] transition-colors shadow-sm cursor-pointer"
+              >
+                Apply Crop
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unsaved Changes Confirmation Modal */}
+      {showDiscardModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#1a2333] border border-[#e0e3e5] dark:border-[#2d3748] rounded-3xl p-6 max-w-md w-full shadow-2xl relative animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold text-[#091426] dark:text-white">Unsaved Changes</h3>
+              <button
+                type="button"
+                onClick={() => setShowDiscardModal(false)}
+                className="text-[#75777d] hover:text-[#091426] dark:hover:text-white p-1 rounded-lg cursor-pointer"
+              >
+                <IoCloseOutline size={22} />
+              </button>
+            </div>
+
+            <p className="text-sm text-[#45474c] dark:text-gray-300 mb-6 leading-relaxed">
+              You have unsaved profile changes. Are you sure you want to discard your changes and leave?
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowDiscardModal(false)}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-semibold text-xs bg-[#f2f4f6] dark:bg-[#252f40] text-[#45474c] dark:text-white hover:bg-[#e0e3e5] dark:hover:bg-[#323f54] transition-colors cursor-pointer"
+              >
+                Keep Editing
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/profile')}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-semibold text-xs bg-red-50 dark:bg-red-950/40 text-[#ba1a1a] dark:text-red-400 border border-red-200 dark:border-red-800/40 hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors cursor-pointer"
+              >
+                Discard Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <button
-          onClick={() => navigate('/profile')}
+          type="button"
+          onClick={handleCancel}
           className="w-10 h-10 rounded-full bg-[#f2f4f6] dark:bg-[#252f40] hover:bg-[#e2e8f0] dark:hover:bg-[#323f54] text-[#091426] dark:text-white flex items-center justify-center transition-colors cursor-pointer"
         >
           <IoArrowBack size={20} />
@@ -144,41 +340,72 @@ export default function EditProfile() {
 
       {/* PC Responsive 2-Column Layout */}
       <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Avatar & Profile Card (4 Columns on PC) */}
-        <div className="lg:col-span-4 bg-white dark:bg-[#1a2333] border border-[#e0e3e5] dark:border-[#2d3748] rounded-3xl p-6 shadow-sm text-center flex flex-col items-center">
-          <div className="relative group mb-4">
-            <div className="w-32 h-32 rounded-full border-4 border-[#4b41e1]/20 shadow-md overflow-hidden bg-[#4b41e1] flex items-center justify-center">
-              {profileImage ? (
-                <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-5xl font-bold text-white">{initial}</span>
-              )}
+        {/* Left Column: Avatar & Banner Theme Card (4 Columns on PC) */}
+        <div className="lg:col-span-4 bg-white dark:bg-[#1a2333] border border-[#e0e3e5] dark:border-[#2d3748] rounded-3xl p-5 shadow-sm text-center flex flex-col items-center">
+          {/* Live Hero Banner Preview Card */}
+          <div className={`w-full bg-gradient-to-br ${BANNER_THEMES.find(t => t.id === bannerTheme)?.gradient || BANNER_THEMES[0].gradient} rounded-2xl p-6 text-white shadow-md relative overflow-hidden transition-all duration-300 mb-5`}>
+            <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
+            <div className="relative group mx-auto mb-3 w-28 h-28">
+              <div className="w-28 h-28 rounded-full border-4 border-white/40 shadow-md overflow-hidden bg-black/20 flex items-center justify-center">
+                {profileImage ? (
+                  <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-4xl font-bold text-white">{initial}</span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute inset-0 bg-black/50 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              >
+                <IoCameraOutline size={26} className="text-white mb-0.5" />
+                <span className="text-[11px] text-white font-semibold">Change</span>
+              </button>
+              <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
             </div>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="absolute inset-0 bg-black/50 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-            >
-              <IoCameraOutline size={32} className="text-white mb-1" />
-              <span className="text-xs text-white font-semibold">Change Photo</span>
-            </button>
-            <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
-          </div>
 
-          <h2 className="text-lg font-bold text-[#091426] dark:text-white">{displayName || 'User'}</h2>
-          <p className="text-xs text-[#75777d] mt-0.5">{user?.email}</p>
+            <h2 className="text-lg font-bold text-white tracking-tight">{displayName || 'User'}</h2>
+            <p className="text-xs text-white/80 mt-0.5 font-medium">{user?.email}</p>
+          </div>
 
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="mt-4 w-full bg-[#f2f4f6] dark:bg-[#252f40] hover:bg-[#e2e8f0] dark:hover:bg-[#323f54] text-[#091426] dark:text-white text-xs font-semibold py-2.5 rounded-xl transition-colors cursor-pointer"
+            className="w-full bg-[#f2f4f6] dark:bg-[#252f40] hover:bg-[#e2e8f0] dark:hover:bg-[#323f54] text-[#091426] dark:text-white text-xs font-semibold py-2.5 rounded-xl transition-colors cursor-pointer mb-5"
           >
             Upload New Picture
           </button>
 
-          <p className="text-[11px] text-[#75777d] mt-3">
-            JPG, PNG or GIF. Max 10MB.
-          </p>
+          {/* Banner Gradient Presets Selector */}
+          <div className="w-full text-left pt-4 border-t border-[#f2f4f6] dark:border-[#2d3748]">
+            <label className="block text-xs font-semibold text-[#091426] dark:text-white uppercase tracking-wide mb-2.5">
+              Banner Theme Presets
+            </label>
+            <div className="grid grid-cols-3 gap-2.5">
+              {BANNER_THEMES.map((theme) => {
+                const isSelected = bannerTheme === theme.id;
+                return (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() => setBannerTheme(theme.id)}
+                    className={`relative p-2 rounded-xl border flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
+                      isSelected
+                        ? 'border-[#4b41e1] bg-[#4b41e1]/5 dark:bg-[#4b41e1]/20 ring-2 ring-[#4b41e1]/40'
+                        : 'border-[#e0e3e5] dark:border-[#2d3748] hover:border-[#4b41e1]/50'
+                    }`}
+                  >
+                    <div className={`w-full h-8 rounded-lg bg-gradient-to-br ${theme.gradient} shadow-xs relative flex items-center justify-center`}>
+                      {isSelected && <IoCheckmarkCircleOutline size={16} className="text-white drop-shadow-sm" />}
+                    </div>
+                    <span className="text-[11px] font-medium text-[#091426] dark:text-white">
+                      {theme.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Right Column: Information & Security Forms (8 Columns on PC) */}
@@ -220,17 +447,18 @@ export default function EditProfile() {
                   Email Address
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#75777d]">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#64748b]">
                     <IoMailOutline size={18} />
                   </div>
                   <input
                     type="email"
                     disabled
                     value={user?.email || ''}
-                    className="w-full bg-[#e0e3e5]/60 dark:bg-[#1e2736] border border-[#c5c6cd]/50 dark:border-[#2d3748] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#75777d] cursor-not-allowed"
+                    className="w-full bg-[#e0e3e5]/60 dark:bg-[#121824] border border-[#c5c6cd]/50 dark:border-[#2d3748] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#64748b] dark:text-[#64748b] disabled:text-[#64748b] disabled:opacity-100 cursor-not-allowed select-none"
+                    style={{ color: '#64748b' }}
                   />
                 </div>
-                <p className="text-[11px] text-[#75777d] mt-1 ml-1">Email cannot be changed.</p>
+                <p className="text-[11px] text-[#64748b] mt-1 ml-1">Email cannot be changed.</p>
               </div>
             </div>
           </div>
@@ -329,7 +557,7 @@ export default function EditProfile() {
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               type="button"
-              onClick={() => navigate('/profile')}
+              onClick={handleCancel}
               className="px-6 py-3 rounded-2xl font-semibold text-sm bg-[#f2f4f6] dark:bg-[#252f40] hover:bg-[#e0e3e5] dark:hover:bg-[#323f54] text-[#45474c] dark:text-white transition-colors cursor-pointer"
             >
               Cancel

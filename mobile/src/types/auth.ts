@@ -11,6 +11,7 @@ export interface User {
   createdAt?: string;
   twoFactorEnabled?: boolean;
   profileImage?: string;
+  bannerTheme?: string;
   learningPreferences?: {
     difficulty?: string;
   };

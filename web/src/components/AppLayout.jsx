@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   IoGridOutline, IoPencilOutline, IoSearchOutline,
   IoChatbubblesOutline, IoPersonOutline, IoLogOutOutline,
   IoMenuOutline, IoCloseOutline, IoCalculatorOutline,
-  IoMoonOutline, IoSunnyOutline,
+  IoMoonOutline, IoSunnyOutline, IoWarningOutline,
 } from 'react-icons/io5';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useActiveSession } from '../context/ActiveSessionContext';
 import SignOutModal from './SignOutModal';
 
 const navItems = [
@@ -21,25 +22,39 @@ const navItems = [
 export default function AppLayout() {
   const { user, logout } = useAuth();
   const { darkMode, toggleDarkMode } = useTheme();
+  const { activeSession, clearActiveSession } = useActiveSession();
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [pendingPath, setPendingPath] = useState(null);
 
   const handleConfirmSignOut = async () => {
     await logout();
     navigate('/');
   };
 
-  const navLinkClass = ({ isActive }) =>
-    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${isActive
-      ? 'bg-[#e2dfff] text-[#4b41e1]'
-      : 'text-[#45474c] hover:bg-[#f2f4f6] hover:text-[#091426]'
-    }`;
+  const handleNavClick = (e, targetPath, onNav) => {
+    if (onNav) onNav();
+    if (location.pathname === targetPath) return;
+
+    if (activeSession) {
+      e.preventDefault();
+      setPendingPath(targetPath);
+      setShowSessionModal(true);
+    }
+  };
 
   const SidebarContent = ({ onNav }) => (
     <>
       {/* Logo - Clickable to Landing Page */}
-      <NavLink to="/" className="p-5 border-b border-[#e0e3e5] dark:border-[#2d3748] flex items-center gap-3 hover:opacity-85 transition-opacity cursor-pointer">
+      <NavLink
+        to="/"
+        onClick={(e) => handleNavClick(e, '/', onNav)}
+        className="p-5 border-b border-[#e0e3e5] dark:border-[#2d3748] flex items-center gap-3 hover:opacity-85 transition-opacity cursor-pointer"
+      >
         <img src="/logo.png" alt="MathMentor AI Logo" className="w-9 h-9 rounded-xl object-contain shadow-xs" />
         <span className="text-lg font-bold text-[#091426] dark:text-white tracking-tight">MathMentor AI</span>
       </NavLink>
@@ -47,7 +62,17 @@ export default function AppLayout() {
       {/* Nav */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {navItems.map(({ to, label, Icon }) => (
-          <NavLink key={to} to={to} className={navLinkClass} onClick={onNav}>
+          <NavLink
+            key={to}
+            to={to}
+            onClick={(e) => handleNavClick(e, to, onNav)}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${isActive
+                ? 'bg-[#e2dfff] text-[#4b41e1]'
+                : 'text-[#45474c] hover:bg-[#f2f4f6] hover:text-[#091426]'
+              }`
+            }
+          >
             <Icon size={18} />
             <span>{label}</span>
           </NavLink>
@@ -56,7 +81,11 @@ export default function AppLayout() {
 
       {/* User footer */}
       <div className="p-4 border-t border-[#e0e3e5]">
-        <div className="flex items-center gap-3 mb-3">
+        <NavLink
+          to="/profile"
+          onClick={(e) => handleNavClick(e, '/profile', onNav)}
+          className="flex items-center gap-3 mb-3 p-1.5 -mx-1.5 rounded-xl hover:bg-[#f2f4f6] dark:hover:bg-[#252f40] transition-colors cursor-pointer group"
+        >
           {user?.profileImage ? (
             <img src={user.profileImage} referrerPolicy="no-referrer"
               className="w-9 h-9 rounded-full object-cover border-2 border-[#e2dfff] shrink-0" alt="" />
@@ -65,11 +94,11 @@ export default function AppLayout() {
               {user?.displayName?.[0]?.toUpperCase() ?? 'U'}
             </div>
           )}
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-[#091426] truncate">{user?.displayName ?? 'User'}</p>
-            <p className="text-xs text-[#75777d] truncate">{user?.email ?? ''}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[#091426] dark:text-white group-hover:text-[#4b41e1] transition-colors truncate">{user?.displayName ?? 'User'}</p>
+            <p className="text-xs text-[#75777d] dark:text-gray-400 truncate">{user?.email ?? ''}</p>
           </div>
-        </div>
+        </NavLink>
         <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#f2f4f6]">
           <button
             onClick={toggleDarkMode}
@@ -91,6 +120,47 @@ export default function AppLayout() {
 
   return (
     <div className="flex h-screen bg-[#f7f9fb] overflow-hidden">
+      {/* Leave Session Confirmation Dialogue */}
+      {showSessionModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-[#1a2333] rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl text-center border border-gray-100 dark:border-[#2d3748] animate-in fade-in zoom-in duration-200">
+            <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 border border-amber-100 dark:border-amber-800/40 flex items-center justify-center mx-auto mb-4 shadow-2xs">
+              <IoWarningOutline size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              {activeSession?.type === 'diagnostic' ? 'Leave Diagnostic Test?' : 'Leave Practice Session?'}
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+              Are you sure you want to leave? Your current progress in this session will not be saved.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowSessionModal(false); setPendingPath(null); }}
+                className="flex-1 bg-gray-100 dark:bg-[#252f40] hover:bg-gray-200 dark:hover:bg-[#2d3748] text-gray-700 dark:text-gray-200 font-bold py-3.5 px-4 rounded-2xl text-sm transition-colors cursor-pointer"
+              >
+                {activeSession?.type === 'diagnostic' ? 'Keep Testing' : 'Keep Practicing'}
+              </button>
+              <button
+                onClick={() => {
+                  if (activeSession?.allowLeaveRef) {
+                    activeSession.allowLeaveRef.current = true;
+                  }
+                  clearActiveSession();
+                  setShowSessionModal(false);
+                  if (pendingPath) {
+                    navigate(pendingPath);
+                    setPendingPath(null);
+                  }
+                }}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3.5 px-4 rounded-2xl text-sm transition-colors shadow-md shadow-red-500/20 cursor-pointer"
+              >
+                Leave Session
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sign Out Confirmation Dialogue */}
       <SignOutModal
         isOpen={showSignOutModal}
@@ -125,10 +195,14 @@ export default function AppLayout() {
           <button onClick={() => setMobileOpen(true)} className="text-[#45474c] hover:text-[#091426]">
             <IoMenuOutline size={24} />
           </button>
-          <div className="flex items-center gap-2">
+          <NavLink
+            to="/dashboard"
+            onClick={(e) => handleNavClick(e, '/dashboard')}
+            className="flex items-center gap-2 hover:opacity-85 transition-opacity cursor-pointer"
+          >
             <img src="/logo.png" alt="MathMentor AI Logo" className="w-7 h-7 rounded-lg object-contain" />
             <span className="text-base font-bold text-[#091426]">MathMentor AI</span>
-          </div>
+          </NavLink>
         </header>
 
         <main className="flex-1 overflow-y-auto">

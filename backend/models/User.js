@@ -28,6 +28,12 @@ const userSchema = new mongoose.Schema({
         default: ""
     },
 
+    bannerTheme: {
+        type: String,
+        enum: ["indigo", "emerald", "sunset", "ocean", "midnight", "amethyst"],
+        default: "indigo"
+    },
+
     gradeLevel: {
         type: Number,
         enum: [9, 10, 11, 12]

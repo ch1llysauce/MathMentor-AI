@@ -181,7 +181,7 @@ export const getProfile = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const updateProfile = asyncHandler(async (req, res) => {
-    const { displayName, gradeLevel, focusAreas, learningPreferences, profileImage } = req.body;
+    const { displayName, gradeLevel, focusAreas, learningPreferences, profileImage, bannerTheme } = req.body;
 
     const user = await User.findById(req.user._id);
 
@@ -194,6 +194,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
     if (gradeLevel) user.gradeLevel = gradeLevel;
     if (focusAreas) user.focusAreas = focusAreas;
     if (profileImage !== undefined) user.profileImage = profileImage;
+    if (bannerTheme) user.bannerTheme = bannerTheme;
     if (learningPreferences) {
         user.learningPreferences = {
             ...user.learningPreferences,
@@ -234,10 +235,18 @@ export const changePassword = asyncHandler(async (req, res) => {
     }
 
     // Hash new password
+    // Hash new password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
-
     await user.save();
+
+    // Revoke all other active sessions for security when password is changed
+    if (req.user?.currentTokenId) {
+        await LoginSession.updateMany(
+            { user: req.user._id, tokenId: { $ne: req.user.currentTokenId } },
+            { isActive: false, revokedAt: new Date() }
+        );
+    }
 
     res.status(200).json({
         success: true,
@@ -246,11 +255,17 @@ export const changePassword = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Logout user (client-side token removal)
+ * @desc    Logout user
  * @route   POST /api/auth/logout
  * @access  Private
  */
 export const logout = asyncHandler(async (req, res) => {
+    if (req.user?.currentTokenId) {
+        await LoginSession.updateOne(
+            { user: req.user._id, tokenId: req.user.currentTokenId },
+            { isActive: false, revokedAt: new Date() }
+        );
+    }
     res.status(200).json({
         success: true,
         message: "Logged out successfully"

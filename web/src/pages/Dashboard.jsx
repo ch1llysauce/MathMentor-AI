@@ -127,7 +127,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full pb-24 sm:pb-28">
       {/* Welcome */}
       <div className="mb-5">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">

@@ -166,22 +166,25 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
               .replace(/\*/g, '');
 
           const extractNums = (s: string) => s.match(/-?\d+\.?\d*/g)?.join(',') ?? s;
-
           const userNorm    = normalize(selectedAnswer);
           const correctRaw  = currentProblem.correctAnswer ?? '';
+          const correctNorm = normalize(correctRaw);
 
-          // Split multi-value answers separated by "or" / "and" / commas
-          // e.g. "$x = -1.00$ or $x = -4.33$"  →  ["-1.00", "-4.33"]
-          const correctParts = correctRaw
-            .split(/\s+or\s+|\s+and\s+|,\s*/i)
-            .map(normalize);
+          // 1. Direct exact or normalized match
+          let correct = selectedAnswer.trim().toLowerCase() === correctRaw.trim().toLowerCase() || userNorm === correctNorm;
 
-          // User answer is correct if it matches ANY of the expected values
-          correct = correctParts.some(
-            part =>
-              userNorm === part ||
-              extractNums(userNorm) === extractNums(part),
-          );
+          // 2. If not matched, try splitting multi-value answers by "or" or "and"
+          if (!correct) {
+            const correctParts = correctRaw
+              .split(/\s+or\s+|\s+and\s+/i)
+              .map(normalize);
+
+            correct = correctParts.some(
+              part =>
+                userNorm === part ||
+                extractNums(userNorm) === extractNums(part),
+            );
+          }
         }
 
         if (correct) {
@@ -454,10 +457,15 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
                 showExplanation && isCorrect  && { backgroundColor: PR.inputCorrectBg, borderColor: PR.inputCorrectBorder },
                 showExplanation && !isCorrect && { backgroundColor: PR.inputWrongBg,  borderColor: PR.inputWrongBorder  },
               ]}
-              placeholder="e.g. 7  or  x = 7"
+              placeholder="e.g. 7  or  -3.5  or  1e5"
               placeholderTextColor={PR.textLight}
               value={selectedAnswer ?? ''}
-              onChangeText={(text) => !showExplanation && setSelectedAnswer(text)}
+              onChangeText={(text) => {
+                if (!showExplanation) {
+                  const filtered = text.replace(/[^0-9eE\.\-\+\/\*\^\,\s\%\(\)π√θ°²³×÷±≈≠≤≥∞αβλμσΔΣΩ]/g, '');
+                  setSelectedAnswer(filtered);
+                }
+              }}
               editable={!showExplanation}
               autoCapitalize="none"
               keyboardType="decimal-pad"
@@ -991,7 +999,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#00a472',
+    backgroundColor: '#4b41e1',
     paddingVertical: 16,
     borderRadius: 16,
   },

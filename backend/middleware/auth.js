@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { User } from "../models/index.js";
+import { User, LoginSession } from "../models/index.js";
 
 /**
  * JWT Authentication Middleware
@@ -39,6 +39,29 @@ export const authenticate = async (req, res, next) => {
                 success: false,
                 message: "Account has been deactivated."
             });
+        }
+
+        // Check if session has been revoked (if token includes a session jti)
+        if (decoded.jti) {
+            const activeSession = await LoginSession.findOne({
+                user: user._id,
+                tokenId: decoded.jti,
+                isActive: true
+            });
+
+            if (!activeSession) {
+                return res.status(401).json({
+                    success: false,
+                    message: "Session has been revoked. Please log in again."
+                });
+            }
+
+            // Periodically update last active timestamp (every 60s)
+            const now = new Date();
+            if (!activeSession.lastActiveAt || now - new Date(activeSession.lastActiveAt) > 60000) {
+                activeSession.lastActiveAt = now;
+                await activeSession.save().catch(() => {});
+            }
         }
 
         // Attach user and tokenId to request object

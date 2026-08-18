@@ -169,7 +169,7 @@ export default function TopicScreen() {
         </div>
       </div>
 
-      <div className="flex-1 p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6">
+      <div className="flex-1 p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6 pb-24 sm:pb-28">
         {/* Top Topic Hero & Stats Banner */}
         <div className="bg-white border border-gray-100 rounded-3xl p-5 sm:p-6 shadow-sm relative overflow-hidden">
           {/* Accent decoration */}

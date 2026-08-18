@@ -13,46 +13,50 @@
 
 import { useState, useEffect } from 'react';
 
-// ─── Safe expression evaluator (identical logic to mobile) ────────────────────
+// ─── Safe expression evaluator ────────────────────────────────────────────────
 function safeEval(expr, mode) {
   try {
+    if (!expr || typeof expr !== 'string') return 'Error';
+
+    const _sin  = (x) => (mode === 'DEG' ? Math.sin((x * Math.PI) / 180) : Math.sin(x));
+    const _cos  = (x) => (mode === 'DEG' ? Math.cos((x * Math.PI) / 180) : Math.cos(x));
+    const _tan  = (x) => (mode === 'DEG' ? Math.tan((x * Math.PI) / 180) : Math.tan(x));
+    const _asin = (x) => (mode === 'DEG' ? (Math.asin(x) * 180) / Math.PI : Math.asin(x));
+    const _acos = (x) => (mode === 'DEG' ? (Math.acos(x) * 180) / Math.PI : Math.acos(x));
+    const _atan = (x) => (mode === 'DEG' ? (Math.atan(x) * 180) / Math.PI : Math.atan(x));
+    const _log  = Math.log10;
+    const _ln   = Math.log;
+    const _sqrt = Math.sqrt;
+    const _cbrt = Math.cbrt;
+
     let e = expr
       .replace(/π/g, `(${Math.PI})`)
-      .replace(/\be\b/g, `(${Math.E})`);
-
-    if (mode === 'DEG') {
-      e = e
-        .replace(/asin\(([^)]+)\)/g,  (_, a) => `(Math.asin(${a})*(180/Math.PI))`)
-        .replace(/acos\(([^)]+)\)/g,  (_, a) => `(Math.acos(${a})*(180/Math.PI))`)
-        .replace(/atan\(([^)]+)\)/g,  (_, a) => `(Math.atan(${a})*(180/Math.PI))`)
-        .replace(/sin\(([^)]+)\)/g,   (_, a) => `(Math.sin((${a})*Math.PI/180))`)
-        .replace(/cos\(([^)]+)\)/g,   (_, a) => `(Math.cos((${a})*Math.PI/180))`)
-        .replace(/tan\(([^)]+)\)/g,   (_, a) => `(Math.tan((${a})*Math.PI/180))`);
-    } else {
-      e = e
-        .replace(/asin\(([^)]+)\)/g,  (_, a) => `(Math.asin(${a}))`)
-        .replace(/acos\(([^)]+)\)/g,  (_, a) => `(Math.acos(${a}))`)
-        .replace(/atan\(([^)]+)\)/g,  (_, a) => `(Math.atan(${a}))`)
-        .replace(/sin\(([^)]+)\)/g,   (_, a) => `(Math.sin(${a}))`)
-        .replace(/cos\(([^)]+)\)/g,   (_, a) => `(Math.cos(${a}))`)
-        .replace(/tan\(([^)]+)\)/g,   (_, a) => `(Math.tan(${a}))`);
-    }
-
-    e = e
-      .replace(/log\(([^)]+)\)/g,  (_, a) => `(Math.log10(${a}))`)
-      .replace(/ln\(([^)]+)\)/g,   (_, a) => `(Math.log(${a}))`)
-      .replace(/√\(([^)]+)\)/g,    (_, a) => `(Math.sqrt(${a}))`)
-      .replace(/∛\(([^)]+)\)/g,    (_, a) => `(Math.cbrt(${a}))`)
+      .replace(/\be\b/g, `(${Math.E})`)
+      .replace(/²/g, '**2')
+      .replace(/³/g, '**3')
+      .replace(/\^/g, '**')
       .replace(/×/g, '*')
-      .replace(/÷/g, '/');
+      .replace(/÷/g, '/')
+      .replace(/\basin\(/g, '_asin(')
+      .replace(/\bacos\(/g, '_acos(')
+      .replace(/\batan\(/g, '_atan(')
+      .replace(/\bsin\(/g,  '_sin(')
+      .replace(/\bcos\(/g,  '_cos(')
+      .replace(/\btan\(/g,  '_tan(')
+      .replace(/\blog\(/g,  '_log(')
+      .replace(/\bln\(/g,   '_ln(')
+      .replace(/√\(/g,     '_sqrt(')
+      .replace(/∛\(/g,     '_cbrt(');
 
     // Only allow safe characters
-    if (/[^0-9+\-*/().Math\s,abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_]/.test(e)) {
+    if (/[^0-9+\-*/().Math\s,_a-zA-Z]/.test(e)) {
       return 'Error';
     }
 
     // eslint-disable-next-line no-new-func
-    const result = new Function('"use strict"; return (' + e + ')')();
+    const fn = new Function('_sin', '_cos', '_tan', '_asin', '_acos', '_atan', '_log', '_ln', '_sqrt', '_cbrt', `"use strict"; return (${e});`);
+    const result = fn(_sin, _cos, _tan, _asin, _acos, _atan, _log, _ln, _sqrt, _cbrt);
+
     if (typeof result !== 'number' || !isFinite(result)) return 'Error';
 
     const rounded = parseFloat(result.toPrecision(10));

@@ -130,7 +130,7 @@ export default function LessonScreen() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 pb-40">
+      <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 pb-48 sm:pb-52">
         {/* Info badges */}
         <div className="bg-white dark:bg-[#1a2333] border border-gray-100 dark:border-[#2d3748] rounded-3xl p-5 shadow-2xs mb-6">
           <div className="flex flex-wrap gap-2 mb-3">
@@ -217,7 +217,7 @@ export default function LessonScreen() {
       </div>
 
       {/* Sticky footer */}
-      <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white/95 dark:bg-[#1a2333]/95 backdrop-blur-md border-t border-gray-200 dark:border-[#2d3748] px-4 py-3 shadow-2xl z-20">
+      <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white/95 dark:bg-[#1a2333]/95 backdrop-blur-md border-t border-gray-200 dark:border-[#2d3748] px-4 py-3 pb-6 sm:pb-3 shadow-2xl z-20">
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
           {/* Prev Button */}
           <button

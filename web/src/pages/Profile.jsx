@@ -49,6 +49,15 @@ function MenuCardItem({ icon: Icon, title, description, badgeText, badgeColor = 
   );
 }
 
+const BANNER_GRADIENTS = {
+  indigo: 'from-[#4b41e1] via-[#3d33d0] to-[#2b1fb8]',
+  emerald: 'from-[#00a472] via-[#008f63] to-[#00704d]',
+  sunset: 'from-[#f59e0b] via-[#ea580c] to-[#dc2626]',
+  ocean: 'from-[#0284c7] via-[#2563eb] to-[#4f46e5]',
+  midnight: 'from-[#1e293b] via-[#0f172a] to-[#020617]',
+  amethyst: 'from-[#9333ea] via-[#7c3aed] to-[#4c1d95]',
+};
+
 export default function Profile() {
   const navigate = useNavigate();
   const { user, refreshProfile, logout, saveAuth } = useAuth();
@@ -121,7 +130,7 @@ export default function Profile() {
     : 'Active Student';
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto pb-16">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto pb-24 sm:pb-28">
       {/* Header Title Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
@@ -139,7 +148,7 @@ export default function Profile() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Hero User Identity Card */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-gradient-to-br from-[#4b41e1] via-[#3d33d0] to-[#2b1fb8] rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+          <div className={`bg-gradient-to-br ${BANNER_GRADIENTS[user?.bannerTheme || 'indigo']} rounded-3xl p-6 text-white shadow-xl relative overflow-hidden transition-all duration-300`}>
             {/* Background Accent Graphic */}
             <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-white/10 rounded-full blur-xl pointer-events-none" />
 

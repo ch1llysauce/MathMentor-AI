@@ -17,6 +17,7 @@ import { practiceApi } from '../../services/api';
 import MathToolbar from '../../components/MathToolbar';
 import ScientificCalculator from '../../components/ScientificCalculator';
 import MathText from '../../components/MathText';
+import { useActiveSession } from '../../context/ActiveSessionContext';
 
 const diffColor = (d) =>
   d === 'Easy' ? { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700', hex: '#00a472' } :
@@ -26,6 +27,7 @@ const diffColor = (d) =>
 export default function Problems() {
   const navigate  = useNavigate();
   const location  = useLocation();
+  const { setActiveSession, clearActiveSession } = useActiveSession();
   const { topic, category, count, title, difficulty, isDaily } = location.state ?? {};
 
   const [problems, setProblems]           = useState([]);
@@ -48,10 +50,22 @@ export default function Problems() {
     setLoading(false);
   }, []);
 
+  const allowLeaveRef = useRef(false);
+
+  // Register active session for global navigation protection
+  useEffect(() => {
+    if (!showResults && problems.length > 0) {
+      setActiveSession({ type: 'practice', allowLeaveRef });
+    } else {
+      clearActiveSession();
+    }
+    return () => clearActiveSession();
+  }, [showResults, problems.length, setActiveSession, clearActiveSession]);
+
   // Prevent accidental navigation / tab closure while session is active
   useEffect(() => {
     const handleBeforeUnload = (e) => {
-      if (!showResults) {
+      if (!showResults && !allowLeaveRef.current) {
         e.preventDefault();
         e.returnValue = '';
       }
@@ -111,10 +125,18 @@ export default function Problems() {
 
     const extractNums = (s) => s.match(/-?\d+\.?\d*/g)?.join(',') ?? s;
     const userNorm    = normalize(userAns);
-    const correctParts = correctAns.split(/\s+or\s+|\s+and\s+|,\s*/i).map(normalize);
-    const correct = correctParts.some(
-      (part) => userNorm === part || extractNums(userNorm) === extractNums(part)
-    );
+    const correctNorm = normalize(correctAns);
+
+    // 1. Direct exact or normalized match
+    let correct = userAns === correctAns || userNorm === correctNorm;
+
+    // 2. If not matched, try splitting multi-value answers by "or" or "and"
+    if (!correct) {
+      const correctParts = correctAns.split(/\s+or\s+|\s+and\s+/i).map(normalize);
+      correct = correctParts.some(
+        (part) => userNorm === part || extractNums(userNorm) === extractNums(part)
+      );
+    }
 
     setIsCorrect(correct);
     setShowExp(true);
@@ -232,6 +254,7 @@ export default function Problems() {
               </button>
               <button
                 onClick={() => {
+                  allowLeaveRef.current = true;
                   setShowQuitModal(false);
                   navigate(-1);
                 }}
@@ -268,7 +291,7 @@ export default function Problems() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-3xl mx-auto w-full pb-36">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-3xl mx-auto w-full pb-48 sm:pb-52">
           {/* Question */}
           <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-2xs mb-5">
             <div className="flex items-center justify-between gap-2 mb-3">
@@ -331,10 +354,15 @@ export default function Problems() {
               <input
                 ref={answerRef}
                 type="text"
+                inputMode="decimal"
                 disabled={showExplanation}
                 value={selectedAnswer ?? ''}
-                onChange={(e) => setSelected(e.target.value)}
-                placeholder="e.g. 7  or  x = 7"
+                onChange={(e) => {
+                  if (showExplanation) return;
+                  const filtered = e.target.value.replace(/[^0-9eE\.\-\+\/\*\^\,\s\%\(\)π√θ°²³×÷±≈≠≤≥∞αβλμσΔΣΩ]/g, '');
+                  setSelected(filtered);
+                }}
+                placeholder="e.g. 7  or  -3.5  or  1e5"
                 className={`w-full border-2 rounded-2xl px-5 py-3.5 text-base font-medium focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all ${
                   showExplanation && isCorrect  ? 'border-emerald-400 bg-emerald-50/60 text-emerald-900' :
                   showExplanation && !isCorrect ? 'border-red-400 bg-red-50/60 text-red-900' :
@@ -419,7 +447,7 @@ export default function Problems() {
         </div>
 
         {/* Sticky footer */}
-        <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 shadow-lg z-20">
+        <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 pb-6 sm:pb-4 shadow-lg z-20">
           <div className="max-w-3xl mx-auto">
             {!showExplanation ? (
               <button onClick={handleSubmit} disabled={!selectedAnswer?.toString().trim()}
@@ -428,7 +456,7 @@ export default function Problems() {
               </button>
             ) : (
               <button onClick={handleNext}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/20">
+                className="w-full bg-[#4b41e1] hover:bg-[#3d33d0] text-white font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md shadow-purple-600/20">
                 {currentIndex < problems.length - 1 ? 'Next Problem' : 'Finish'}
                 <IoArrowForwardOutline size={20} />
               </button>

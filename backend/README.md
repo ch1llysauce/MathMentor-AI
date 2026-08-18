@@ -151,7 +151,7 @@ Server runs on `http://localhost:5000`.
 |---|---|---|
 | GET | `/` | List questions with filters |
 | GET | `/random` | Random practice questions |
-| GET | `/diagnostic` | Diagnostic question set (15 questions) |
+| GET | `/diagnostic` | Diagnostic question set (9 questions) |
 | POST | `/submit` | Submit an answer |
 
 ### Progress — `/api/progress`

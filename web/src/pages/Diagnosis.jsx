@@ -22,6 +22,7 @@ import {
 import { questionApi, learningApi } from '../services/api';
 import MathText from '../components/MathText';
 import ScientificCalculator from '../components/ScientificCalculator';
+import { useActiveSession } from '../context/ActiveSessionContext';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const SUBTOPIC_DB_KEY = {
@@ -92,7 +93,7 @@ function MasteryRing({ percentage, topic, subtitle, onClick, color = '#4b41e1', 
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="drop-shadow-sm">
           {/* Track */}
-          <circle cx={size/2} cy={size/2} r={radius} stroke="#f2f4f6" strokeWidth={stroke} fill="none" />
+          <circle cx={size/2} cy={size/2} r={radius} className="stroke-gray-100 dark:stroke-gray-800" strokeWidth={stroke} fill="none" />
           {/* Progress */}
           <circle
             cx={size/2} cy={size/2} r={radius}
@@ -107,12 +108,12 @@ function MasteryRing({ percentage, topic, subtitle, onClick, color = '#4b41e1', 
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center flex-col">
-          <span className="text-2xl font-extrabold text-gray-900 tracking-tight" style={{ color: color }}>{Math.round(percentage)}%</span>
+          <span className="text-2xl font-extrabold tracking-tight" style={{ color: color }}>{Math.round(percentage)}%</span>
         </div>
       </div>
       <div className="text-center">
-        <p className="text-base font-bold text-gray-900 group-hover:text-purple-700 transition-colors">{topic}</p>
-        {subtitle && <p className="text-xs font-medium text-gray-500 mt-0.5">{subtitle}</p>}
+        <p className="text-base font-bold text-gray-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors">{topic}</p>
+        {subtitle && <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>}
       </div>
     </>
   );
@@ -121,7 +122,7 @@ function MasteryRing({ percentage, topic, subtitle, onClick, color = '#4b41e1', 
     return (
       <button
         onClick={onClick}
-        className="flex flex-col items-center gap-3 p-4 rounded-2xl hover:bg-gray-50/80 transition-all duration-300 focus:outline-none group border border-transparent hover:border-gray-200 hover:shadow-sm"
+        className="flex flex-col items-center gap-3 p-4 rounded-2xl hover:bg-gray-50/80 dark:hover:bg-gray-800/40 transition-all duration-300 focus:outline-none group border border-transparent hover:border-gray-200 dark:hover:border-gray-700 hover:shadow-sm"
       >
         {content}
       </button>
@@ -165,49 +166,58 @@ function TimelineChart({ data }) {
   const yTicks = [100, 75, 50, 25, 0];
 
   return (
-    <div className="flex gap-2 overflow-hidden">
-      {/* Y-axis */}
-      <div className="flex flex-col justify-between text-right shrink-0" style={{ height: chartH }}>
-        {yTicks.map((t) => (
-          <span key={t} className="text-xs text-gray-400 leading-none">{t}</span>
-        ))}
-      </div>
+    <div className="flex flex-col">
+      <div className="flex gap-2 items-start overflow-hidden">
+        {/* Rotated Y-axis title label (matching mobile layout) */}
+        <div className="flex items-center justify-center shrink-0 w-4 self-stretch my-auto" style={{ height: chartH - 24 }}>
+          <span className="-rotate-90 text-[10px] font-bold text-gray-400 dark:text-gray-500 whitespace-nowrap tracking-wider">
+            Mastery Score (%)
+          </span>
+        </div>
 
-      {/* Bars + gridlines */}
-      <div className="flex-1 overflow-x-auto">
-        <div className="relative" style={{ height: chartH }}>
-          {/* Gridlines */}
+        {/* Y-axis tick numbers */}
+        <div className="flex flex-col justify-between text-right shrink-0 py-0.5" style={{ height: chartH - 24 }}>
           {yTicks.map((t) => (
-            <div
-              key={t}
-              className="absolute left-0 right-0 border-t border-gray-100"
-              style={{ top: `${((100 - t) / 100) * chartH}px` }}
-            />
+            <span key={t} className="text-xs text-gray-400 dark:text-gray-500 leading-none font-medium">{t}</span>
           ))}
+        </div>
 
-          {/* Bars */}
-          <div className="absolute inset-0 flex items-end gap-1 pb-6 px-1">
-            {data.map((point, i) => {
-              const pct = Math.min(Math.max(point.score, 0), 100);
-              const barH = (pct / 100) * (chartH - 24); // 24 = label space
-              const color = pct >= 70 ? '#4b41e1' : pct >= 40 ? '#f59e0b' : '#ef4444';
-              return (
-                <div key={i} className="flex flex-col items-center gap-1" style={{ minWidth: `${barW}px` }}>
-                  <div className="flex flex-col justify-end flex-1 w-full px-1">
-                    <div
-                      className="w-full rounded-t-lg transition-all"
-                      style={{ height: `${barH}px`, backgroundColor: color }}
-                    />
+        {/* Bars + gridlines */}
+        <div className="flex-1 overflow-x-auto">
+          <div className="relative" style={{ height: chartH }}>
+            {/* Gridlines */}
+            {yTicks.map((t) => (
+              <div
+                key={t}
+                className="absolute left-0 right-0 border-t border-gray-100 dark:border-gray-800"
+                style={{ top: `${((100 - t) / 100) * (chartH - 24)}px` }}
+              />
+            ))}
+
+            {/* Bars */}
+            <div className="absolute inset-0 flex items-end gap-1 pb-6 px-1">
+              {data.map((point, i) => {
+                const pct = Math.min(Math.max(point.score, 0), 100);
+                const barH = (pct / 100) * (chartH - 24); // 24 = label space
+                const color = pct >= 70 ? '#4b41e1' : pct >= 40 ? '#f59e0b' : '#ef4444';
+                return (
+                  <div key={i} className="flex flex-col items-center gap-1" style={{ minWidth: `${barW}px` }}>
+                    <div className="flex flex-col justify-end flex-1 w-full px-1">
+                      <div
+                        className="w-full rounded-t-lg transition-all"
+                        style={{ height: `${barH}px`, backgroundColor: color }}
+                      />
+                    </div>
+                    <span className="text-xs text-gray-400 dark:text-gray-500 truncate w-full text-center font-medium">{point.date}</span>
                   </div>
-                  <span className="text-xs text-gray-400 truncate w-full text-center">{point.date}</span>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
-        {/* X label */}
-        <p className="text-xs text-gray-400 text-center mt-1">Date</p>
       </div>
+      {/* X-axis title */}
+      <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 text-center mt-2 pl-10">Date</p>
     </div>
   );
 }
@@ -222,14 +232,14 @@ function IntroScreen({ onStart, loading }) {
         </div>
         <h2 className="text-xl font-bold text-purple-700 dark:text-purple-300 mb-2">Update Your Knowledge Map</h2>
         <p className="text-sm text-gray-500 dark:text-gray-300 leading-relaxed">
-          15 questions across Algebra, Geometry, and Trigonometry. Takes around 15–20 minutes.
+          9 questions across Algebra, Geometry, and Trigonometry. Takes around 5–10 minutes.
           Your personalised learning path will be updated when you finish.
         </p>
       </div>
       <div className="mb-6 space-y-3">
         <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">What to expect</p>
         {[
-          { Icon: IoHelpCircleOutline, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/50', title: '15 questions', sub: 'Balanced across all three topics' },
+          { Icon: IoHelpCircleOutline, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/50', title: '9 questions', sub: 'Balanced across all three topics (3 per topic)' },
           { Icon: IoBulbOutline,       color: 'text-amber-500 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/50', title: 'Hints available', sub: 'One hint per question if you need it' },
           { Icon: IoAnalyticsOutline,  color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/50', title: 'Instant results', sub: 'Your knowledge map updates immediately' },
         ].map(({ Icon, color, bg, title, sub }) => (
@@ -265,7 +275,8 @@ function IntroScreen({ onStart, loading }) {
   );
 }
 
-function TestScreen({ questions, onSubmit, onCancel }) {
+function TestScreen({ questions, onFinish, onCancel }) {
+  const { setActiveSession, clearActiveSession } = useActiveSession();
   const [currentIndex, setCurrentIndex]       = useState(0);
   const [answers, setAnswers]                 = useState({});
   const [selectedAnswer, setSelectedAnswer]   = useState(null);
@@ -275,6 +286,23 @@ function TestScreen({ questions, onSubmit, onCancel }) {
   const [showCalc, setShowCalc]               = useState(false);
   const [showQuitModal, setShowQuitModal]     = useState(false);
   const startTimeRef = useRef(Date.now());
+  const allowLeaveRef = useRef(false);
+
+  useEffect(() => {
+    setActiveSession({ type: 'diagnostic', allowLeaveRef });
+    return () => clearActiveSession();
+  }, [setActiveSession, clearActiveSession]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (!allowLeaveRef.current) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   const q = questions[currentIndex];
   const progress = (currentIndex + 1) / questions.length;
@@ -296,6 +324,7 @@ function TestScreen({ questions, onSubmit, onCancel }) {
       setIsCorrect(null);
       setShowHint(false);
     } else {
+      allowLeaveRef.current = true;
       const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
       const finalAnswers = { ...answers, [currentIndex]: selectedAnswer };
       onSubmit(finalAnswers, timeSpent);
@@ -305,7 +334,24 @@ function TestScreen({ questions, onSubmit, onCancel }) {
   return (
     <>
       {/* Scientific Calculator Floating Drawer */}
-      <ScientificCalculator isOpen={showCalc} onClose={() => setShowCalc(false)} />
+      <ScientificCalculator
+        isOpen={showCalc}
+        onClose={() => setShowCalc(false)}
+        onUseResult={(val) => {
+          if (q?.choices && Array.isArray(q.choices)) {
+            const match = q.choices.find(
+              (c) =>
+                c.trim().toLowerCase() === val.trim().toLowerCase() ||
+                c.startsWith(val) ||
+                c.includes(val)
+            );
+            setSelectedAnswer(match ?? val);
+          } else {
+            setSelectedAnswer(val);
+          }
+          setShowCalc(false);
+        }}
+      />
 
       {/* Leave Warning Modal */}
       {showQuitModal && (
@@ -327,6 +373,7 @@ function TestScreen({ questions, onSubmit, onCancel }) {
               </button>
               <button
                 onClick={() => {
+                  allowLeaveRef.current = true;
                   setShowQuitModal(false);
                   if (onCancel) onCancel();
                 }}
@@ -365,7 +412,7 @@ function TestScreen({ questions, onSubmit, onCancel }) {
         </div>
 
         {/* Question content */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-3xl mx-auto w-full pb-36">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-3xl mx-auto w-full pb-48 sm:pb-52">
           <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-2xs mb-5">
             <div className="flex items-center justify-between gap-2 mb-3">
               {q?.subtopic ? (
@@ -451,8 +498,8 @@ function TestScreen({ questions, onSubmit, onCancel }) {
           )}
         </div>
 
-        {/* Fixed action bar */}
-        <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 shadow-lg z-20">
+        {/* Sticky footer */}
+        <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 pb-6 sm:pb-4 shadow-lg z-20">
           <div className="max-w-3xl mx-auto">
             {!showExplanation ? (
               <button onClick={handleConfirm} disabled={!selectedAnswer}
@@ -461,7 +508,7 @@ function TestScreen({ questions, onSubmit, onCancel }) {
               </button>
             ) : (
               <button onClick={handleNext}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-4 rounded-2xl transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2">
+                className="w-full bg-[#4b41e1] hover:bg-[#3d33d0] text-white font-extrabold py-4 rounded-2xl transition-all shadow-md shadow-purple-600/20 flex items-center justify-center gap-2">
                 {currentIndex < questions.length - 1 ? 'Next Question' : 'Finish & Submit'}
                 <IoArrowForwardOutline size={20} />
               </button>
@@ -593,19 +640,19 @@ function TopicDetailScreen({ topic, latestDiag, onBack, onPractice }) {
         <div className="flex items-center gap-3.5">
           <button
             onClick={onBack}
-            className="w-10 h-10 rounded-2xl bg-white border border-gray-200 flex items-center justify-center text-gray-700 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-300 transition-all shadow-2xs group shrink-0"
+            className="w-10 h-10 rounded-2xl bg-white dark:bg-[#1a2333] border border-gray-200 dark:border-[#2d3748] flex items-center justify-center text-gray-700 dark:text-gray-200 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-600 dark:hover:text-purple-400 hover:border-purple-300 dark:hover:border-purple-700 transition-all shadow-2xs group shrink-0"
           >
             <IoArrowBackOutline size={20} className="group-hover:-translate-x-0.5 transition-transform" />
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-lg border border-purple-100">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/50 px-2.5 py-0.5 rounded-lg border border-purple-100 dark:border-purple-800/40">
                 Knowledge Map
               </span>
               <span className="text-xs text-gray-400">•</span>
-              <span className="text-xs font-semibold text-gray-500">{topic} Analysis</span>
+              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{topic} Analysis</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight mt-0.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight mt-0.5">
               {topic} Mastery Overview
             </h1>
           </div>
@@ -625,7 +672,7 @@ function TopicDetailScreen({ topic, latestDiag, onBack, onPractice }) {
         {/* Left Column (1/3 width on PC): Overall Card, Recommendation & Quick Actions */}
         <div className="lg:col-span-1 space-y-6">
           {/* Overall Card */}
-          <div className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col items-center gap-6">
+          <div className="bg-white dark:bg-[#1a2333] border border-gray-200 dark:border-[#2d3748] rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col items-center gap-6">
             <MasteryRing
               percentage={score}
               topic={topic}
@@ -637,28 +684,28 @@ function TopicDetailScreen({ topic, latestDiag, onBack, onPractice }) {
 
             {/* Stats Row */}
             <div className="grid grid-cols-3 gap-2.5 w-full">
-              <div className="bg-purple-50/70 border border-purple-100/80 rounded-2xl p-3.5 text-center flex flex-col items-center justify-center">
-                <span className="text-xl sm:text-2xl font-extrabold text-purple-700">{totalQuestions}</span>
-                <span className="text-[11px] font-semibold text-gray-500 mt-0.5">Questions</span>
+              <div className="bg-purple-50/80 dark:bg-purple-950/60 border border-purple-100/90 dark:border-purple-800/50 rounded-2xl p-3.5 text-center flex flex-col items-center justify-center">
+                <span className="text-xl sm:text-2xl font-black text-purple-700 dark:text-purple-300">{totalQuestions}</span>
+                <span className="text-[11px] font-extrabold text-purple-950/80 dark:text-purple-200/90 mt-0.5">Questions</span>
               </div>
-              <div className="bg-emerald-50/70 border border-emerald-100/80 rounded-2xl p-3.5 text-center flex flex-col items-center justify-center">
-                <span className="text-xl sm:text-2xl font-extrabold text-[#00a472]">{totalCorrect}</span>
-                <span className="text-[11px] font-semibold text-gray-500 mt-0.5">Correct</span>
+              <div className="bg-emerald-50/80 dark:bg-emerald-950/60 border border-emerald-100/90 dark:border-emerald-800/50 rounded-2xl p-3.5 text-center flex flex-col items-center justify-center">
+                <span className="text-xl sm:text-2xl font-black text-[#00a472] dark:text-emerald-400">{totalCorrect}</span>
+                <span className="text-[11px] font-extrabold text-emerald-950/80 dark:text-emerald-200/90 mt-0.5">Correct</span>
               </div>
-              <div className="bg-red-50/70 border border-red-100/80 rounded-2xl p-3.5 text-center flex flex-col items-center justify-center">
-                <span className="text-xl sm:text-2xl font-extrabold text-[#ef4444]">{totalIncorrect}</span>
-                <span className="text-[11px] font-semibold text-gray-500 mt-0.5">Incorrect</span>
+              <div className="bg-red-50/80 dark:bg-red-950/60 border border-red-100/90 dark:border-red-800/50 rounded-2xl p-3.5 text-center flex flex-col items-center justify-center">
+                <span className="text-xl sm:text-2xl font-black text-[#ef4444] dark:text-red-400">{totalIncorrect}</span>
+                <span className="text-[11px] font-extrabold text-red-950/80 dark:text-red-200/90 mt-0.5">Incorrect</span>
               </div>
             </div>
           </div>
 
           {/* Recommendation Card */}
-          <div className="bg-amber-50/80 border-l-4 border-amber-400 rounded-2xl p-5 shadow-2xs space-y-2">
-            <div className="flex items-center gap-2 text-amber-700 font-extrabold text-xs uppercase tracking-wider">
+          <div className="bg-amber-50/80 dark:bg-amber-950/40 border-l-4 border-amber-400 dark:border-amber-500 rounded-2xl p-5 shadow-2xs space-y-2">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-extrabold text-xs uppercase tracking-wider">
               <IoBulbOutline size={18} className="text-amber-500" />
               <span>AI Recommendation</span>
             </div>
-            <p className="text-sm font-medium text-amber-950 leading-relaxed">{recommendation}</p>
+            <p className="text-sm font-medium text-amber-950 dark:text-amber-100 leading-relaxed">{recommendation}</p>
           </div>
 
           {/* Action Buttons */}
@@ -671,7 +718,7 @@ function TopicDetailScreen({ topic, latestDiag, onBack, onPractice }) {
             </button>
             <button
               onClick={onBack}
-              className="w-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-[#4b41e1] font-bold py-3.5 rounded-2xl transition-colors text-sm shadow-2xs"
+              className="w-full bg-white dark:bg-[#1a2333] border border-gray-200 dark:border-[#2d3748] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-purple-900/20 hover:text-[#4b41e1] dark:hover:text-purple-400 font-bold py-3.5 rounded-2xl transition-colors text-sm shadow-2xs"
             >
               Back to Knowledge Map
             </button>
@@ -680,13 +727,13 @@ function TopicDetailScreen({ topic, latestDiag, onBack, onPractice }) {
 
         {/* Right Column (2/3 width on PC): Subtopics Breakdown */}
         <div className="lg:col-span-2">
-          <div className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+          <div className="bg-white dark:bg-[#1a2333] border border-gray-200 dark:border-[#2d3748] rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-[#2d3748] pb-4">
               <div>
-                <h2 className="text-xl font-extrabold text-gray-900">Subtopics Breakdown</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Detailed accuracy and performance level per skill</p>
+                <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">Subtopics Breakdown</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Detailed accuracy and performance level per skill</p>
               </div>
-              <span className="text-xs font-bold text-purple-700 bg-purple-50 px-3 py-1 rounded-xl border border-purple-100">
+              <span className="text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/50 px-3 py-1 rounded-xl border border-purple-100 dark:border-purple-800/40">
                 {subtopics.length} Subtopics
               </span>
             </div>
@@ -695,10 +742,10 @@ function TopicDetailScreen({ topic, latestDiag, onBack, onPractice }) {
               {subtopics.map((st, i) => (
                 <div
                   key={i}
-                  className="bg-gray-50/70 border border-gray-100 hover:border-purple-200 rounded-2xl p-5 transition-all shadow-2xs flex flex-col justify-between space-y-3 group"
+                  className="bg-gray-50/70 dark:bg-[#111827]/60 border border-gray-100 dark:border-[#2d3748] hover:border-purple-200 dark:hover:border-purple-700 rounded-2xl p-5 transition-all shadow-2xs flex flex-col justify-between space-y-3 group"
                 >
                   <div className="flex justify-between items-start">
-                    <span className="text-base font-bold text-gray-900 group-hover:text-purple-700 transition-colors">
+                    <span className="text-base font-bold text-gray-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors">
                       {st.name}
                     </span>
                     {st.score !== null ? (
@@ -706,25 +753,25 @@ function TopicDetailScreen({ topic, latestDiag, onBack, onPractice }) {
                         {st.score}%
                       </span>
                     ) : (
-                      <span className="text-xs font-medium text-gray-400 italic shrink-0 ml-2">Not tested</span>
+                      <span className="text-xs font-medium text-gray-400 dark:text-gray-500 italic shrink-0 ml-2">Not tested</span>
                     )}
                   </div>
 
                   <div className="space-y-1.5">
-                    <div className="h-2.5 bg-gray-200/80 rounded-full overflow-hidden">
+                    <div className="h-2.5 bg-gray-200/80 dark:bg-gray-700 rounded-full overflow-hidden">
                       {st.score !== null ? (
                         <div
                           className="h-full rounded-full transition-all duration-500"
                           style={{ width: `${st.score}%`, backgroundColor: getScoreColor(st.score) }}
                         />
                       ) : (
-                        <div className="h-full w-0 bg-gray-300 rounded-full" />
+                        <div className="h-full w-0 bg-gray-300 dark:bg-gray-600 rounded-full" />
                       )}
                     </div>
                     {st.score !== null && (
-                      <div className="flex justify-between items-center text-xs text-gray-500">
+                      <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
                         <span className="font-semibold">{getScoreLabel(st.score)}</span>
-                        <span className="text-[11px] text-gray-400">Mastery score</span>
+                        <span className="text-[11px] text-gray-400 dark:text-gray-500">Mastery score</span>
                       </div>
                     )}
                   </div>

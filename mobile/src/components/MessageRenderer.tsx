@@ -117,6 +117,12 @@ function cleanLatex(raw: string): string {
   for (const [re, rep] of BARE_LATEX_MAP) {
     s = s.replace(re, rep as string);
   }
+  let openCount = (s.match(/\(/g) || []).length;
+  let closeCount = (s.match(/\)/g) || []).length;
+  while (closeCount > openCount && s.endsWith(')')) {
+    s = s.slice(0, -1).trim();
+    closeCount--;
+  }
   return s.trim();
 }
 

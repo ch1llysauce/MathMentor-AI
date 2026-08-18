@@ -68,6 +68,7 @@ function normalizeMathInText(rawText) {
     // Clean symbols
     s = s.replace(/±|\+-/g, '\\pm ');
     s = s.replace(/×/g, '\\times ').replace(/÷/g, '\\div ');
+    s = s.replace(/°/g, '^{\\circ}');
 
     // Roots: √((...)) or √( ... ) or √...
     s = s.replace(/√\s*\(\s*\(\s*([^)]+)\s*\)\s*\)/g, '\\sqrt{$1}');
@@ -80,10 +81,23 @@ function normalizeMathInText(rawText) {
     // Fractions inside \sqrt: \sqrt{(A) / B} -> \sqrt{\frac{A}{B}}
     s = s.replace(/\\sqrt\{\s*\(?\s*([^/]+?)\s*\/\s*([^)]+?)\s*\)?\s*\}/g, '\\sqrt{\\frac{$1}{$2}}');
 
-    // Simple parenthesized fractions: (A / B) -> \frac{A}{B}
-    s = s.replace(/\(\s*([a-zA-Z0-9^+\-* ]+)\s*\/\s*([a-zA-Z0-9^+\-* ]+)\s*\)/g, '\\frac{$1}{$2}');
-    // Unparenthesized fractions: A / B -> \frac{A}{B}
-    s = s.replace(/(\b[a-zA-Z0-9^+*()]+\b)\s*\/\s*(\b[a-zA-Z0-9^+*()]+\b)/g, '\\frac{$1}{$2}');
+    // Simple parenthesized fractions & function-aware fractions
+    const parenFracRegex = /\(\s*((?:[^{}()]+|\([^()]*\))+?)\s*\/\s*((?:[^{}()]+|\([^()]*\))+?)\s*\)/g;
+    s = s.replace(parenFracRegex, (match, num, den) => {
+      let n = num.trim();
+      let d = den.trim();
+      if (n.startsWith('(') && n.endsWith(')')) n = n.slice(1, -1).trim();
+      return `\\frac{${n}}{${d}}`;
+    });
+
+    const unparenFracRegex = /(\b[a-zA-Z0-9_]+(?:\([^()]*\))?)\s*\/\s*(\b[a-zA-Z0-9_]+(?:\([^()]*\))?)/g;
+    s = s.replace(unparenFracRegex, '\\frac{$1}{$2}');
+
+    // Clean up stray closing parenthesis directly following \frac{...}{...}
+    s = s.replace(/(\\frac\s*\{[^{}]*\}\s*\{[^}]+\})\)/g, (m, p1) => p1);
+
+    // Format trig functions safely
+    s = s.replace(/(?<!\\)\b(sin|cos|tan|asin|acos|atan|csc|sec|cot)\b/g, (m) => '\\' + m);
 
     // Logarithms with bases: log2(16) -> \log_{2}(16), log_b(x) -> \log_{b}(x), log10(x) -> \log_{10}(x)
     s = s.replace(/\blog_?([0-9a-zA-Z]+)\s*\(([^)]+)\)/gi, '\\log_{$1}($2)');
@@ -92,6 +106,14 @@ function normalizeMathInText(rawText) {
 
     // Exponents: ax^2 -> ax^{2}, b^2 -> b^{2}, 4a^2 -> 4a^{2}
     s = s.replace(/([a-zA-Z0-9_)]+)\^([a-zA-Z0-9_]+)/g, '$1^{$2}');
+
+    // Trim any unbalanced closing parens from the end of formula
+    let openCount = (s.match(/\(/g) || []).length;
+    let closeCount = (s.match(/\)/g) || []).length;
+    while (closeCount > openCount && s.endsWith(')')) {
+      s = s.slice(0, -1).trim();
+      closeCount--;
+    }
 
     s = s.replace(/\s+/g, ' ').trim();
     return `$${s}$` + punct;
@@ -110,8 +132,8 @@ function normalizeMathInText(rawText) {
   };
 
   // Replace equations/formulas embedded inside prose text without touching English words
-  // Match candidate math formulas (containing variables, numbers, operators, =, ^, √, ±, parens)
-  return str.replace(/((?:\([^)]+\)|[a-zA-Z0-9_]|\s|[+\-*/=^±√()]){1,})/g, (match) => {
+  // Match candidate math formulas (containing variables, numbers, operators, =, ^, √, ±, parens, decimals, degrees)
+  return str.replace(/((?:\([^)]+\)|[a-zA-Z0-9_]|\s|[+\-*/=^±√().,°%\[\]{}]){1,})/g, (match) => {
     const trimmed = match.trim();
     if (!trimmed) return match;
 

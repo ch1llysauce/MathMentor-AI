@@ -129,17 +129,17 @@ export default function TopicDetailScreen() {
         <View style={[styles.overallCard, { backgroundColor: TD.card }]}>
           <MasteryRing percentage={score} size={120} strokeWidth={10} topic={topic} subtitle={getScoreLabel(score)} />
           <View style={styles.statsRow}>
-            <View style={[styles.statBox, { backgroundColor: TD.surface }]}>
-              <Text style={[styles.statValue, { color: TD.primary }]}>{totalQuestions}</Text>
-              <Text style={[styles.statLabel, { color: TD.textLight }]}>Questions</Text>
+            <View style={[styles.statBox, { backgroundColor: darkMode ? '#1e1b4b' : '#f3e8ff' }]}>
+              <Text style={[styles.statValue, { color: darkMode ? '#c084fc' : '#7e22ce' }]}>{totalQuestions}</Text>
+              <Text style={[styles.statLabel, { color: darkMode ? '#e9d5ff' : '#6b21a8' }]}>Questions</Text>
             </View>
-            <View style={[styles.statBox, { backgroundColor: TD.surface }]}>
-              <Text style={[styles.statValue, { color: '#00a472' }]}>{totalCorrect}</Text>
-              <Text style={[styles.statLabel, { color: TD.textLight }]}>Correct</Text>
+            <View style={[styles.statBox, { backgroundColor: darkMode ? '#064e3b' : '#ecfdf5' }]}>
+              <Text style={[styles.statValue, { color: darkMode ? '#34d399' : '#047857' }]}>{totalCorrect}</Text>
+              <Text style={[styles.statLabel, { color: darkMode ? '#a7f3d0' : '#065f46' }]}>Correct</Text>
             </View>
-            <View style={[styles.statBox, { backgroundColor: TD.surface }]}>
-              <Text style={[styles.statValue, { color: '#ef4444' }]}>{totalIncorrect}</Text>
-              <Text style={[styles.statLabel, { color: TD.textLight }]}>Incorrect</Text>
+            <View style={[styles.statBox, { backgroundColor: darkMode ? '#4c0519' : '#fff1f2' }]}>
+              <Text style={[styles.statValue, { color: darkMode ? '#fb7185' : '#be123c' }]}>{totalIncorrect}</Text>
+              <Text style={[styles.statLabel, { color: darkMode ? '#fecdd3' : '#9f1239' }]}>Incorrect</Text>
             </View>
           </View>
         </View>

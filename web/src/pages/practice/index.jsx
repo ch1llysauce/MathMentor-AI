@@ -134,7 +134,7 @@ export default function PracticeIndex() {
   });
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6 pb-24 sm:pb-28">
       {/* Header & Controls */}
       <div className="bg-white border border-gray-100 rounded-3xl p-5 sm:p-6 shadow-sm">
         <div className="max-w-2xl">

@@ -38,9 +38,7 @@ export default function Landing() {
       <header className="sticky top-0 z-10 bg-white/90 dark:bg-[#1a2333]/90 backdrop-blur border-b border-[#e0e3e5] dark:border-[#2d3748]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-[#4b41e1] rounded-lg flex items-center justify-center">
-              <IoCalculatorOutline size={17} color="#fff" />
-            </div>
+            <img src="/logo.png" alt="MathMentor AI Logo" className="w-8 h-8 rounded-lg object-contain" />
             <span className="text-lg font-bold text-[#091426] dark:text-white tracking-tight">MathMentor AI</span>
           </Link>
           <div className="flex items-center gap-2">
@@ -190,9 +188,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="border-t border-[#e0e3e5] py-8 text-center text-sm text-[#75777d]">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="w-6 h-6 bg-[#4b41e1] rounded-lg flex items-center justify-center">
-            <IoCalculatorOutline size={13} color="#fff" />
-          </div>
+          <img src="/logo.png" alt="MathMentor AI Logo" className="w-6 h-6 rounded-md object-contain" />
           <span className="font-semibold text-[#091426]">MathMentor AI</span>
         </div>
         <p>© {new Date().getFullYear()} MathMentor AI. Built for high school students.</p>

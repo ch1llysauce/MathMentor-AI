@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { authService } from '../services/authService';
-import api from '../services/api';
+import api, { setOnUnauthorizedCallback } from '../services/api';
 import { AUTH_ENDPOINTS } from '../constants/api';
 import { storage } from '../utils/storage';
 import { User, AuthResponse, RegisterData } from '../types/auth';
@@ -29,7 +29,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setOnUnauthorizedCallback(() => {
+      setUser(null);
+    });
     checkAuth();
+    return () => {
+      setOnUnauthorizedCallback(null);
+    };
   }, []);
 
   const checkAuth = async () => {

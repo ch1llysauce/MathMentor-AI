@@ -37,9 +37,7 @@ export default function Register() {
 
       <div className="w-full max-w-md relative">
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-[#091426] rounded-xl flex items-center justify-center shadow-md">
-            <IoCalculatorOutline size={20} color="#fff" />
-          </div>
+          <img src="/logo.png" alt="MathMentor AI Logo" className="w-10 h-10 rounded-xl object-contain shadow-md" />
           <span className="text-2xl font-bold text-[#091426] tracking-tight">MathMentor AI</span>
         </div>
 
