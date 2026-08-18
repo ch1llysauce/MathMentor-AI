@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { useColorScheme, Appearance, Text as RNText, type TextProps } from 'react-native';
 import { storage } from '@/utils/storage';
-import { getThemePrimaryColor } from '@/constants/bannerThemes';
+import { getThemePrimaryColor, getBannerGradientColors } from '@/constants/bannerThemes';
 
 interface ThemeContextType {
   darkMode: boolean;
@@ -9,6 +9,7 @@ interface ThemeContextType {
   accentTheme: string;
   setAccentTheme: (themeId: string) => Promise<void>;
   primaryColor: string;
+  gradientColors: readonly [string, string, ...string[]];
 }
 
 export const ThemeContext = createContext<ThemeContextType>({
@@ -17,6 +18,7 @@ export const ThemeContext = createContext<ThemeContextType>({
   accentTheme: 'indigo',
   setAccentTheme: async () => {},
   primaryColor: '#4b41e1',
+  gradientColors: ['#4b41e1', '#3d33d0', '#2b1fb8'],
 });
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -73,9 +75,10 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const primaryColor = getThemePrimaryColor(accentTheme);
+  const gradientColors = getBannerGradientColors(accentTheme);
 
   return (
-    <ThemeContext.Provider value={{ darkMode, toggleDarkMode, accentTheme, setAccentTheme, primaryColor }}>
+    <ThemeContext.Provider value={{ darkMode, toggleDarkMode, accentTheme, setAccentTheme, primaryColor, gradientColors }}>
       {children}
     </ThemeContext.Provider>
   );

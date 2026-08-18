@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Switch, Modal, StatusBar } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
@@ -10,7 +10,8 @@ import { BANNER_THEMES } from '@/constants/bannerThemes';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { darkMode, toggleDarkMode, accentTheme, setAccentTheme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { darkMode, toggleDarkMode, accentTheme, setAccentTheme, primaryColor } = useTheme();
 
   // Offline Mode State persisted to storage
   const [offlineMode, setOfflineMode] = useState(false);
@@ -112,6 +113,7 @@ export default function SettingsScreen() {
           style={[
             styles.toastContainer,
             {
+              bottom: Math.max(insets.bottom + 24, 75),
               backgroundColor: S.toastBg,
               borderColor: darkMode ? 'rgba(0,164,114,0.4)' : 'rgba(0,164,114,0.2)',
             },
@@ -119,6 +121,13 @@ export default function SettingsScreen() {
         >
           <Ionicons name="checkmark-circle-outline" size={20} color="#00a472" />
           <Text style={[styles.toastText, { color: S.text }]}>{toast}</Text>
+          <TouchableOpacity
+            onPress={() => setToast('')}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={styles.toastCloseBtn}
+          >
+            <Ionicons name="close" size={18} color={S.textLight} />
+          </TouchableOpacity>
         </View>
       )}
 
@@ -143,8 +152,8 @@ export default function SettingsScreen() {
             {/* Dark Mode */}
             <View style={styles.cardRow}>
               <View style={styles.cardRowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: 'rgba(75,65,225,0.1)' }]}>
-                  <Ionicons name="moon-outline" size={20} color="#4b41e1" />
+                <View style={[styles.iconBox, { backgroundColor: darkMode ? `${primaryColor}25` : `${primaryColor}15` }]}>
+                  <Ionicons name="moon-outline" size={20} color={primaryColor} />
                 </View>
                 <View>
                   <Text style={[styles.rowTitle, { color: S.text }]}>Dark Mode</Text>
@@ -154,7 +163,7 @@ export default function SettingsScreen() {
               <Switch
                 value={darkMode}
                 onValueChange={toggleDarkMode}
-                trackColor={{ false: darkMode ? '#3a3a3a' : '#e0e3e5', true: '#4b41e1' }}
+                trackColor={{ false: darkMode ? '#3a3a3a' : '#e0e3e5', true: primaryColor }}
                 thumbColor="#ffffff"
                 ios_backgroundColor={darkMode ? '#3a3a3a' : '#e0e3e5'}
               />
@@ -329,7 +338,7 @@ const styles = StyleSheet.create({
   },
   toastContainer: {
     position: 'absolute',
-    top: 60,
+    bottom: 30,
     left: 20,
     right: 20,
     zIndex: 999,
@@ -345,6 +354,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 6,
+  },
+  toastCloseBtn: {
+    padding: 2,
+    marginLeft: 4,
   },
   toastText: {
     fontSize: 13,

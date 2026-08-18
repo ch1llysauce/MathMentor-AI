@@ -13,6 +13,7 @@ import {
   IoBarChartOutline,
 } from 'react-icons/io5';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { progressApi, learningApi } from '../services/api';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -24,19 +25,73 @@ const TOPIC_META = {
 
 function StatCard({ label, value, sub, icon: Icon, iconBg, iconColor }) {
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+    <div className="bg-white dark:bg-[#1a2333] rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
       <div className={`w-12 h-12 rounded-2xl ${iconBg} flex items-center justify-center ${iconColor} mb-3`}>
         <Icon size={22} />
       </div>
-      <p className="text-sm text-gray-500 mb-1">{label}</p>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{label}</p>
+      <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
       {sub && <p className="text-xs text-gray-400 mt-1 italic">{sub}</p>}
+    </div>
+  );
+}
+
+function TopicBreakdownItem({ topicName, meta, subtopicCount, mastery, navigate, primaryColor }) {
+  const [hovered, setHovered] = useState(false);
+  const Icon = meta.Icon;
+
+  return (
+    <div
+      onClick={() => navigate(`/practice/topic/${encodeURIComponent(topicName)}`)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        borderColor: hovered ? `${primaryColor}60` : undefined,
+        backgroundColor: hovered ? `${primaryColor}0D` : undefined,
+      }}
+      className="p-3.5 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 transition-all cursor-pointer group"
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm"
+            style={{ backgroundColor: meta.color }}
+          >
+            <Icon size={18} />
+          </div>
+          <div>
+            <h3
+              className="text-sm font-semibold text-gray-900 dark:text-white transition-colors"
+              style={{ color: hovered ? primaryColor : undefined }}
+            >
+              {topicName}
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {subtopicCount > 0 ? `${subtopicCount} subtopics` : '0 subtopics'}
+            </p>
+          </div>
+        </div>
+        <span className="text-xs font-bold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 px-2.5 py-1 rounded-lg border border-gray-100 dark:border-gray-700">
+          {mastery}% Mastery
+        </span>
+      </div>
+      {/* Progress Bar */}
+      <div className="w-full h-2 bg-gray-200/80 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${Math.min(mastery, 100)}%`,
+            backgroundColor: meta.color,
+          }}
+        />
+      </div>
     </div>
   );
 }
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { primaryColor } = useTheme();
   const navigate = useNavigate();
   const firstName = (user?.displayName ?? user?.name ?? 'Student').split(' ')[0];
 
@@ -119,7 +174,10 @@ export default function Dashboard() {
     return (
       <div className="flex items-center justify-center h-full min-h-64">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <div
+            className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-3"
+            style={{ borderColor: primaryColor, borderTopColor: 'transparent' }}
+          />
           <p className="text-sm text-gray-500">Loading your progress…</p>
         </div>
       </div>
@@ -130,23 +188,28 @@ export default function Dashboard() {
     <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full pb-24 sm:pb-28">
       {/* Welcome */}
       <div className="mb-5">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
           Welcome back, {firstName}.
         </h1>
-        <p className="text-gray-500 text-sm mt-1">Ready to solve some problems today?</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Ready to solve some problems today?</p>
       </div>
 
       {/* Action buttons */}
       <div className="flex gap-3 mb-6 w-full">
         <button
           disabled
-          className="flex-1 flex items-center justify-center gap-2 bg-purple-600 text-white text-sm font-semibold py-3 px-4 rounded-xl opacity-60 cursor-not-allowed"
+          className="flex-1 flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 px-4 rounded-xl opacity-60 cursor-not-allowed"
+          style={{ backgroundColor: primaryColor }}
         >
           <IoSchoolOutline size={18} /> Resume Tutoring
         </button>
         <Link
-          to={diagnosticDone ? '/diagnosis' : '/diagnosis'}
-          className="flex-1 flex items-center justify-center gap-2 bg-purple-100 text-purple-700 text-sm font-semibold py-3 px-4 rounded-xl hover:bg-purple-200 transition-colors"
+          to="/diagnosis"
+          className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold py-3 px-4 rounded-xl transition-colors hover:opacity-90"
+          style={{
+            backgroundColor: `${primaryColor}18`,
+            color: primaryColor,
+          }}
         >
           <IoAnalyticsOutline size={18} />
           {diagnosticDone ? 'Diagnostic' : 'Take Diagnostic'}
@@ -201,15 +264,19 @@ export default function Dashboard() {
           )}
 
           {/* Topic Breakdown & Mastery Progress */}
-          <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+          <div className="bg-white dark:bg-[#1a2333] border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="font-semibold text-gray-900 flex items-center gap-2 text-base">
-                  <IoBarChartOutline size={18} className="text-purple-600" /> Topic Breakdown & Mastery
+                <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 text-base">
+                  <IoBarChartOutline size={18} style={{ color: primaryColor }} /> Topic Breakdown & Mastery
                 </h2>
-                <p className="text-xs text-gray-500 mt-0.5">Your progress across main domain areas</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Your progress across main domain areas</p>
               </div>
-              <Link to="/practice" className="text-xs font-medium text-purple-600 hover:underline flex items-center gap-1">
+              <Link
+                to="/practice"
+                className="text-xs font-medium hover:underline flex items-center gap-1"
+                style={{ color: primaryColor }}
+              >
                 View All <IoArrowForwardOutline size={12} />
               </Link>
             </div>
@@ -217,7 +284,6 @@ export default function Dashboard() {
             <div className="space-y-3.5">
               {['Algebra', 'Geometry', 'Trigonometry'].map((topicName) => {
                 const meta = TOPIC_META[topicName] || { Icon: IoCalculatorOutline, color: '#8b5cf6' };
-                const Icon = meta.Icon;
                 const diagKey = topicName.toLowerCase();
                 const diagScore = diagnostic?.[`${diagKey}Score`] ?? diagnostic?.topicScores?.[diagKey]?.score ?? 0;
                 const stats = summary?.topicStats?.find(
@@ -225,47 +291,18 @@ export default function Dashboard() {
                 );
                 const statsScore = stats?.averageMastery ?? stats?.accuracy ?? 0;
                 const mastery = Math.round(Math.max(diagScore, statsScore));
-                const solvedCount = stats?.totalQuestions ?? 0;
                 const subtopicCount = stats?.subtopics?.length ?? (diagnostic?.topicScores?.[diagKey]?.subtopicScores ? Object.keys(diagnostic.topicScores[diagKey].subtopicScores).length : 0);
 
                 return (
-                  <div
+                  <TopicBreakdownItem
                     key={topicName}
-                    onClick={() => navigate(`/practice/topic/${encodeURIComponent(topicName)}`)}
-                    className="p-3.5 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-purple-50/40 hover:border-purple-200 transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm"
-                          style={{ backgroundColor: meta.color }}
-                        >
-                          <Icon size={18} />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-semibold text-gray-900 group-hover:text-purple-700 transition-colors">
-                            {topicName}
-                          </h3>
-                          <p className="text-xs text-gray-500">
-                            {subtopicCount > 0 ? `${subtopicCount} subtopics` : '0 subtopics'}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-xs font-bold text-gray-700 bg-white px-2.5 py-1 rounded-lg border border-gray-100">
-                        {mastery}% Mastery
-                      </span>
-                    </div>
-                    {/* Progress Bar */}
-                    <div className="w-full h-2 bg-gray-200/80 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${Math.min(mastery, 100)}%`,
-                          backgroundColor: meta.color,
-                        }}
-                      />
-                    </div>
-                  </div>
+                    topicName={topicName}
+                    meta={meta}
+                    subtopicCount={subtopicCount}
+                    mastery={mastery}
+                    navigate={navigate}
+                    primaryColor={primaryColor}
+                  />
                 );
               })}
             </div>
@@ -273,11 +310,11 @@ export default function Dashboard() {
 
           {/* Streak */}
           {stats.currentStreak > 0 && (
-            <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center gap-3">
+            <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-100 dark:border-orange-900/40 rounded-2xl p-4 flex items-center gap-3">
               <IoFlameOutline size={24} className="text-orange-500 shrink-0" />
               <div>
-                <p className="font-semibold text-orange-800">{stats.currentStreak}-day streak</p>
-                <p className="text-xs text-orange-600">Keep it going — practice something today.</p>
+                <p className="font-semibold text-orange-800 dark:text-orange-300">{stats.currentStreak}-day streak</p>
+                <p className="text-xs text-orange-600 dark:text-orange-400">Keep it going — practice something today.</p>
               </div>
             </div>
           )}
@@ -290,15 +327,15 @@ export default function Dashboard() {
             value={stats.accuracyTotal > 0 ? `${stats.accuracy}%` : '—'}
             sub={stats.accuracyTotal > 0 ? `${stats.accuracyCorrect}/${stats.accuracyTotal} · Diagnostic Results` : undefined}
             icon={IoCheckmarkDoneOutline}
-            iconBg="bg-indigo-50"
-            iconColor="text-indigo-600"
+            iconBg="bg-indigo-50 dark:bg-indigo-950/40"
+            iconColor="text-indigo-600 dark:text-indigo-400"
           />
           <StatCard
             label="Avg. Speed"
             value={stats.avgSpeed > 0 ? `${stats.avgSpeed}s` : '—'}
             icon={IoTimerOutline}
-            iconBg="bg-red-50"
-            iconColor="text-red-500"
+            iconBg="bg-red-50 dark:bg-red-950/40"
+            iconColor="text-red-500 dark:text-red-400"
           />
         </div>
       </div>
@@ -320,8 +357,12 @@ function FeaturedSkeleton() {
 }
 
 function FeaturedCard({ badge, title, description, progressLabel, progressPct, btnLabel, onPress, IconComponent }) {
+  const { themeGradient } = useTheme();
   return (
-    <div className="bg-[#4b41e1] rounded-3xl p-6 relative overflow-hidden shadow-lg shadow-[rgba(75,65,225,0.25)]">
+    <div
+      className="rounded-3xl p-6 relative overflow-hidden shadow-lg transition-all"
+      style={{ background: themeGradient }}
+    >
       {/* Background icon */}
       <div className="absolute top-4 right-4 opacity-10 pointer-events-none">
         <IconComponent size={80} color="#ffffff" />
@@ -332,7 +373,7 @@ function FeaturedCard({ badge, title, description, progressLabel, progressPct, b
       </span>
 
       <h2 className="text-2xl font-bold text-white mb-2">{title}</h2>
-      <p className="text-purple-100 text-sm leading-relaxed mb-6">{description}</p>
+      <p className="text-white/80 text-sm leading-relaxed mb-6">{description}</p>
 
       <div className="flex items-center gap-4">
         <div className="flex-1">
@@ -349,7 +390,7 @@ function FeaturedCard({ badge, title, description, progressLabel, progressPct, b
         </div>
         <button
           onClick={onPress}
-          className="shrink-0 bg-white text-gray-900 text-sm font-bold px-5 py-3 rounded-xl hover:bg-purple-50 transition-colors"
+          className="shrink-0 bg-white text-gray-900 text-sm font-bold px-5 py-3 rounded-xl hover:bg-gray-100 transition-colors shadow-sm cursor-pointer"
         >
           {btnLabel}
         </button>

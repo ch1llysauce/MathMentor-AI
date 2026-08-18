@@ -13,6 +13,7 @@ import {
   Platform,
   Keyboard,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
@@ -103,6 +104,7 @@ const FAQS = [
 
 export default function FaqScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { darkMode } = useTheme();
   const [openIndex, setOpenIndex] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -169,9 +171,24 @@ export default function FaqScreen() {
     <View style={[styles.container, { backgroundColor: C.bg }]}>
       {/* Toast Notification */}
       {toast && (
-        <View style={[styles.toastContainer, { backgroundColor: C.card, borderColor: '#00a472' }]}>
+        <View
+          style={[
+            styles.toastContainer,
+            {
+              bottom: Math.max(insets.bottom + 24, 75),
+              backgroundColor: C.card,
+              borderColor: '#00a472',
+            },
+          ]}
+        >
           <Ionicons name="checkmark-circle-outline" size={20} color="#00a472" />
           <Text style={[styles.toastText, { color: C.text }]}>{toast}</Text>
+          <TouchableOpacity
+            onPress={() => setToast(null)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="close" size={18} color={C.textLight} />
+          </TouchableOpacity>
         </View>
       )}
 
@@ -377,7 +394,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   toastContainer: {
     position: 'absolute',
-    top: 54,
+    bottom: 30,
     left: 16,
     right: 16,
     zIndex: 999,

@@ -16,7 +16,7 @@ type ModalType = null | 'setup-key' | 'setup-verify' | 'disable' | 'policy' | 's
 
 export default function PrivacySecurityScreen() {
   const router = useRouter();
-  const { darkMode } = useTheme();
+  const { darkMode, primaryColor } = useTheme();
   const { user, logout } = useAuth();
 
   const PV = {
@@ -375,10 +375,10 @@ export default function PrivacySecurityScreen() {
               disabled={downloadLoading}
             >
               <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: 'rgba(75, 65, 225, 0.1)' }]}>
+                <View style={[styles.menuIcon, { backgroundColor: darkMode ? `${primaryColor}25` : `${primaryColor}15` }]}>
                   {downloadLoading
-                    ? <ActivityIndicator size="small" color="#4b41e1" />
-                    : <Ionicons name="download-outline" size={20} color="#4b41e1" />}
+                    ? <ActivityIndicator size="small" color={primaryColor} />
+                    : <Ionicons name="download-outline" size={20} color={primaryColor} />}
                 </View>
                 <View style={styles.menuTextContainer}>
                   <Text style={[styles.menuTitle, { color: PV.text }]}>Download My Data</Text>
@@ -438,8 +438,8 @@ export default function PrivacySecurityScreen() {
               onPress={openSessionsModal}
             >
               <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: 'rgba(75, 65, 225, 0.1)' }]}>
-                  <Ionicons name="phone-portrait-outline" size={20} color="#4b41e1" />
+                <View style={[styles.menuIcon, { backgroundColor: darkMode ? `${primaryColor}25` : `${primaryColor}15` }]}>
+                  <Ionicons name="phone-portrait-outline" size={20} color={primaryColor} />
                 </View>
                 <View style={styles.menuTextContainer}>
                   <Text style={[styles.menuTitle, { color: PV.text }]}>Active Sessions</Text>

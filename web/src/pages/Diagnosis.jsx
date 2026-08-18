@@ -23,6 +23,7 @@ import { questionApi, learningApi } from '../services/api';
 import MathText from '../components/MathText';
 import ScientificCalculator from '../components/ScientificCalculator';
 import { useActiveSession } from '../context/ActiveSessionContext';
+import { useTheme } from '../context/ThemeContext';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const SUBTOPIC_DB_KEY = {
@@ -151,6 +152,59 @@ function WeakAreaCard({ subtopic, masteryPercentage, onPress }) {
         <button className="text-xs font-bold text-red-600 group-hover:text-red-700 tracking-wider flex items-center gap-1 uppercase">
           Review Now <IoArrowForwardOutline size={12} />
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Subtopic Breakdown Card ──────────────────────────────────────────────────
+function SubtopicBreakdownCard({ st, getScoreColor, primaryColor }) {
+  const [hovered, setHovered] = useState(false);
+  const getScoreLabel = (score) =>
+    score >= 80 ? 'Mastered' : score >= 60 ? 'Proficient' : 'Needs Practice';
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        borderColor: hovered ? `${primaryColor}60` : undefined,
+      }}
+      className="bg-gray-50/70 dark:bg-[#111827]/60 border border-gray-100 dark:border-[#2d3748] rounded-2xl p-5 transition-all shadow-2xs flex flex-col justify-between space-y-3 group"
+    >
+      <div className="flex justify-between items-start">
+        <span
+          className="text-base font-bold text-gray-900 dark:text-white transition-colors"
+          style={{ color: hovered ? primaryColor : undefined }}
+        >
+          {st.name}
+        </span>
+        {st.score !== null ? (
+          <span className="text-lg font-extrabold shrink-0 ml-2" style={{ color: getScoreColor(st.score) }}>
+            {st.score}%
+          </span>
+        ) : (
+          <span className="text-xs font-medium text-gray-400 dark:text-gray-500 italic shrink-0 ml-2">Not tested</span>
+        )}
+      </div>
+
+      <div className="space-y-1.5">
+        <div className="h-2.5 bg-gray-200/80 dark:bg-gray-700 rounded-full overflow-hidden">
+          {st.score !== null ? (
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${st.score}%`, backgroundColor: getScoreColor(st.score) }}
+            />
+          ) : (
+            <div className="h-full w-0 bg-gray-300 dark:bg-gray-600 rounded-full" />
+          )}
+        </div>
+        {st.score !== null && (
+          <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+            <span className="font-semibold">{getScoreLabel(st.score)}</span>
+            <span className="text-[11px] text-gray-400 dark:text-gray-500">Mastery score</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -733,49 +787,21 @@ function TopicDetailScreen({ topic, latestDiag, onBack, onPractice }) {
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">Subtopics Breakdown</h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Detailed accuracy and performance level per skill</p>
               </div>
-              <span className="text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/50 px-3 py-1 rounded-xl border border-purple-100 dark:border-purple-800/40">
+              <span
+                className="text-xs font-bold px-3 py-1 rounded-xl border"
+                style={{
+                  color: primaryColor,
+                  backgroundColor: `${primaryColor}15`,
+                  borderColor: `${primaryColor}30`,
+                }}
+              >
                 {subtopics.length} Subtopics
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {subtopics.map((st, i) => (
-                <div
-                  key={i}
-                  className="bg-gray-50/70 dark:bg-[#111827]/60 border border-gray-100 dark:border-[#2d3748] hover:border-purple-200 dark:hover:border-purple-700 rounded-2xl p-5 transition-all shadow-2xs flex flex-col justify-between space-y-3 group"
-                >
-                  <div className="flex justify-between items-start">
-                    <span className="text-base font-bold text-gray-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors">
-                      {st.name}
-                    </span>
-                    {st.score !== null ? (
-                      <span className="text-lg font-extrabold shrink-0 ml-2" style={{ color: getScoreColor(st.score) }}>
-                        {st.score}%
-                      </span>
-                    ) : (
-                      <span className="text-xs font-medium text-gray-400 dark:text-gray-500 italic shrink-0 ml-2">Not tested</span>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <div className="h-2.5 bg-gray-200/80 dark:bg-gray-700 rounded-full overflow-hidden">
-                      {st.score !== null ? (
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${st.score}%`, backgroundColor: getScoreColor(st.score) }}
-                        />
-                      ) : (
-                        <div className="h-full w-0 bg-gray-300 dark:bg-gray-600 rounded-full" />
-                      )}
-                    </div>
-                    {st.score !== null && (
-                      <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
-                        <span className="font-semibold">{getScoreLabel(st.score)}</span>
-                        <span className="text-[11px] text-gray-400 dark:text-gray-500">Mastery score</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <SubtopicBreakdownCard key={i} st={st} getScoreColor={getScoreColor} primaryColor={primaryColor} />
               ))}
             </div>
           </div>
@@ -788,6 +814,7 @@ function TopicDetailScreen({ topic, latestDiag, onBack, onPractice }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function Diagnosis() {
   const navigate = useNavigate();
+  const { themeGradient } = useTheme();
   const [view, setView]           = useState('menu');
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -1132,15 +1159,15 @@ export default function Diagnosis() {
             </div>
 
             {/* CTA card */}
-            <div className="bg-gradient-to-br from-purple-800 to-indigo-900 rounded-2xl p-6 mt-6 shadow-lg shadow-purple-900/20 text-center">
+            <div className="rounded-2xl p-6 mt-6 shadow-lg text-center transition-all" style={{ background: themeGradient }}>
               <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 text-white">
                 <IoSchoolOutline size={24} />
               </div>
               <p className="text-white font-bold text-lg mb-1">Ready for a challenge?</p>
-              <p className="text-purple-200 text-xs font-medium mb-5 leading-relaxed">Retake the diagnostic to update your personalised learning path</p>
+              <p className="text-white/80 text-xs font-medium mb-5 leading-relaxed">Retake the diagnostic to update your personalised learning path</p>
               <button
                 onClick={() => setView('intro')}
-                className="w-full bg-white text-purple-800 font-extrabold py-3.5 rounded-xl hover:bg-purple-50 transition-colors shadow-sm"
+                className="w-full bg-white text-gray-900 font-extrabold py-3.5 rounded-xl hover:bg-gray-100 transition-colors shadow-sm cursor-pointer"
               >
                 RETAKE DIAGNOSTIC
               </button>

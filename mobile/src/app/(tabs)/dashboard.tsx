@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, StatusBar, RefreshControl, ActivityIndicator, Image } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/hooks/useAuth';
 import Loading from '@/components/common/Loading';
 import { dashboardService, DashboardStats } from '@/services/dashboardService';
@@ -56,7 +57,7 @@ const _dashCache = dashCache;
 export default function DashboardScreen() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const { darkMode } = useTheme();
+  const { darkMode, primaryColor, gradientColors } = useTheme();
 
   // Dynamic colors based on theme
   const D = {
@@ -66,12 +67,12 @@ export default function DashboardScreen() {
     border: darkMode ? '#2e2e2e' : '#e0e3e5',
     text: darkMode ? '#f0f0f0' : '#091426',
     textLight: darkMode ? '#a0a0a0' : '#45474c',
-    primary: darkMode ? '#a5b4fc' : '#4b41e1',
+    primary: primaryColor,
     itemBg: darkMode ? '#242424' : '#f2f4f6',
     itemBorder: darkMode ? 'rgba(100,100,120,0.2)' : 'rgba(197, 198, 205, 0.3)',
     insightsBtnBg: darkMode ? '#1a1a1a' : '#f2f4f6',
-    secondaryBtnBg: darkMode ? '#312e81' : '#e2dfff',
-    secondaryBtnText: darkMode ? '#a5b4fc' : '#3323cc',
+    secondaryBtnBg: darkMode ? 'rgba(255,255,255,0.15)' : `${primaryColor}1a`,
+    secondaryBtnText: darkMode ? '#ffffff' : primaryColor,
     radialBg: darkMode ? '#2e2e2e' : '#e0e3e5',
   };
   const [isReady, setIsReady] = useState(!!_dashCache.data);
@@ -357,7 +358,6 @@ export default function DashboardScreen() {
             </View>
           ) : nextStep ? (
             <TouchableOpacity
-              style={styles.featuredCard}
               activeOpacity={0.92}
               onPress={() =>
                 router.push({
@@ -370,6 +370,7 @@ export default function DashboardScreen() {
                 })
               }
             >
+              <LinearGradient colors={gradientColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.featuredCard}>
               <View style={styles.featuredBadge}>
                 <Text style={styles.featuredBadgeText}>NEXT IN YOUR PATH</Text>
               </View>
@@ -411,14 +412,15 @@ export default function DashboardScreen() {
                   color="rgba(255,255,255,0.1)"
                 />
               </View>
+              </LinearGradient>
             </TouchableOpacity>
           ) : diagnosticDone ? (
             /* Diagnostic done but no next step — check if user has any progress */
             <TouchableOpacity
-              style={styles.featuredCard}
               activeOpacity={0.92}
               onPress={() => router.push('/(tabs)/practice')}
             >
+              <LinearGradient colors={gradientColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.featuredCard}>
               {(() => {
                 const hasProgress = topics.some(t => t.problemsSolved > 0);
                 const badge = hasProgress ? 'GREAT JOB' : 'READY TO START';
@@ -458,14 +460,15 @@ export default function DashboardScreen() {
                   </>
                 );
               })()}
+              </LinearGradient>
             </TouchableOpacity>
           ) : (
             /* No diagnostic yet — prompt the user */
             <TouchableOpacity
-              style={styles.featuredCard}
               activeOpacity={0.92}
               onPress={() => router.push('/diagnostic/retake')}
             >
+              <LinearGradient colors={gradientColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.featuredCard}>
               <View style={styles.featuredBadge}>
                 <Text style={styles.featuredBadgeText}>GET STARTED</Text>
               </View>
@@ -491,6 +494,7 @@ export default function DashboardScreen() {
               <View style={styles.featuredIcon}>
                 <Ionicons name="analytics" size={80} color="rgba(255,255,255,0.1)" />
               </View>
+              </LinearGradient>
             </TouchableOpacity>
           )}
 

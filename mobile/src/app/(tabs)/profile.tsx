@@ -41,12 +41,15 @@ function MenuCardItem({
   badgeText,
   badgeColor,
   badgeTextColor,
-  iconBg = 'rgba(75, 65, 225, 0.1)',
-  iconColor = '#4b41e1',
+  iconBg,
+  iconColor,
   onPress,
   rightElement,
 }: MenuCardItemProps) {
-  const { darkMode } = useTheme();
+  const { darkMode, primaryColor } = useTheme();
+
+  const effectiveIconBg = iconBg || (darkMode ? `${primaryColor}25` : `${primaryColor}15`);
+  const effectiveIconColor = iconColor || primaryColor;
 
   return (
     <TouchableOpacity
@@ -61,8 +64,8 @@ function MenuCardItem({
       ]}
     >
       <View style={styles.menuCardLeft}>
-        <View style={[styles.menuCardIconBox, { backgroundColor: iconBg }]}>
-          <Ionicons name={icon} size={22} color={iconColor} />
+        <View style={[styles.menuCardIconBox, { backgroundColor: effectiveIconBg }]}>
+          <Ionicons name={icon} size={22} color={effectiveIconColor} />
         </View>
         <View style={{ flex: 1 }}>
           <View style={styles.menuCardTitleRow}>
@@ -74,7 +77,7 @@ function MenuCardItem({
                 style={[
                   styles.menuBadge,
                   {
-                    backgroundColor: badgeColor || (darkMode ? 'rgba(75,65,225,0.2)' : '#f2f4f6'),
+                    backgroundColor: badgeColor || (darkMode ? `${primaryColor}30` : `${primaryColor}15`),
                   },
                 ]}
               >
@@ -82,7 +85,7 @@ function MenuCardItem({
                   style={[
                     styles.menuBadgeText,
                     {
-                      color: badgeTextColor || (darkMode ? '#a5b4fc' : '#45474c'),
+                      color: badgeTextColor || primaryColor,
                     },
                   ]}
                 >
@@ -114,7 +117,7 @@ function MenuCardItem({
 export default function ProfileScreen() {
   const { user, logout, loading } = useAuth();
   const router = useRouter();
-  const { darkMode, toggleDarkMode } = useTheme();
+  const { darkMode, toggleDarkMode, primaryColor } = useTheme();
   const { fabDismissed, restoreFab } = useCalculatorContext();
 
   const [isReady, setIsReady] = useState(false);
@@ -284,8 +287,8 @@ export default function ProfileScreen() {
               icon="person-outline"
               title="Edit Profile & Password"
               description="Update display name, avatar, and security credentials"
-              iconBg={darkMode ? 'rgba(165, 180, 252, 0.15)' : 'rgba(75, 65, 225, 0.1)'}
-              iconColor={darkMode ? '#a5b4fc' : '#4b41e1'}
+              iconBg={darkMode ? `${primaryColor}25` : `${primaryColor}15`}
+              iconColor={primaryColor}
               onPress={() => router.push('/profile/edit-profile')}
             />
 
@@ -304,8 +307,8 @@ export default function ProfileScreen() {
                     : 'rgba(245, 158, 11, 0.15)'
               }
               badgeTextColor={is2FAActive ? '#00a472' : '#f59e0b'}
-              iconBg={darkMode ? 'rgba(52, 211, 153, 0.15)' : 'rgba(0, 164, 114, 0.1)'}
-              iconColor={darkMode ? '#34d399' : '#00a472'}
+              iconBg={darkMode ? `${primaryColor}25` : `${primaryColor}15`}
+              iconColor={primaryColor}
               onPress={() => router.push('/profile/privacy')}
             />
           </View>
@@ -325,11 +328,11 @@ export default function ProfileScreen() {
               badgeColor={
                 fabDismissed
                   ? darkMode ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2'
-                  : darkMode ? 'rgba(75, 65, 225, 0.2)' : '#e2dfff'
+                  : darkMode ? `${primaryColor}25` : `${primaryColor}15`
               }
-              badgeTextColor={fabDismissed ? '#ef4444' : (darkMode ? '#a5b4fc' : '#4b41e1')}
-              iconBg={darkMode ? 'rgba(165, 180, 252, 0.15)' : 'rgba(75, 65, 225, 0.1)'}
-              iconColor={darkMode ? '#a5b4fc' : '#4b41e1'}
+              badgeTextColor={fabDismissed ? '#ef4444' : primaryColor}
+              iconBg={darkMode ? `${primaryColor}25` : `${primaryColor}15`}
+              iconColor={primaryColor}
               onPress={restoreFab}
             />
 
@@ -337,8 +340,8 @@ export default function ProfileScreen() {
               icon="settings-outline"
               title="App Settings"
               description="Configure dark mode, offline cache mode, and app preferences"
-              iconBg={darkMode ? 'rgba(96, 165, 250, 0.15)' : 'rgba(33, 150, 243, 0.1)'}
-              iconColor={darkMode ? '#60a5fa' : '#2196f3'}
+              iconBg={darkMode ? `${primaryColor}25` : `${primaryColor}15`}
+              iconColor={primaryColor}
               onPress={() => router.push('/profile/settings')}
             />
           </View>
@@ -354,8 +357,8 @@ export default function ProfileScreen() {
               icon="help-circle-outline"
               title="Help & FAQs"
               description="Instant search, categorized guides, direct email support & feedback"
-              iconBg={darkMode ? 'rgba(165, 180, 252, 0.15)' : 'rgba(75, 65, 225, 0.1)'}
-              iconColor={darkMode ? '#a5b4fc' : '#4b41e1'}
+              iconBg={darkMode ? `${primaryColor}25` : `${primaryColor}15`}
+              iconColor={primaryColor}
               onPress={() => router.push('/profile/faq')}
             />
 
@@ -363,8 +366,8 @@ export default function ProfileScreen() {
               icon="information-circle-outline"
               title="About MathMentor AI"
               description="App mission, curriculum details, core features & legal terms of service"
-              iconBg={darkMode ? 'rgba(52, 211, 153, 0.15)' : 'rgba(0, 164, 114, 0.1)'}
-              iconColor={darkMode ? '#34d399' : '#00a472'}
+              iconBg={darkMode ? `${primaryColor}25` : `${primaryColor}15`}
+              iconColor={primaryColor}
               onPress={() => router.push('/profile/about')}
             />
 
@@ -372,8 +375,8 @@ export default function ProfileScreen() {
               icon="globe-outline"
               title="Visit Home Page"
               description="View the MathMentor AI public landing page & product overview"
-              iconBg={darkMode ? 'rgba(165, 180, 252, 0.12)' : 'rgba(75, 65, 225, 0.08)'}
-              iconColor={darkMode ? '#a5b4fc' : '#4b41e1'}
+              iconBg={darkMode ? `${primaryColor}25` : `${primaryColor}15`}
+              iconColor={primaryColor}
               onPress={handleVisitWebsite}
             />
           </View>

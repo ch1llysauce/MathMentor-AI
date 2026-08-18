@@ -19,32 +19,56 @@ import {
   IoKeyOutline,
 } from 'react-icons/io5';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { authApi } from '../services/api';
 import SignOutModal from '../components/SignOutModal';
 
-function MenuCardItem({ icon: Icon, title, description, badgeText, badgeColor = 'bg-[#f2f4f6] text-[#45474c]', iconBg = 'bg-[rgba(75,65,225,0.1)]', iconColor = 'text-[#4b41e1]', onClick }) {
+function MenuCardItem({ icon: Icon, title, description, badgeText, badgeColor = 'bg-[#f2f4f6] text-[#45474c]', onClick }) {
+  const { primaryColor } = useTheme();
+  const [hovered, setHovered] = useState(false);
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-[#e0e3e5] hover:border-[#4b41e1]/40 hover:shadow-md hover:-translate-y-0.5 transition-all group text-left cursor-pointer"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        borderColor: hovered ? `${primaryColor}60` : '#e0e3e5',
+        transform: hovered ? 'translateY(-2px)' : 'none',
+        boxShadow: hovered ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
+      }}
+      className="w-full flex items-center justify-between p-4 bg-white dark:bg-[#1a2333] rounded-2xl border transition-all text-left cursor-pointer group"
     >
       <div className="flex items-center gap-3.5">
-        <div className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
-          <Icon size={22} className={iconColor} />
+        <div
+          className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"
+          style={{ backgroundColor: `${primaryColor}18` }}
+        >
+          <Icon size={22} style={{ color: primaryColor }} />
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <p className="text-base font-bold text-[#091426] group-hover:text-[#4b41e1] transition-colors">{title}</p>
+            <p
+              className="text-base font-bold dark:text-white transition-colors"
+              style={{ color: hovered ? primaryColor : undefined }}
+            >
+              {title}
+            </p>
             {badgeText && (
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeColor}`}>
                 {badgeText}
               </span>
             )}
           </div>
-          {description && <p className="text-xs text-[#75777d] mt-0.5 leading-relaxed">{description}</p>}
+          {description && <p className="text-xs text-[#75777d] dark:text-gray-400 mt-0.5 leading-relaxed">{description}</p>}
         </div>
       </div>
-      <div className="w-8 h-8 rounded-full bg-[#f7f9fb] group-hover:bg-[#4b41e1] text-[#75777d] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+      <div
+        className="w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0"
+        style={{
+          backgroundColor: hovered ? primaryColor : '#f7f9fb',
+          color: hovered ? '#ffffff' : '#75777d',
+        }}
+      >
         <IoChevronForwardOutline size={16} />
       </div>
     </button>

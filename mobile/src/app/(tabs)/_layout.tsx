@@ -13,7 +13,7 @@ const INITIAL_X = SCREEN_WIDTH - 64;
 const INITIAL_Y = SCREEN_HEIGHT - 160;
 
 export default function TabsLayout() {
-  const { darkMode } = useTheme();
+  const { darkMode, primaryColor } = useTheme();
   const { fabDismissed, setFabDismissed, calcVisible, setCalcVisible, resetTrigger } = useCalculatorContext();
 
   const [isDragging, setIsDragging] = useState(false);
@@ -21,7 +21,7 @@ export default function TabsLayout() {
   const [showDismissModal, setShowDismissModal] = useState(false);
 
   const tabBarBg = darkMode ? '#0a0a0a' : '#ffffff';
-  const activeColor = darkMode ? '#a5b4fc' : Colors.secondary;
+  const activeColor = primaryColor;
   const inactiveColor = darkMode ? '#666666' : Colors.textLight;
 
   const dropZoneCircleRef = useRef<View>(null);
