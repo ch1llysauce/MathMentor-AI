@@ -20,6 +20,7 @@ import { lessonService } from '@/services/lessonService';
 import { Message } from '@/types/tutor';
 import { useTheme } from '@/context/ThemeContext';
 import MessageRenderer from '@/components/MessageRenderer';
+import CustomAlertModal from '@/components/common/CustomAlertModal';
 
 export default function LessonChatScreen() {
   const { lessonId, lessonTitle, topic, subtopic } = useLocalSearchParams<{
@@ -56,6 +57,16 @@ export default function LessonChatScreen() {
   const [conversationId, setConversationId] = useState<string | undefined>();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type?: 'error' | 'success' | 'warning' | 'info';
+  }>({ visible: false, title: '', message: '' });
+
+  const showAlert = (title: string, message: string, type: 'error' | 'success' | 'warning' | 'info' = 'error') => {
+    setAlertConfig({ visible: true, title, message, type });
+  };
 
   const quickSuggestions = [
     `Can you give me a practice problem for ${lessonTitle}?`,
@@ -139,7 +150,7 @@ export default function LessonChatScreen() {
         },
       ]);
     } catch {
-      Alert.alert('Error', 'Failed to delete conversation. Please try again.');
+      showAlert('Error', 'Failed to delete conversation. Please try again.');
     } finally {
       setIsDeleting(false);
     }
@@ -197,7 +208,7 @@ export default function LessonChatScreen() {
         error.message ||
         'Failed to send message. Please try again.';
 
-      Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
+      showAlert('Error', errorMessage);
       setMessages((prev) => prev.filter((msg) => msg.id !== userMessage.id));
     } finally {
       setIsLoading(false);
@@ -419,6 +430,15 @@ export default function LessonChatScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Custom Alert Modal */}
+      <CustomAlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onPrimaryPress={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 }

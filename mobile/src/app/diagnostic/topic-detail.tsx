@@ -63,14 +63,14 @@ export default function TopicDetailScreen() {
     border: darkMode ? '#2e2e2e' : '#e2e8f0',
     text: darkMode ? '#f0f0f0' : Colors.text,
     textLight: darkMode ? '#a0a0a0' : Colors.textLight,
-    primary: darkMode ? '#a5b4fc' : Colors.primary,
+    primary: primaryColor || (darkMode ? '#a5b4fc' : Colors.primary),
     card: darkMode ? '#1a1a1a' : '#fff',
     surface: darkMode ? '#2e2e2e' : Colors.surfaceContainer,
     recBg: darkMode ? '#2d2a00' : '#fffbeb',
     recBorder: '#f59e0b',
     recText: darkMode ? '#fcd34d' : Colors.text,
     secBtn: darkMode ? '#2e2e2e' : Colors.surfaceContainer,
-    secBtnText: darkMode ? '#a5b4fc' : Colors.primary,
+    secBtnText: primaryColor || (darkMode ? '#a5b4fc' : Colors.primary),
   };
 
   const topic     = (params.topic as string) || 'Algebra';

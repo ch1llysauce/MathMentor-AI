@@ -142,27 +142,19 @@ body {
   color: #d4d4d8 !important;
 }
 
-.dark .math-text-container,
-.dark .math-text-container * {
-  color: inherit;
+/* MathText & KaTeX color inheritance in Dark Mode */
+.dark .math-text-container {
+  color: inherit !important;
 }
 
-.dark .math-text-container {
-  color: #f4f4f5 !important;
+.dark .math-text-container * {
+  color: inherit;
 }
 
 /* Purple & Accent Adjustments */
 .dark .text-purple-900,
 .dark .text-indigo-900 {
   color: #e0e7ff !important;
-}
-
-.dark .text-amber-950 {
-  color: #fef08a !important;
-}
-
-.dark .text-amber-900 {
-  color: #fef9c3 !important;
 }
 
 .dark .text-purple-800,
@@ -184,6 +176,80 @@ body {
   background-color: rgba(59, 130, 246, 0.15) !important;
 }
 
+/* Gray Backgrounds in Dark Mode */
+.dark .bg-gray-100 {
+  background-color: #27272a !important;
+}
+
+.dark .bg-gray-50,
+.dark .bg-gray-50\/50,
+.dark .bg-gray-50\/60,
+.dark .bg-gray-50\/70,
+.dark .bg-gray-50\/80 {
+  background-color: #1f1f23 !important;
+}
+
+/* Green / Emerald Feedback Card & Badge Backgrounds in Dark Mode */
+.dark .bg-emerald-50,
+.dark .bg-emerald-50\/60,
+.dark .bg-emerald-50\/70,
+.dark .bg-emerald-50\/80,
+.dark .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.16) !important;
+}
+
+/* Red / Danger Feedback Card & Badge Backgrounds in Dark Mode */
+.dark .bg-red-50,
+.dark .bg-red-50\/60,
+.dark .bg-red-50\/70,
+.dark .bg-red-50\/80,
+.dark .bg-red-100 {
+  background-color: rgba(239, 68, 68, 0.16) !important;
+}
+
+/* Amber / Warning Feedback Card & Badge Backgrounds in Dark Mode */
+.dark .bg-amber-50,
+.dark .bg-amber-50\/40,
+.dark .bg-amber-50\/60,
+.dark .bg-amber-50\/80,
+.dark .bg-amber-100 {
+  background-color: rgba(245, 158, 11, 0.16) !important;
+}
+
+/* Alert & Feedback Text Colors in Dark Mode */
+.dark .text-emerald-950,
+.dark .text-emerald-900,
+.dark .text-emerald-800 {
+  color: #a7f3d0 !important;
+}
+
+.dark .text-emerald-700,
+.dark .text-emerald-600 {
+  color: #6ee7b7 !important;
+}
+
+.dark .text-red-950,
+.dark .text-red-900,
+.dark .text-red-800 {
+  color: #fca5a5 !important;
+}
+
+.dark .text-red-700,
+.dark .text-red-600 {
+  color: #f87171 !important;
+}
+
+.dark .text-amber-950,
+.dark .text-amber-900,
+.dark .text-amber-800 {
+  color: #fef08a !important;
+}
+
+.dark .text-amber-700,
+.dark .text-amber-600 {
+  color: #fbbf24 !important;
+}
+
 /* Primary Green Action Buttons */
 .dark .bg-emerald-600 {
   background-color: #059669 !important;
@@ -194,9 +260,12 @@ body {
   background-color: #047857 !important;
 }
 
-/* Borders */
+/* Borders in Dark Mode */
 .dark .border-\[\#e0e3e5\],
-.dark .border-\[\#f2f4f6\] {
+.dark .border-\[\#f2f4f6\],
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-200\/90 {
   border-color: #27272a !important;
 }
 
@@ -204,6 +273,39 @@ body {
 .dark .border-purple-200,
 .dark .border-\[\#c5bfff\] {
   border-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+.dark .border-emerald-100,
+.dark .border-emerald-200,
+.dark .border-emerald-300 {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+.dark .border-emerald-400,
+.dark .border-emerald-500 {
+  border-color: rgba(16, 185, 129, 0.6) !important;
+}
+
+.dark .border-red-100,
+.dark .border-red-200,
+.dark .border-red-300 {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.dark .border-red-400,
+.dark .border-red-500 {
+  border-color: rgba(239, 68, 68, 0.6) !important;
+}
+
+.dark .border-amber-100,
+.dark .border-amber-200,
+.dark .border-amber-300 {
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+.dark .border-amber-400,
+.dark .border-amber-500 {
+  border-color: rgba(245, 158, 11, 0.6) !important;
 }
 
 /* Form Controls */

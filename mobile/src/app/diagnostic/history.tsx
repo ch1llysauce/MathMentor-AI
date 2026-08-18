@@ -51,8 +51,8 @@ export default function DiagnosticHistoryScreen() {
     text: darkMode ? '#ffffff' : '#091426',
     textMuted: darkMode ? '#94a3b8' : '#64748b',
     border: darkMode ? '#2d3748' : '#e2e8f0',
-    iconBg: darkMode ? 'rgba(75, 65, 225, 0.2)' : 'rgba(75, 65, 225, 0.1)',
-    iconColor: darkMode ? '#a5b4fc' : '#4b41e1',
+    iconBg: primaryColor ? `${primaryColor}20` : (darkMode ? 'rgba(75, 65, 225, 0.2)' : 'rgba(75, 65, 225, 0.1)'),
+    iconColor: primaryColor || (darkMode ? '#a5b4fc' : '#4b41e1'),
   };
 
   return (
@@ -73,7 +73,7 @@ export default function DiagnosticHistoryScreen() {
 
       {loading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#4b41e1" />
+          <ActivityIndicator size="large" color={primaryColor || "#4b41e1"} />
           <Text style={[styles.loadingText, { color: colors.textMuted }]}>Loading history...</Text>
         </View>
       ) : history.length === 0 ? (

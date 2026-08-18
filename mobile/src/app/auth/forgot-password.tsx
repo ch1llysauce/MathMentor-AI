@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
 import api from '@/services/api';
 import { AUTH_ENDPOINTS } from '@/constants/api';
+import CustomAlertModal from '@/components/common/CustomAlertModal';
 
 type Step = 'email' | 'otp' | 'password';
 
@@ -39,6 +40,23 @@ export default function ForgotPasswordScreen() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type?: 'error' | 'success' | 'warning' | 'info';
+    onPrimaryPress?: () => void;
+  }>({ visible: false, title: '', message: '' });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: 'error' | 'success' | 'warning' | 'info' = 'error',
+    onPrimaryPress?: () => void
+  ) => {
+    setAlertConfig({ visible: true, title, message, type, onPrimaryPress });
+  };
+
   // OTP countdown — sourced from the backend response
   const [otpExpirySeconds, setOtpExpirySeconds] = useState<number | null>(null);
   const [resendCooldown, setResendCooldown] = useState<number>(0);
@@ -48,9 +66,9 @@ export default function ForgotPasswordScreen() {
   // ── Step 1: Send OTP ─────────────────────────────────────────────────────
   const handleSendOtp = async () => {
     const trimmed = email.trim().toLowerCase();
-    if (!trimmed) { Alert.alert('Error', 'Please enter your email address'); return; }
+    if (!trimmed) { showAlert('Error', 'Please enter your email address', 'warning'); return; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmed)) { Alert.alert('Error', 'Please enter a valid email address'); return; }
+    if (!emailRegex.test(trimmed)) { showAlert('Error', 'Please enter a valid email address', 'warning'); return; }
 
     setLoading(true);
     try {
@@ -65,7 +83,7 @@ export default function ForgotPasswordScreen() {
     } catch (error: any) {
       const status = error.response?.status;
       const msg = error.response?.data?.message || error.message || 'Failed to send reset code. Please try again.';
-      Alert.alert(status === 429 ? 'Too Many Requests' : 'Error', msg);
+      showAlert(status === 429 ? 'Too Many Requests' : 'Error', msg);
     } finally {
       setLoading(false);
     }
@@ -73,7 +91,7 @@ export default function ForgotPasswordScreen() {
 
   // ── Step 2: Verify OTP ───────────────────────────────────────────────────
   const handleVerifyOtp = async () => {
-    if (otp.trim().length !== 6) { Alert.alert('Error', 'Please enter the 6-digit code'); return; }
+    if (otp.trim().length !== 6) { showAlert('Error', 'Please enter the 6-digit code', 'warning'); return; }
 
     setLoading(true);
     try {
@@ -86,7 +104,7 @@ export default function ForgotPasswordScreen() {
     } catch (error: any) {
       const status = error.response?.status;
       const msg = error.message || 'The code is incorrect or has expired.';
-      Alert.alert(status === 429 ? 'Too Many Attempts' : 'Invalid Code', msg);
+      showAlert(status === 429 ? 'Too Many Attempts' : 'Invalid Code', msg);
     } finally {
       setLoading(false);
     }
@@ -94,21 +112,22 @@ export default function ForgotPasswordScreen() {
 
   // ── Step 3: Reset Password ───────────────────────────────────────────────
   const handleResetPassword = async () => {
-    if (newPassword.length < 6) { Alert.alert('Error', 'Password must be at least 6 characters'); return; }
-    if (newPassword !== confirmPassword) { Alert.alert('Error', 'Passwords do not match'); return; }
+    if (newPassword.length < 6) { showAlert('Error', 'Password must be at least 6 characters', 'warning'); return; }
+    if (newPassword !== confirmPassword) { showAlert('Error', 'Passwords do not match', 'warning'); return; }
 
     setLoading(true);
     try {
       await api.post(AUTH_ENDPOINTS.RESET_PASSWORD, { resetToken, newPassword });
-      Alert.alert(
+      showAlert(
         'Password Reset',
         'Your password has been reset successfully. Please log in with your new password.',
-        [{ text: 'Log In', onPress: () => router.replace('/auth/login') }]
+        'success',
+        () => router.replace('/auth/login')
       );
     } catch (error: any) {
       const status = error.response?.status;
       const msg = error.message || 'Failed to reset password. Please try again.';
-      Alert.alert(status === 429 ? 'Too Many Attempts' : 'Error', msg);
+      showAlert(status === 429 ? 'Too Many Attempts' : 'Error', msg);
     } finally {
       setLoading(false);
     }
@@ -335,6 +354,20 @@ export default function ForgotPasswordScreen() {
 
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Custom Alert Modal */}
+      <CustomAlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onPrimaryPress={() => {
+          setAlertConfig((prev) => ({ ...prev, visible: false }));
+          if (alertConfig.onPrimaryPress) {
+            alertConfig.onPrimaryPress();
+          }
+        }}
+      />
     </View>
   );
 }

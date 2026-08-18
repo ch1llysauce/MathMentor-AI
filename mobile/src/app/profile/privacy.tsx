@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { authService } from '@/services/authService';
 import api from '@/services/api';
 import { AUTH_ENDPOINTS } from '@/constants/api';
+import CustomAlertModal from '@/components/common/CustomAlertModal';
 
 type ModalType = null | 'setup-key' | 'setup-verify' | 'disable' | 'policy' | 'sessions' | 'revoke-others-confirm' | 'revoke-others-success';
 
@@ -59,6 +60,18 @@ export default function PrivacySecurityScreen() {
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [revokeAllLoading, setRevokeAllLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type?: 'error' | 'success' | 'warning' | 'info';
+  }>({ visible: false, title: '', message: '' });
+
+  const showAlert = (title: string, message: string, type: 'error' | 'success' | 'warning' | 'info' = 'error') => {
+    setAlertConfig({ visible: true, title, message, type });
+  };
 
   useEffect(() => {
     setTwoFactorAuth(user?.twoFactorEnabled ?? false);
@@ -75,7 +88,7 @@ export default function PrivacySecurityScreen() {
         setVerifyCode('');
         setModalType('setup-key');
       } catch (error: any) {
-        Alert.alert('Error', error.response?.data?.message || 'Failed to set up 2FA');
+        showAlert('Error', error.response?.data?.message || 'Failed to set up 2FA');
       } finally {
         setLoading(false);
       }
@@ -87,7 +100,7 @@ export default function PrivacySecurityScreen() {
 
   const handleVerify2FA = async () => {
     if (verifyCode.trim().length !== 6) {
-      Alert.alert('Error', 'Please enter the 6-digit code from your authenticator app');
+      showAlert('Error', 'Please enter the 6-digit code from your authenticator app', 'warning');
       return;
     }
     setLoading(true);
@@ -97,12 +110,12 @@ export default function PrivacySecurityScreen() {
         setTwoFactorAuth(true);
         setModalType(null);
         setVerifyCode('');
-        Alert.alert('2FA Enabled', 'Two-factor authentication is now active on your account');
+        showAlert('2FA Enabled', 'Two-factor authentication is now active on your account', 'success');
       } else {
-        Alert.alert('Invalid Code', response.message || 'Verification failed. Check the code and try again.');
+        showAlert('Invalid Code', response.message || 'Verification failed. Check the code and try again.');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Invalid verification code');
+      showAlert('Error', error.response?.data?.message || 'Invalid verification code');
     } finally {
       setLoading(false);
     }
@@ -110,7 +123,7 @@ export default function PrivacySecurityScreen() {
 
   const handleDisable2FA = async () => {
     if (disableCode.trim().length !== 6) {
-      Alert.alert('Error', 'Please enter your current 6-digit code to confirm');
+      showAlert('Error', 'Please enter your current 6-digit code to confirm', 'warning');
       return;
     }
     setLoading(true);
@@ -120,12 +133,12 @@ export default function PrivacySecurityScreen() {
         setTwoFactorAuth(false);
         setModalType(null);
         setDisableCode('');
-        Alert.alert('2FA Disabled', 'Two-factor authentication has been turned off');
+        showAlert('2FA Disabled', 'Two-factor authentication has been turned off', 'info');
       } else {
-        Alert.alert('Failed', response.message || 'Could not disable 2FA');
+        showAlert('Failed', response.message || 'Could not disable 2FA');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Invalid verification code');
+      showAlert('Error', error.response?.data?.message || 'Invalid verification code');
     } finally {
       setLoading(false);
     }
@@ -177,7 +190,7 @@ export default function PrivacySecurityScreen() {
         title: 'My MathMentor AI Data',
       });
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to export data. Please try again.');
+      showAlert('Error', error.response?.data?.message || 'Failed to export data. Please try again.');
     } finally {
       setDownloadLoading(false);
     }
@@ -186,35 +199,11 @@ export default function PrivacySecurityScreen() {
   // ── Delete Account ────────────────────────────────────────────────────────
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete All My Data',
-      'This will permanently delete your account, all learning progress, and diagnostic results. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Continue',
-          style: 'destructive',
-          onPress: () => {
-            // Second confirmation with typed acknowledgement via Alert
-            Alert.alert(
-              'Are you absolutely sure?',
-              'Your account will be deleted immediately and you will be logged out. There is no way to recover your data.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Delete Everything',
-                  style: 'destructive',
-                  onPress: confirmDeleteAccount,
-                },
-              ]
-            );
-          },
-        },
-      ]
-    );
+    setShowDeleteModal(true);
   };
 
   const confirmDeleteAccount = async () => {
+    setShowDeleteModal(false);
     setDeleteLoading(true);
     try {
       await api.delete(AUTH_ENDPOINTS.DELETE_ACCOUNT);
@@ -222,7 +211,7 @@ export default function PrivacySecurityScreen() {
       // logout clears storage; router will redirect to login via AuthContext
       router.replace('/auth/login');
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to delete account. Please try again.');
+      showAlert('Error', error.response?.data?.message || 'Failed to delete account. Please try again.');
     } finally {
       setDeleteLoading(false);
     }
@@ -237,7 +226,7 @@ export default function PrivacySecurityScreen() {
       const response = await api.get(AUTH_ENDPOINTS.SESSIONS);
       setSessions(response.data.data.sessions);
     } catch (error: any) {
-      Alert.alert('Error', 'Failed to load active sessions');
+      showAlert('Error', 'Failed to load active sessions');
       setModalType(null);
     } finally {
       setSessionsLoading(false);
@@ -250,7 +239,7 @@ export default function PrivacySecurityScreen() {
       await api.delete(`${AUTH_ENDPOINTS.SESSIONS}/${sessionId}`);
       setSessions(prev => prev.filter(s => s.id !== sessionId));
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to revoke session');
+      showAlert('Error', error.response?.data?.message || 'Failed to revoke session');
     } finally {
       setRevokingId(null);
     }
@@ -267,7 +256,7 @@ export default function PrivacySecurityScreen() {
       setSessions(prev => prev.filter(s => s.isCurrent));
       setModalType('revoke-others-success');
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to sign out other devices');
+      showAlert('Error', error.response?.data?.message || 'Failed to sign out other devices');
       setModalType(null);
     } finally {
       setRevokeAllLoading(false);
@@ -847,6 +836,27 @@ export default function PrivacySecurityScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Delete Account Custom Confirmation Modal */}
+      <CustomAlertModal
+        visible={showDeleteModal}
+        title="Delete All My Data?"
+        message="This will permanently delete your account, learning progress, and diagnostic results. This action cannot be undone."
+        type="error"
+        primaryButtonText="Delete Everything"
+        onPrimaryPress={confirmDeleteAccount}
+        secondaryButtonText="Cancel"
+        onSecondaryPress={() => setShowDeleteModal(false)}
+      />
+
+      {/* Generic Custom Alert Modal */}
+      <CustomAlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onPrimaryPress={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+      />
 
     </View>
   );

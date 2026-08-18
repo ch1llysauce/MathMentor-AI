@@ -20,6 +20,7 @@ import Loading from '@/components/common/Loading';
 import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 import { useCalculatorContext } from '@/context/CalculatorContext';
 import { getBannerGradientColors } from '@/constants/bannerThemes';
+import CustomAlertModal from '@/components/common/CustomAlertModal';
 
 interface MenuCardItemProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -123,6 +124,16 @@ export default function ProfileScreen() {
   const [isReady, setIsReady] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type?: 'error' | 'success' | 'warning' | 'info';
+  }>({ visible: false, title: '', message: '' });
+
+  const showAlert = (title: string, message: string, type: 'error' | 'success' | 'warning' | 'info' = 'error') => {
+    setAlertConfig({ visible: true, title, message, type });
+  };
 
   useEffect(() => {
     if (!loading) {
@@ -150,7 +161,7 @@ export default function ProfileScreen() {
   const handleVisitWebsite = () => {
     const websiteUrl = process.env.EXPO_PUBLIC_WEB_URL || 'https://math-mentor-ai-nine.vercel.app';
     Linking.openURL(websiteUrl).catch(() => {
-      Alert.alert('Error', 'Unable to open website in external browser.');
+      showAlert('Error', 'Unable to open website in external browser.');
     });
   };
 
@@ -470,6 +481,15 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Custom Alert Modal */}
+      <CustomAlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onPrimaryPress={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+      />
     </SafeAreaView>
   );
 }

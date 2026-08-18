@@ -7,6 +7,7 @@ import { Message, QuickAction } from '@/types/tutor';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 import MessageRenderer from '@/components/MessageRenderer';
+import CustomAlertModal from '@/components/common/CustomAlertModal';
 
 export default function TutorScreen() {
   const { user } = useAuth();
@@ -37,6 +38,16 @@ export default function TutorScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>();
   const [showClearModal, setShowClearModal] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type?: 'error' | 'success' | 'warning' | 'info';
+  }>({ visible: false, title: '', message: '' });
+
+  const showAlert = (title: string, message: string, type: 'error' | 'success' | 'warning' | 'info' = 'error') => {
+    setAlertConfig({ visible: true, title, message, type });
+  };
 
   const quickActions: QuickAction[] = [
     {
@@ -128,11 +139,7 @@ export default function TutorScreen() {
         || error.message 
         || 'Failed to send message. Please try again.';
       
-      Alert.alert(
-        'Error', 
-        errorMessage,
-        [{ text: 'OK' }]
-      );
+      showAlert('Error', errorMessage);
       
       // Remove the user message if failed
       setMessages((prev) => prev.filter((msg) => msg.id !== userMessage.id));
@@ -325,6 +332,15 @@ export default function TutorScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Custom Alert Modal */}
+      <CustomAlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onPrimaryPress={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 }

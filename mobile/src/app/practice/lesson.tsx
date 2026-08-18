@@ -8,6 +8,7 @@ import { lessonService } from '@/services/lessonService';
 import { Lesson } from '@/types/lesson';
 import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 import MessageRenderer from '@/components/MessageRenderer';
+import CustomAlertModal from '@/components/common/CustomAlertModal';
 
 const TOPIC_COLORS: Record<string, string> = {
   Algebra: '#2563eb',
@@ -75,6 +76,17 @@ export default function LessonScreen() {
   const [startTime] = useState(Date.now());
   const [lessonList, setLessonList] = useState<Lesson[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type?: 'error' | 'success' | 'warning' | 'info';
+  }>({ visible: false, title: '', message: '' });
+
+  const showAlert = (title: string, message: string, type: 'error' | 'success' | 'warning' | 'info' = 'error') => {
+    setAlertConfig({ visible: true, title, message, type });
+  };
+
   // Track whether the next fetch is triggered by prev/next navigation
   const isNavigationFetch = useRef(false);
 
@@ -116,7 +128,7 @@ export default function LessonScreen() {
       fetchLessonList(data.lesson.topic, !isNavigation);
     } catch (error: any) {
       console.error('Error fetching lesson:', error);
-      Alert.alert('Error', 'Failed to load lesson');
+      showAlert('Error', 'Failed to load lesson');
     } finally {
       setLoading(false);
     }
@@ -157,7 +169,7 @@ export default function LessonScreen() {
       }
     } catch (error: any) {
       console.error('Error updating lesson status:', error);
-      Alert.alert('Error', 'Failed to update lesson status');
+      showAlert('Error', 'Failed to update lesson status');
     } finally {
       setCompleting(false);
     }
@@ -383,6 +395,15 @@ export default function LessonScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Custom Alert Modal */}
+      <CustomAlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onPrimaryPress={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+      />
     </LinearGradient>
   );
 }

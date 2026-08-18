@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
+import CustomAlertModal from '@/components/common/CustomAlertModal';
 import api from '@/services/api';
 import diagnosticService from '@/services/diagnosticService';
 import { authService } from '@/services/authService';
@@ -36,7 +37,7 @@ interface DiagQuestion {
   hints: string[];
 }
 
-type Screen = 'intro' | 'test' | 'submitting';
+type Screen = 'intro' | 'test' | 'submitting' | 'result';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 // Map subtopic display names → exact camelCase keys matching the DiagnosticResult schema
@@ -109,7 +110,7 @@ function buildTopicScores(
 // ── Component ──────────────────────────────────────────────────────────────
 export default function RetakeDiagnosticScreen() {
   const router = useRouter();
-  const { darkMode } = useTheme();
+  const { darkMode, primaryColor } = useTheme();
   const { updateUser } = useAuth();
 
   const RK = {
@@ -118,12 +119,12 @@ export default function RetakeDiagnosticScreen() {
     border: darkMode ? '#2e2e2e' : '#e2e8f0',
     text: darkMode ? '#f0f0f0' : Colors.text,
     textLight: darkMode ? '#a0a0a0' : Colors.textLight,
-    primary: darkMode ? '#a5b4fc' : Colors.primary,
-    secondary: darkMode ? '#a5b4fc' : Colors.secondary,
+    primary: primaryColor || (darkMode ? '#a5b4fc' : Colors.primary),
+    secondary: primaryColor || (darkMode ? '#a5b4fc' : Colors.secondary),
     card: darkMode ? '#1a1a1a' : '#fff',
     surface: darkMode ? '#2e2e2e' : '#f2f4f6',
-    chipBg: darkMode ? '#312e81' : Colors.secondary + '20',
-    chipText: darkMode ? '#a5b4fc' : Colors.secondary,
+    chipBg: primaryColor ? `${primaryColor}20` : (darkMode ? '#312e81' : Colors.secondary + '20'),
+    chipText: primaryColor || (darkMode ? '#a5b4fc' : Colors.secondary),
     choiceCard: darkMode ? '#1a1a1a' : '#fff',
     choiceBorder: darkMode ? '#2e2e2e' : '#e2e8f0',
     choiceText: darkMode ? '#f0f0f0' : Colors.text,
@@ -146,12 +147,13 @@ export default function RetakeDiagnosticScreen() {
     incorrectBg:     darkMode ? '#2d0a0a' : '#fee2e2',
     incorrectText:   darkMode ? '#f87171' : '#ef4444',
     incorrectBorder: darkMode ? '#7f1d1d' : '#ef4444',
-    selectedBg:      darkMode ? '#1e1b4b' : '#f5f4ff',
-    selectedBorder:  '#4b41e1',
-    selectedText:    darkMode ? '#a5b4fc' : '#4b41e1',
+    selectedBg:      primaryColor ? `${primaryColor}15` : (darkMode ? '#1e1b4b' : '#f5f4ff'),
+    selectedBorder:  primaryColor || '#4b41e1',
+    selectedText:    primaryColor || (darkMode ? '#a5b4fc' : '#4b41e1'),
   };
 
   const [screen, setScreen] = useState<Screen>('intro');
+  const [resultData, setResultData] = useState<any>(null);
   const [questions, setQuestions] = useState<DiagQuestion[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -162,6 +164,16 @@ export default function RetakeDiagnosticScreen() {
   const [showHint, setShowHint] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [showQuitModal, setShowQuitModal] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type?: 'error' | 'success' | 'warning' | 'info';
+  }>({ visible: false, title: '', message: '' });
+
+  const showAlert = (title: string, message: string, type: 'error' | 'success' | 'warning' | 'info' = 'error') => {
+    setAlertConfig({ visible: true, title, message, type });
+  };
   const startTimeRef = useRef<number>(Date.now());
 
   const currentQuestion = questions[currentIndex] ?? null;
@@ -174,14 +186,14 @@ export default function RetakeDiagnosticScreen() {
       const response = await api.get('/questions/diagnostic');
       const qs: DiagQuestion[] = response.data.data.questions;
       if (qs.length === 0) {
-        Alert.alert('No Questions', 'No diagnostic questions are available. Please contact support.');
+        showAlert('No Questions', 'No diagnostic questions are available. Please contact support.', 'info');
         return;
       }
       setQuestions(qs);
       startTimeRef.current = Date.now();
       setScreen('test');
     } catch (err: any) {
-      Alert.alert('Error', 'Could not load diagnostic questions. Please check your connection.');
+      showAlert('Error', 'Could not load diagnostic questions. Please check your connection.');
     } finally {
       setLoadingQuestions(false);
     }
@@ -225,15 +237,23 @@ export default function RetakeDiagnosticScreen() {
       ).length;
       const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
 
-      await diagnosticService.submitDiagnosticResults({
+      const response = await diagnosticService.submitDiagnosticResults({
         topicScores,
         totalQuestions: questions.length,
         correctAnswers: totalCorrect,
         timeSpent,
       });
 
+      const resDiag = (response as any)?.data?.diagnosticResult || (response as any)?.data?.diagnostic || (response as any)?.data || response || {
+        overallScore: Math.round((topicScores.algebra.score + topicScores.geometry.score + topicScores.trigonometry.score) / 3),
+        algebraScore: topicScores.algebra.score,
+        geometryScore: topicScores.geometry.score,
+        trigonometryScore: topicScores.trigonometry.score,
+      };
+
+      setResultData(resDiag);
+
       // Refresh the stored user so diagnosticCompleted flips to true immediately
-      // without requiring the user to log out and back in.
       try {
         const profileRes = await authService.getProfile();
         if (profileRes.success && profileRes.data?.user) {
@@ -243,13 +263,9 @@ export default function RetakeDiagnosticScreen() {
         // Non-critical — dashboard will re-check on next focus
       }
 
-      Alert.alert(
-        'Diagnostic Complete!',
-        'Your knowledge map has been updated. Check your results in the Diagnostic tab.',
-        [{ text: 'View Results', onPress: () => router.replace('/(tabs)/diagnostic') }]
-      );
+      setScreen('result');
     } catch (err: any) {
-      Alert.alert('Error', 'Failed to save your results. Please try again.');
+      showAlert('Error', 'Failed to save your results. Please try again.');
       setScreen('test');
     }
   };
@@ -261,6 +277,145 @@ export default function RetakeDiagnosticScreen() {
         <ActivityIndicator size="large" color={RK.secondary} />
         <Text style={[styles.submittingText, { color: RK.primary }]}>Analysing your results…</Text>
         <Text style={[styles.submittingSubtext, { color: RK.textLight }]}>Building your personalised learning path</Text>
+      </View>
+    );
+  }
+
+  // ── Render: Result ───────────────────────────────────────────────────────
+  if (screen === 'result' && resultData) {
+    const overallScore = Math.round(resultData.overallScore ?? 0);
+    const subjects = [
+      { name: 'Algebra', score: Math.round(resultData.algebraScore ?? 0) },
+      { name: 'Geometry', score: Math.round(resultData.geometryScore ?? 0) },
+      { name: 'Trigonometry', score: Math.round(resultData.trigonometryScore ?? 0) },
+    ];
+    const weakAreas = (resultData.weakTopics && resultData.weakTopics.length > 0)
+      ? resultData.weakTopics
+      : subjects.filter(s => s.score < 70).map(s => ({ topic: s.name, score: s.score }));
+
+    const getBarColor = (s: number) => (s >= 70 ? '#00a472' : s >= 40 ? '#f59e0b' : '#ef4444');
+
+    return (
+      <View style={[styles.container, { backgroundColor: RK.bg }]}>
+        <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={RK.header} />
+        
+        {/* Header */}
+        <View style={[styles.header, { backgroundColor: RK.header, borderBottomColor: RK.border }]}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/(tabs)/diagnostic')}>
+            <Ionicons name="close" size={24} color={RK.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: RK.text }]}>Diagnostic Results</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <ScrollView style={styles.scrollView} contentContainerStyle={{ padding: 20, gap: 16 }} showsVerticalScrollIndicator={false}>
+          {/* Top Header Card */}
+          <View style={{ alignItems: 'center', marginVertical: 12, gap: 8 }}>
+            <View style={{
+              width: 64,
+              height: 64,
+              borderRadius: 32,
+              backgroundColor: darkMode ? '#312e81' : '#f5f4ff',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 1,
+              borderColor: darkMode ? '#4338ca' : '#e0e7ff'
+            }}>
+              <Ionicons name="search" size={32} color={RK.primary} />
+            </View>
+            <Text style={{ fontSize: 24, fontWeight: '800', color: RK.text }}>Diagnostic Complete</Text>
+            <Text style={{ fontSize: 16, color: RK.textLight }}>
+              Overall: <Text style={{ fontWeight: '800', color: RK.primary }}>{overallScore}%</Text>
+            </Text>
+          </View>
+
+          {/* Subject Scores Card */}
+          <View style={{
+            backgroundColor: RK.card,
+            borderRadius: 20,
+            padding: 20,
+            borderWidth: 1,
+            borderColor: RK.border,
+            gap: 16,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 8,
+            elevation: 2,
+          }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: RK.text }}>Subject Scores</Text>
+            <View style={{ gap: 14 }}>
+              {subjects.map(({ name, score }) => {
+                const barColor = getBarColor(score);
+                return (
+                  <View key={name} style={{ gap: 6 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: RK.text }}>{name}</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: RK.textLight }}>{score}%</Text>
+                    </View>
+                    <View style={{ height: 8, backgroundColor: RK.surface, borderRadius: 4, overflow: 'hidden' }}>
+                      <View style={{ height: '100%', width: `${Math.min(100, Math.max(0, score))}%`, backgroundColor: barColor, borderRadius: 4 }} />
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Areas to Improve Card */}
+          {weakAreas.length > 0 && (
+            <View style={{
+              backgroundColor: darkMode ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2',
+              borderRadius: 20,
+              padding: 20,
+              borderWidth: 1,
+              borderColor: darkMode ? 'rgba(239, 68, 68, 0.3)' : '#fecaca',
+              gap: 12,
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="alert-circle-outline" size={20} color="#ef4444" />
+                <Text style={{ fontSize: 16, fontWeight: '700', color: darkMode ? '#f87171' : '#b91c1c' }}>
+                  Areas to Improve
+                </Text>
+              </View>
+              <View style={{ gap: 10 }}>
+                {weakAreas.map((area: any, i: number) => (
+                  <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: darkMode ? '#fca5a5' : '#991b1b' }}>
+                      {area.topic}{area.subtopic ? ` — ${area.subtopic}` : ''}
+                    </Text>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: darkMode ? '#f87171' : '#dc2626' }}>
+                      {area.score}%
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Back to Diagnosis Button */}
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              backgroundColor: RK.card,
+              borderWidth: 1,
+              borderColor: RK.border,
+              borderRadius: 16,
+              paddingVertical: 16,
+              marginTop: 8,
+            }}
+            onPress={() => router.replace('/(tabs)/diagnostic')}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="refresh" size={18} color={RK.text} />
+            <Text style={{ fontSize: 15, fontWeight: '700', color: RK.text }}>Back to Diagnosis</Text>
+          </TouchableOpacity>
+
+          <View style={{ height: 40 }} />
+        </ScrollView>
       </View>
     );
   }
@@ -295,7 +450,7 @@ export default function RetakeDiagnosticScreen() {
 
         {/* Progress bar */}
         <View style={[styles.progressTrack, { backgroundColor: RK.border }]}>
-          <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+          <View style={[styles.progressFill, { width: `${progress * 100}%`, backgroundColor: RK.primary }]} />
         </View>
 
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -367,7 +522,7 @@ export default function RetakeDiagnosticScreen() {
                 } else if (isSelected) {
                   cardBg = RK.selectedBg;
                   cardBorder = RK.selectedBorder;
-                  bubbleBg = '#4b41e1';
+                  bubbleBg = RK.primary;
                   bubbleTextColor = '#fff';
                   cardTextColor = RK.selectedText;
                 }
@@ -439,7 +594,7 @@ export default function RetakeDiagnosticScreen() {
               <Text style={styles.footerButtonText}>Confirm Answer</Text>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity style={[styles.footerButton, styles.footerButtonNext]}
+            <TouchableOpacity style={[styles.footerButton, { backgroundColor: RK.primary }]}
               onPress={handleNext} activeOpacity={0.9}>
               <Text style={styles.footerButtonText}>
                 {currentIndex < questions.length - 1 ? 'Next Question' : 'Finish & Submit'}
@@ -578,6 +733,15 @@ export default function RetakeDiagnosticScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Custom Alert Modal */}
+      <CustomAlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onPrimaryPress={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 }

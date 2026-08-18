@@ -20,6 +20,7 @@ import diagnosticService from '@/services/diagnosticService';
 import { DiagnosticResult, WeakTopic } from '@/types/diagnostic';
 import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 import { diagCache } from '@/utils/tabCache';
+import CustomAlertModal from '@/components/common/CustomAlertModal';
 
 type TimelinePeriod = 'week' | 'month' | '6months';
 
@@ -56,6 +57,16 @@ export default function DiagnosticScreen() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimelinePeriod>('week');
   const [loading, setLoading] = useState(!_diagCache.loaded);
   const [refreshing, setRefreshing] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type?: 'error' | 'success' | 'warning' | 'info';
+  }>({ visible: false, title: '', message: '' });
+
+  const showAlert = (title: string, message: string, type: 'error' | 'success' | 'warning' | 'info' = 'error') => {
+    setAlertConfig({ visible: true, title, message, type });
+  };
 
   useEffect(() => {
     if (!_diagCache.loaded) loadDiagnosticData();
@@ -89,7 +100,7 @@ export default function DiagnosticScreen() {
         if (error.response?.status === 404) {
           setDiagnostic(null);
         } else {
-          Alert.alert('Error', 'Failed to load diagnostic data');
+          showAlert('Error', 'Failed to load diagnostic data');
         }
       }
     } finally {
@@ -209,6 +220,7 @@ export default function DiagnosticScreen() {
   }
 
   return (
+    <>
       <ScrollView
         style={{ backgroundColor: DX.bg }}
         showsVerticalScrollIndicator={false}
@@ -401,6 +413,16 @@ export default function DiagnosticScreen() {
 
         <View style={{ height: 20 }} />
       </ScrollView>
+
+      {/* Custom Alert Modal */}
+      <CustomAlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onPrimaryPress={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+      />
+    </>
   );
 }
 

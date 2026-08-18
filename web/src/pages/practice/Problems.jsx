@@ -18,6 +18,7 @@ import MathToolbar from '../../components/MathToolbar';
 import ScientificCalculator from '../../components/ScientificCalculator';
 import MathText from '../../components/MathText';
 import { useActiveSession } from '../../context/ActiveSessionContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const diffColor = (d) =>
   d === 'Easy' ? { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700', hex: '#00a472' } :
@@ -28,6 +29,7 @@ export default function Problems() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const { setActiveSession, clearActiveSession } = useActiveSession();
+  const { primaryColor } = useTheme();
   const { topic, category, count, title, difficulty, isDaily } = location.state ?? {};
 
   const [problems, setProblems]           = useState([]);
@@ -295,7 +297,7 @@ export default function Problems() {
               <IoArrowBackOutline size={20} />
             </button>
             <div className="flex-1 text-center">
-              <p className="text-xs font-semibold text-purple-600 truncate uppercase tracking-wider">{title ?? 'Practice Problems'}</p>
+              <p className="text-xs font-semibold truncate uppercase tracking-wider" style={{ color: primaryColor }}>{title ?? 'Practice Problems'}</p>
               <p className="text-sm font-extrabold text-gray-900">Problem {currentIndex + 1} of {problems.length}</p>
             </div>
             <span className={`text-xs font-bold px-3 py-1 rounded-xl border ${diff.bg} ${diff.text}`}>
@@ -304,7 +306,7 @@ export default function Problems() {
           </div>
           <div className="mt-3 max-w-3xl mx-auto">
             <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress}%`, backgroundColor: diff.hex }} />
+              <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress}%`, backgroundColor: primaryColor || diff.hex }} />
             </div>
           </div>
         </div>
@@ -315,7 +317,7 @@ export default function Problems() {
           <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-2xs mb-5">
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}>
                   <IoHelpCircleOutline size={20} />
                 </div>
                 <span className="text-sm font-bold text-gray-800">Question</span>
@@ -324,7 +326,8 @@ export default function Problems() {
                 <button
                   type="button"
                   onClick={() => setShowCalc(!showCalc)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-xs font-bold hover:bg-purple-100 dark:hover:bg-purple-900/50 border border-purple-100 dark:border-purple-800/40 transition-colors shadow-2xs cursor-pointer"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+                  style={{ backgroundColor: `${primaryColor}15`, color: primaryColor, borderColor: `${primaryColor}30` }}
                 >
                   <IoCalculatorOutline size={16} />
                   <span>{showCalc ? 'Hide Calculator' : 'Scientific Calculator'}</span>
@@ -344,20 +347,33 @@ export default function Problems() {
                 const isSel   = selectedAnswer === val;
                 const isRight = String(val).trim().toLowerCase() === String(current.correctAnswer ?? current.answer ?? '').trim().toLowerCase();
                 const isWrong = showExplanation && isSel && !isRight;
-                let cardCls   = 'bg-white border-gray-200/90 text-gray-800 hover:border-purple-300 hover:bg-purple-50/20';
-                let bubbleCls = 'bg-gray-100 text-gray-600';
-                if (showExplanation && isRight) { cardCls = 'bg-emerald-50 border-emerald-400 text-emerald-900 font-medium'; bubbleCls = 'bg-emerald-500 text-white'; }
-                else if (isWrong)               { cardCls = 'bg-red-50 border-red-400 text-red-900 font-medium';             bubbleCls = 'bg-red-500 text-white'; }
-                else if (isSel)                 { cardCls = 'bg-purple-50 border-purple-500 text-purple-900 font-medium shadow-2xs'; bubbleCls = 'bg-purple-600 text-white'; }
+                let cardCls   = 'bg-white dark:bg-[#18181b] border-gray-200/90 dark:border-gray-800 text-gray-800 dark:text-gray-200';
+                let bubbleCls = 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300';
+                let customCardStyle = {};
+                let customBubbleStyle = {};
+
+                if (showExplanation && isRight) {
+                  cardCls = 'bg-emerald-50 dark:bg-emerald-950/70 border-emerald-400 dark:border-emerald-500 text-emerald-900 dark:text-emerald-200 font-medium';
+                  bubbleCls = 'bg-emerald-500 text-white';
+                } else if (isWrong) {
+                  cardCls = 'bg-red-50 dark:bg-red-950/70 border-red-400 dark:border-red-500 text-red-900 dark:text-red-200 font-medium';
+                  bubbleCls = 'bg-red-500 text-white';
+                } else if (isSel) {
+                  cardCls = 'font-medium shadow-2xs';
+                  customCardStyle = { backgroundColor: `${primaryColor}15`, borderColor: primaryColor, color: primaryColor };
+                  customBubbleStyle = { backgroundColor: primaryColor, color: '#ffffff' };
+                }
+
                 return (
                   <button key={i} onClick={() => !showExplanation && setSelected(val)} disabled={showExplanation}
+                    style={customCardStyle}
                     className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 text-base text-left transition-all ${cardCls}`}>
-                    <span className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-2xs ${bubbleCls}`}>
+                    <span style={customBubbleStyle} className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-2xs ${bubbleCls}`}>
                       {String.fromCharCode(65 + i)}
                     </span>
                     <span className="flex-1 font-medium"><MathText text={val} /></span>
-                    {showExplanation && isRight && <IoCheckmarkCircle size={22} className="shrink-0 text-emerald-600" />}
-                    {showExplanation && isWrong && <IoCloseCircle size={22} className="shrink-0 text-red-500" />}
+                    {showExplanation && isRight && <IoCheckmarkCircle size={22} className="shrink-0 text-emerald-600 dark:text-emerald-400" />}
+                    {showExplanation && isWrong && <IoCloseCircle size={22} className="shrink-0 text-red-500 dark:text-red-400" />}
                   </button>
                 );
               })}
@@ -369,7 +385,7 @@ export default function Problems() {
             <div className="mb-5">
               <div className="flex flex-wrap items-center justify-between gap-1 mb-2">
                 <span className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">Type your answer:</span>
-                <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2.5 py-1 rounded-lg border border-purple-100 dark:border-purple-800/40">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-lg border" style={{ backgroundColor: `${primaryColor}15`, color: primaryColor, borderColor: `${primaryColor}30` }}>
                   {isAbsoluteValue ? 'Use 2 decimal places max • Providing either solution is accepted' : 'Use 2 decimal places if needed'}
                 </span>
               </div>
@@ -386,9 +402,9 @@ export default function Problems() {
                 }}
                 placeholder="e.g. 7  or  -3.5  or  1e5"
                 className={`w-full border-2 rounded-2xl px-5 py-3.5 text-base font-medium focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all ${
-                  showExplanation && isCorrect  ? 'border-emerald-400 bg-emerald-50/60 text-emerald-900' :
-                  showExplanation && !isCorrect ? 'border-red-400 bg-red-50/60 text-red-900' :
-                  'border-gray-200 bg-white focus:border-purple-500'
+                  showExplanation && isCorrect  ? 'border-emerald-400 dark:border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200' :
+                  showExplanation && !isCorrect ? 'border-red-400 dark:border-red-500 bg-red-50/60 dark:bg-red-950/60 text-red-900 dark:text-red-200' :
+                  'border-gray-200 dark:border-gray-800 bg-white dark:bg-[#18181b] text-gray-900 dark:text-white focus:border-purple-500'
                 }`}
               />
               {/* Math symbol toolbar */}
@@ -397,9 +413,9 @@ export default function Problems() {
               )}
               {/* Correct answer hint for free-response */}
               {showExplanation && !isCorrect && (
-                <div className="flex items-center gap-2 mt-3 bg-emerald-50 border border-emerald-200 px-4 py-3 rounded-2xl">
-                  <IoCheckmarkCircle size={18} className="text-emerald-600 shrink-0" />
-                  <div className="text-sm text-emerald-800 font-bold">
+                <div className="flex items-center gap-2 mt-3 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/50 px-4 py-3 rounded-2xl">
+                  <IoCheckmarkCircle size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <div className="text-sm text-emerald-800 dark:text-emerald-200 font-bold">
                     Correct answer: <MathText text={String(current.correctAnswer ?? current.answer ?? '')} />
                   </div>
                 </div>
@@ -412,12 +428,12 @@ export default function Problems() {
             <div className="mb-5">
               {!showHint ? (
                 <button onClick={() => setShowHint(true)}
-                  className="w-full flex items-center justify-center gap-2 bg-amber-50/60 border border-amber-200 text-amber-900 text-sm font-bold py-3 rounded-2xl hover:bg-amber-100/80 transition-colors shadow-2xs">
-                  <IoBulbOutline size={20} className="text-amber-500" /> Show Hint
+                  className="w-full flex items-center justify-center gap-2 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 text-sm font-bold py-3 rounded-2xl hover:bg-amber-100/80 dark:hover:bg-amber-950/60 transition-colors shadow-2xs">
+                  <IoBulbOutline size={20} className="text-amber-500 dark:text-amber-400" /> Show Hint
                 </button>
               ) : (
-                <div className="flex gap-3 bg-amber-50 border-l-4 border-amber-400 rounded-2xl p-4 text-sm text-amber-900 shadow-2xs">
-                  <IoBulbOutline size={20} className="shrink-0 text-amber-500 mt-0.5" />
+                <div className="flex gap-3 bg-amber-50 dark:bg-amber-950/50 border-l-4 border-amber-400 dark:border-amber-500 rounded-2xl p-4 text-sm text-amber-900 dark:text-amber-100 shadow-2xs">
+                  <IoBulbOutline size={20} className="shrink-0 text-amber-500 dark:text-amber-400 mt-0.5" />
                   <div className="leading-relaxed"><MathText text={current.hints[0]} /></div>
                 </div>
               )}
@@ -426,7 +442,7 @@ export default function Problems() {
 
           {/* Explanation */}
           {showExplanation && (
-            <div className="rounded-3xl overflow-hidden mb-5 border border-gray-100 shadow-2xs">
+            <div className="rounded-3xl overflow-hidden mb-5 border border-gray-100 dark:border-gray-800 shadow-2xs">
               <div className={`flex items-center gap-3 px-6 py-4 ${isCorrect ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
                 {isCorrect
                   ? <IoCheckmarkCircle size={26} className="shrink-0" />
@@ -436,27 +452,27 @@ export default function Problems() {
                   {isCorrect ? 'Correct!' : 'Incorrect'}
                 </span>
               </div>
-              <div className="bg-white px-6 py-5 space-y-4">
+              <div className="bg-white dark:bg-[#18181b] px-6 py-5 space-y-4">
                 {current.explanation && (
-                  <div className="text-sm text-gray-700 leading-relaxed font-medium">
+                  <div className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed font-medium">
                     <MathText text={current.explanation} />
                   </div>
                 )}
                 {current.solution?.steps?.length > 0 && (
-                  <div className="pt-3 border-t border-gray-100">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Solution Steps:</p>
+                  <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
+                    <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Solution Steps:</p>
                     <div className="space-y-2.5">
                       {current.solution.steps.map((step, i) => (
-                        <div key={i} className="flex items-start gap-3 bg-gray-50/60 p-3 rounded-2xl border border-gray-100">
-                          <span className="w-6 h-6 rounded-xl bg-purple-600 flex items-center justify-center text-white text-xs font-extrabold shrink-0 mt-0.5 shadow-2xs">{i + 1}</span>
-                          <div className="text-sm text-gray-800 leading-relaxed font-medium">
+                        <div key={i} className="flex items-start gap-3 bg-gray-50/60 dark:bg-gray-800/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-800">
+                          <span className="w-6 h-6 rounded-xl text-white text-xs font-extrabold flex items-center justify-center shrink-0 mt-0.5 shadow-2xs" style={{ backgroundColor: primaryColor }}>{i + 1}</span>
+                          <div className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed font-medium">
                             <MathText text={step} />
                           </div>
                         </div>
                       ))}
                     </div>
                     {current.solution.finalAnswer && (
-                      <div className="text-sm font-extrabold text-purple-700 mt-3 p-3 bg-purple-50 rounded-2xl border border-purple-100 flex items-center gap-2">
+                      <div className="text-sm font-extrabold mt-3 p-3 rounded-2xl border flex items-center gap-2" style={{ backgroundColor: `${primaryColor}15`, borderColor: `${primaryColor}30`, color: primaryColor }}>
                         <IoSparklesOutline size={18} />
                         <span>Final Answer: <MathText text={current.solution.finalAnswer} /></span>
                       </div>
@@ -469,16 +485,18 @@ export default function Problems() {
         </div>
 
         {/* Sticky footer */}
-        <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 pb-6 sm:pb-4 shadow-lg z-20">
+        <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 p-4 pb-6 sm:pb-4 shadow-lg z-20">
           <div className="max-w-3xl mx-auto">
             {!showExplanation ? (
               <button onClick={handleSubmit} disabled={!selectedAnswer?.toString().trim()}
-                className="w-full bg-purple-600 text-white font-extrabold py-4 rounded-2xl hover:bg-purple-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-md shadow-purple-600/20">
+                style={{ backgroundColor: primaryColor }}
+                className="w-full text-white font-extrabold py-4 rounded-2xl disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-md">
                 <IoCheckmarkCircle size={22} /> Submit Answer
               </button>
             ) : (
               <button onClick={handleNext}
-                className="w-full bg-[#4b41e1] hover:bg-[#3d33d0] text-white font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md shadow-purple-600/20">
+                style={{ backgroundColor: primaryColor }}
+                className="w-full text-white font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md">
                 {currentIndex < problems.length - 1 ? 'Next Problem' : 'Finish'}
                 <IoArrowForwardOutline size={20} />
               </button>

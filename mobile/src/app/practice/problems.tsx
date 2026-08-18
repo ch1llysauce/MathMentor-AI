@@ -21,6 +21,7 @@ import MathToolbar from '@/components/MathToolbar';
 import ScientificCalculator from '@/components/ScientificCalculator';
 import api from '@/services/api';
 import { PRACTICE_ENDPOINTS } from '@/constants/api';
+import CustomAlertModal from '@/components/common/CustomAlertModal';
 
 export default function ProblemsScreen() {
 const { lessonId, difficulty, category, count, title, topic, isDaily } = useLocalSearchParams<{
@@ -47,6 +48,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
     chipBg: primaryColor ? `${primaryColor}20` : (darkMode ? '#312e81' : Colors.secondary + '20'),
     chipText: primaryColor || (darkMode ? '#a5b4fc' : Colors.secondary),
     primary: primaryColor || (darkMode ? '#818cf8' : '#4b41e1'),
+    selectedBg: primaryColor ? `${primaryColor}15` : (darkMode ? '#1e1b4b' : '#f5f4ff'),
     footer: darkMode ? '#0a0a0a' : Colors.white,
     backIconBg: darkMode ? '#2a2a2a' : Colors.surface,
     backIconColor: darkMode ? '#f0f0f0' : '#091426',
@@ -88,6 +90,17 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showCalculator, setShowCalculator] = useState(false);
   const [showQuitModal, setShowQuitModal] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type?: 'error' | 'success' | 'warning' | 'info';
+  }>({ visible: false, title: '', message: '' });
+
+  const showAlert = (title: string, message: string, type: 'error' | 'success' | 'warning' | 'info' = 'error') => {
+    setAlertConfig({ visible: true, title, message, type });
+  };
+
   // Scoring — use a ref so the count is always synchronously current
   // when handleNextProblem reads it immediately after handleSubmitAnswer.
   const correctCountRef = useRef(0);
@@ -125,7 +138,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
       setProblems(generated as unknown as PracticeProblem[]);
     } catch (error: any) {
       console.error('Error loading problems:', error?.message || error);
-      Alert.alert('Error', `Could not load problems: ${error?.message || 'Unknown error'}`);
+      showAlert('Error', `Could not load problems: ${error?.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -232,7 +245,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
       setShowExplanation(true);
     } catch (error: any) {
       console.error('Error submitting answer:', error);
-      Alert.alert('Error', 'Failed to submit answer');
+      showAlert('Error', 'Failed to submit answer');
     } finally {
       setSubmitting(false);
     }
@@ -396,7 +409,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
       {/* Progress Bar */}
       <View style={[styles.progressContainer, { backgroundColor: PR.header }]}>
         <View style={[styles.progressBar, { backgroundColor: PR.surface }]}>
-          <View style={[styles.progressFill, { width: `${((currentIndex + 1) / problems.length) * 100}%` }]} />
+          <View style={[styles.progressFill, { width: `${((currentIndex + 1) / problems.length) * 100}%`, backgroundColor: PR.primary }]} />
         </View>
       </View>
 
@@ -426,7 +439,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
         {/* Problem Card */}
         <View style={[styles.problemCard, { backgroundColor: PR.card }]}>
           <View style={styles.problemHeader}>
-            <Ionicons name="help-circle" size={24} color="#4b41e1" />
+            <Ionicons name="help-circle" size={24} color={PR.primary} />
             <Text style={[styles.problemLabel, { color: PR.text }]}>Question</Text>
           </View>
           <MessageRenderer content={currentProblem.problem.text} textColor={PR.text} fontSize={18} />
@@ -445,7 +458,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
                   style={[
                     styles.optionCard,
                     { backgroundColor: PR.optionCard, borderColor: PR.optionBorder },
-                    isSelected && !showExplanation && { borderColor: '#4b41e1', backgroundColor: darkMode ? '#1e1b4b' : '#f5f4ff' },
+                    isSelected && !showExplanation && { borderColor: PR.primary, backgroundColor: PR.selectedBg },
                     showExplanation && isSelected && isCorrect  && { borderColor: PR.correctBorder,   backgroundColor: PR.correctBg   },
                     showExplanation && isSelected && !isCorrect && { borderColor: PR.incorrectBorder, backgroundColor: PR.incorrectBg },
                     showExplanation && !isSelected && option.isCorrect && { borderColor: PR.correctBorder, backgroundColor: PR.correctBg },
@@ -457,7 +470,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
                   <View style={[
                     styles.optionBubble,
                     { backgroundColor: PR.surface },
-                    isSelected && !showExplanation && styles.optionBubbleSelected,
+                    isSelected && !showExplanation && { backgroundColor: PR.primary },
                     showExplanation && isSelected && isCorrect && styles.optionBubbleCorrect,
                     showExplanation && isSelected && !isCorrect && styles.optionBubbleWrong,
                   ]}>
@@ -484,7 +497,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
           <View style={styles.freeResponseContainer}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
               <Text style={[styles.freeResponseLabel, { color: PR.textLight }]}>Type your answer:</Text>
-              <Text style={{ fontSize: 11, fontWeight: '600', color: '#6366f1', backgroundColor: darkMode ? 'rgba(99, 102, 241, 0.2)' : '#e0e7ff', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+              <Text style={{ fontSize: 11, fontWeight: '600', color: PR.primary, backgroundColor: PR.chipBg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
                 {isAbsoluteValue ? 'Use 2 decimal places max • Providing either solution is accepted' : 'Use 2 decimal places if needed'}
               </Text>
             </View>
@@ -537,7 +550,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
                 if (isSelected && !isCorrect)    { bg = PR.incorrectBg; border = PR.incorrectBorder; textColor = PR.incorrectText; }
                 if (!isSelected && isCorrectOpt) { bg = PR.correctBg;   border = PR.correctBorder;   textColor = PR.correctText;   }
               } else if (isSelected) {
-                bg = darkMode ? '#1e1b4b' : '#f5f4ff'; border = '#4b41e1'; textColor = '#4b41e1';
+                bg = PR.selectedBg; border = PR.primary; textColor = PR.primary;
               }
               return (
                 <TouchableOpacity
@@ -595,7 +608,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
                   <Text style={[styles.solutionLabel, { color: PR.text }]}>Solution Steps:</Text>
                   {currentProblem.solution.steps.map((step, index) => (
                     <View key={index} style={styles.solutionStep}>
-                      <View style={styles.stepNumber}>
+                      <View style={[styles.stepNumber, { backgroundColor: PR.primary }]}>
                         <Text style={styles.stepNumberText}>{index + 1}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
@@ -605,7 +618,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
                   ))}
                   <View style={[styles.finalAnswer, { borderTopColor: PR.surface }]}>
                     <Text style={[styles.finalAnswerLabel, { color: PR.text }]}>Final Answer:</Text>
-                    <MessageRenderer content={currentProblem.solution.finalAnswer} textColor="#4b41e1" fontSize={16} />
+                    <MessageRenderer content={currentProblem.solution.finalAnswer} textColor={PR.primary} fontSize={16} />
                   </View>
                 </View>
               )}
@@ -618,7 +631,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
       <View style={[styles.footer, { backgroundColor: PR.footer, borderTopColor: PR.border }]}>
         {!showExplanation ? (
           <TouchableOpacity
-            style={[styles.submitButton, !selectedAnswer?.trim() && styles.submitButtonDisabled]}
+            style={[styles.submitButton, { backgroundColor: PR.primary }, !selectedAnswer?.trim() && styles.submitButtonDisabled]}
             onPress={handleSubmitAnswer}
             disabled={!selectedAnswer?.trim() || submitting}
           >
@@ -632,7 +645,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
             )}
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.nextButton} onPress={handleNextProblem}>
+          <TouchableOpacity style={[styles.nextButton, { backgroundColor: PR.primary }]} onPress={handleNextProblem}>
             <Text style={styles.nextButtonText}>
               {currentIndex < problems.length - 1 ? 'Next Problem' : 'Finish'}
             </Text>
@@ -692,6 +705,15 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
           </View>
         </View>
       </Modal>
+
+      {/* Custom Alert Modal */}
+      <CustomAlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onPrimaryPress={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 }

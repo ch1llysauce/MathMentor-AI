@@ -19,6 +19,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import CustomAlertModal from '@/components/common/CustomAlertModal';
 
 const GoogleLogo = ({ size = 20 }: { size?: number }) => (
   <Svg width={size} height={size} viewBox="0 0 48 48">
@@ -75,6 +76,16 @@ export default function LoginScreen() {
   const [twoFAUserId, setTwoFAUserId] = useState('');
   const [twoFACode, setTwoFACode] = useState('');
   const [twoFALoading, setTwoFALoading] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type?: 'error' | 'success' | 'warning' | 'info';
+  }>({ visible: false, title: '', message: '' });
+
+  const showAlert = (title: string, message: string, type: 'error' | 'success' | 'warning' | 'info' = 'error') => {
+    setAlertConfig({ visible: true, title, message, type });
+  };
 
   const handleLogin = async () => {
     setErrorMessage(null);
@@ -162,7 +173,7 @@ export default function LoginScreen() {
 
   const handle2FASubmit = async () => {
     if (twoFACode.trim().length !== 6) {
-      Alert.alert('Error', 'Please enter a 6-digit verification code');
+      showAlert('Error', 'Please enter a 6-digit verification code', 'warning');
       return;
     }
     setTwoFALoading(true);
@@ -173,14 +184,14 @@ export default function LoginScreen() {
         setTwoFACode('');
         setTimeout(() => router.replace('/(tabs)/dashboard'), 200);
       } else {
-        Alert.alert('Invalid Code', response.message || 'Verification failed');
+        showAlert('Invalid Code', response.message || 'Verification failed');
       }
     } catch (error: any) {
       const status = error.response?.status;
       if (status === 429) {
-        Alert.alert('Too Many Attempts', error.message || 'Too many verification attempts. Please try again later.');
+        showAlert('Too Many Attempts', error.message || 'Too many verification attempts. Please try again later.');
       } else {
-        Alert.alert('Invalid Code', error.message || 'Invalid verification code');
+        showAlert('Invalid Code', error.message || 'Invalid verification code');
       }
     } finally {
       setTwoFALoading(false);
@@ -373,6 +384,15 @@ export default function LoginScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Custom Alert Modal */}
+      <CustomAlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onPrimaryPress={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 }

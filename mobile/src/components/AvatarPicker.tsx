@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { TouchableOpacity, View, Text, Image, Alert, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -12,6 +13,7 @@ try {
 }
 
 import { useTheme } from '@/context/ThemeContext';
+import CustomAlertModal from '@/components/common/CustomAlertModal';
 
 interface AvatarPickerProps {
   /** Current image URI or base64 data URI. Pass null/empty string for initials fallback. */
@@ -36,21 +38,33 @@ export default function AvatarPicker({
   textColor,
 }: AvatarPickerProps) {
   const { primaryColor } = useTheme();
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type?: 'error' | 'success' | 'warning' | 'info';
+  }>({ visible: false, title: '', message: '' });
+
+  const showAlert = (title: string, message: string, type: 'error' | 'success' | 'warning' | 'info' = 'error') => {
+    setAlertConfig({ visible: true, title, message, type });
+  };
 
   const handlePick = async () => {
     if (!ImagePicker) {
-      Alert.alert(
+      showAlert(
         'Native Build Required',
-        'Photo upload requires a native build. Run "npx expo run:android" to enable this feature.'
+        'Photo upload requires a native build. Run "npx expo run:android" to enable this feature.',
+        'info'
       );
       return;
     }
 
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(
+      showAlert(
         'Permission required',
-        'Please allow access to your photo library to change your profile picture.'
+        'Please allow access to your photo library to change your profile picture.',
+        'warning'
       );
       return;
     }
@@ -118,6 +132,15 @@ export default function AvatarPicker({
           </View>
         )}
       </View>
+
+      {/* Custom Alert Modal */}
+      <CustomAlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onPrimaryPress={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 }

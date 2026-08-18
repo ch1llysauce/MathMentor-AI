@@ -140,16 +140,16 @@ function MasteryRing({ percentage, topic, subtitle, onClick, color = '#4b41e1', 
 // ─── Weak Area Card ───────────────────────────────────────────────────────────
 function WeakAreaCard({ subtopic, masteryPercentage, onPress }) {
   return (
-    <div className="rounded-2xl p-4 mb-3 bg-white border border-red-100 hover:border-red-300 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group" onClick={onPress}>
+    <div className="rounded-2xl p-4 mb-3 bg-white dark:bg-[#1a2333] border border-red-100 dark:border-red-900/40 hover:border-red-300 dark:hover:border-red-700/60 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group" onClick={onPress}>
       <div className="flex justify-between items-center mb-3">
-        <span className="text-sm font-bold text-gray-900 group-hover:text-red-600 transition-colors">{subtopic}</span>
-        <span className="text-xs font-extrabold text-red-500 bg-red-50 px-2 py-1 rounded-md">{masteryPercentage}% Mastery</span>
+        <span className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">{subtopic}</span>
+        <span className="text-xs font-extrabold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-950/60 px-2.5 py-1 rounded-md border border-red-100 dark:border-red-900/40">{masteryPercentage}% Mastery</span>
       </div>
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
+      <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mb-3">
         <div className="h-full bg-gradient-to-r from-red-400 to-orange-400 rounded-full transition-all" style={{ width: `${masteryPercentage}%` }} />
       </div>
       <div className="flex justify-end">
-        <button className="text-xs font-bold text-red-600 group-hover:text-red-700 tracking-wider flex items-center gap-1 uppercase">
+        <button className="text-xs font-bold text-red-600 dark:text-red-400 group-hover:text-red-700 dark:group-hover:text-red-300 tracking-wider flex items-center gap-1 uppercase">
           Review Now <IoArrowForwardOutline size={12} />
         </button>
       </div>
@@ -180,7 +180,7 @@ function SubtopicBreakdownCard({ st, getScoreColor, primaryColor }) {
           {st.name}
         </span>
         {st.score !== null ? (
-          <span className="text-lg font-extrabold shrink-0 ml-2" style={{ color: getScoreColor(st.score) }}>
+          <span className="text-lg font-extrabold shrink-0 ml-2" style={{ color: getScoreColor(st.score, primaryColor) }}>
             {st.score}%
           </span>
         ) : (
@@ -330,8 +330,9 @@ function IntroScreen({ onStart, loading }) {
   );
 }
 
-function TestScreen({ questions, onFinish, onCancel }) {
+function TestScreen({ questions, onSubmit, onFinish, onCancel }) {
   const { setActiveSession, clearActiveSession } = useActiveSession();
+  const { primaryColor }                      = useTheme();
   const [currentIndex, setCurrentIndex]       = useState(0);
   const [answers, setAnswers]                 = useState({});
   const [selectedAnswer, setSelectedAnswer]   = useState(null);
@@ -382,7 +383,8 @@ function TestScreen({ questions, onFinish, onCancel }) {
       allowLeaveRef.current = true;
       const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
       const finalAnswers = { ...answers, [currentIndex]: selectedAnswer };
-      onSubmit(finalAnswers, timeSpent);
+      const submitFn = onSubmit || onFinish;
+      if (submitFn) submitFn(finalAnswers, timeSpent);
     }
   };
 
@@ -443,57 +445,58 @@ function TestScreen({ questions, onFinish, onCancel }) {
 
       <div className="flex flex-col min-h-full">
         {/* Header with Back Button */}
-        <div className="bg-white border-b border-gray-100 px-4 sm:px-6 py-3.5 sticky top-0 z-10 shadow-2xs">
+        <div className="bg-white dark:bg-[#18181b] border-b border-gray-100 dark:border-gray-800 px-4 sm:px-6 py-3.5 sticky top-0 z-10 shadow-2xs">
           <div className="flex items-center gap-4 max-w-3xl mx-auto">
             <button
               onClick={() => setShowQuitModal(true)}
-              className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 shrink-0 transition-colors"
+              className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 shrink-0 transition-colors"
             >
               <IoArrowBackOutline size={20} />
             </button>
             <div className="flex-1 text-center">
-              <p className="text-xs font-semibold text-purple-600 truncate uppercase tracking-wider">{q?.topic}</p>
-              <p className="text-sm font-extrabold text-gray-900">{currentIndex + 1} of {questions.length}</p>
+              <p className="text-xs font-semibold truncate uppercase tracking-wider" style={{ color: primaryColor }}>{q?.topic}</p>
+              <p className="text-sm font-extrabold text-gray-900 dark:text-white">{currentIndex + 1} of {questions.length}</p>
             </div>
             <span className="text-xs font-bold px-3 py-1 rounded-xl border" style={{ backgroundColor: diffColor + '18', borderColor: diffColor + '30', color: diffColor }}>
               {q?.difficulty}
             </span>
           </div>
           <div className="mt-3 max-w-3xl mx-auto">
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full bg-purple-600 rounded-full transition-all duration-300" style={{ width: `${progress * 100}%` }} />
+            <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress * 100}%`, backgroundColor: primaryColor }} />
             </div>
           </div>
         </div>
 
         {/* Question content */}
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-3xl mx-auto w-full pb-48 sm:pb-52">
-          <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-2xs mb-5">
+          <div className="bg-white dark:bg-[#18181b] border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-2xs mb-5">
             <div className="flex items-center justify-between gap-2 mb-3">
               {q?.subtopic ? (
-                <span className="inline-block bg-purple-50 text-purple-700 border border-purple-100 text-xs font-bold px-3.5 py-1 rounded-xl">
+                <span className="inline-block border text-xs font-bold px-3.5 py-1 rounded-xl" style={{ backgroundColor: `${primaryColor}15`, color: primaryColor, borderColor: `${primaryColor}30` }}>
                   {q.subtopic}
                 </span>
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}>
                     <IoHelpCircleOutline size={20} />
                   </div>
-                  <span className="text-sm font-bold text-gray-800">Question</span>
+                  <span className="text-sm font-bold text-gray-800 dark:text-gray-200">Question</span>
                 </div>
               )}
               {!showExplanation && (
                 <button
                   type="button"
                   onClick={() => setShowCalc(!showCalc)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-xs font-bold hover:bg-purple-100 dark:hover:bg-purple-900/50 border border-purple-100 dark:border-purple-800/40 transition-colors shadow-2xs cursor-pointer"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors shadow-2xs cursor-pointer border"
+                  style={{ backgroundColor: `${primaryColor}15`, color: primaryColor, borderColor: `${primaryColor}30` }}
                 >
                   <IoCalculatorOutline size={16} />
                   <span>{showCalc ? 'Hide Calculator' : 'Scientific Calculator'}</span>
                 </button>
               )}
             </div>
-            <div className="text-gray-900 font-semibold leading-relaxed text-lg">
+            <div className="text-gray-900 dark:text-white font-semibold leading-relaxed text-lg">
               <MathText text={q?.question} />
             </div>
           </div>
@@ -504,24 +507,29 @@ function TestScreen({ questions, onFinish, onCancel }) {
                 const letter  = String.fromCharCode(65 + idx);
                 const isSel   = selectedAnswer === choice;
                 const isRight = choice.trim().toLowerCase() === (q.correctAnswer ?? '').trim().toLowerCase();
-                let cardClass   = 'bg-white border-gray-200/90 text-gray-800 hover:border-purple-300 hover:bg-purple-50/20';
-                let bubbleClass = 'bg-gray-100 text-gray-600';
+                let cardClass   = 'bg-white dark:bg-[#18181b] border-gray-200/90 dark:border-gray-800 text-gray-800 dark:text-gray-200';
+                let bubbleClass = 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300';
+                let customCardStyle = {};
+                let customBubbleStyle = {};
+
                 if (showExplanation) {
-                  if (isSel && isCorrect)      { cardClass = 'bg-emerald-50 border-emerald-400 text-emerald-900 font-medium'; bubbleClass = 'bg-emerald-500 text-white'; }
-                  else if (isSel && !isCorrect){ cardClass = 'bg-red-50 border-red-400 text-red-900 font-medium';           bubbleClass = 'bg-red-500 text-white'; }
-                  else if (!isSel && isRight)  { cardClass = 'bg-emerald-50 border-emerald-400 text-emerald-900 font-medium'; }
+                  if (isSel && isCorrect)      { cardClass = 'bg-emerald-50 dark:bg-emerald-950/70 border-emerald-400 dark:border-emerald-500 text-emerald-900 dark:text-emerald-200 font-medium'; bubbleClass = 'bg-emerald-500 text-white'; }
+                  else if (isSel && !isCorrect){ cardClass = 'bg-red-50 dark:bg-red-950/70 border-red-400 dark:border-red-500 text-red-900 dark:text-red-200 font-medium';           bubbleClass = 'bg-red-500 text-white'; }
+                  else if (!isSel && isRight)  { cardClass = 'bg-emerald-50 dark:bg-emerald-950/70 border-emerald-400 dark:border-emerald-500 text-emerald-900 dark:text-emerald-200 font-medium'; }
                 } else if (isSel) {
-                  cardClass   = 'bg-purple-50 border-purple-500 text-purple-900 font-medium shadow-2xs';
-                  bubbleClass = 'bg-purple-600 text-white';
+                  cardClass   = 'font-medium shadow-2xs';
+                  customCardStyle = { backgroundColor: `${primaryColor}15`, borderColor: primaryColor, color: primaryColor };
+                  customBubbleStyle = { backgroundColor: primaryColor, color: '#ffffff' };
                 }
                 return (
                   <button key={idx} onClick={() => !showExplanation && setSelectedAnswer(choice)} disabled={showExplanation}
+                    style={customCardStyle}
                     className={`w-full text-left flex items-center gap-4 px-5 py-4 rounded-2xl border-2 text-base transition-all ${cardClass}`}>
-                    <span className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-2xs ${bubbleClass}`}>{letter}</span>
+                    <span style={customBubbleStyle} className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-2xs ${bubbleClass}`}>{letter}</span>
                     <span className="flex-1 font-medium"><MathText text={choice} /></span>
-                    {showExplanation && isSel && isCorrect  && <IoCheckmarkCircleOutline size={22} className="shrink-0 text-emerald-600" />}
-                    {showExplanation && isSel && !isCorrect && <IoCloseOutline size={22} className="shrink-0 text-red-500" />}
-                    {showExplanation && !isSel && isRight   && <IoCheckmarkCircleOutline size={22} className="shrink-0 text-emerald-600" />}
+                    {showExplanation && isSel && isCorrect  && <IoCheckmarkCircleOutline size={22} className="shrink-0 text-emerald-600 dark:text-emerald-400" />}
+                    {showExplanation && isSel && !isCorrect && <IoCloseOutline size={22} className="shrink-0 text-red-500 dark:text-red-400" />}
+                    {showExplanation && !isSel && isRight   && <IoCheckmarkCircleOutline size={22} className="shrink-0 text-emerald-600 dark:text-emerald-400" />}
                   </button>
                 );
               })}
@@ -532,12 +540,12 @@ function TestScreen({ questions, onFinish, onCancel }) {
             <div className="mb-5">
               {!showHint ? (
                 <button onClick={() => setShowHint(true)}
-                  className="w-full flex items-center justify-center gap-2 bg-amber-50/60 border border-amber-200 text-amber-900 text-sm font-bold py-3 rounded-2xl hover:bg-amber-100/80 transition-colors shadow-2xs">
-                  <IoBulbOutline size={20} className="text-amber-500" /> Show Hint
+                  className="w-full flex items-center justify-center gap-2 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 text-sm font-bold py-3 rounded-2xl hover:bg-amber-100/80 dark:hover:bg-amber-950/60 transition-colors shadow-2xs">
+                  <IoBulbOutline size={20} className="text-amber-500 dark:text-amber-400" /> Show Hint
                 </button>
               ) : (
-                <div className="flex gap-3 bg-amber-50 border-l-4 border-amber-400 rounded-2xl p-4 text-sm text-amber-900 shadow-2xs">
-                  <IoBulbOutline size={20} className="text-amber-500 shrink-0 mt-0.5" />
+                <div className="flex gap-3 bg-amber-50 dark:bg-amber-950/50 border-l-4 border-amber-400 dark:border-amber-500 rounded-2xl p-4 text-sm text-amber-900 dark:text-amber-100 shadow-2xs">
+                  <IoBulbOutline size={20} className="text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" />
                   <div className="leading-relaxed"><MathText text={q.hints[0]} /></div>
                 </div>
               )}
@@ -545,25 +553,27 @@ function TestScreen({ questions, onFinish, onCancel }) {
           )}
 
           {showExplanation && (
-            <div className={`rounded-3xl border-l-4 p-5 mb-5 text-sm shadow-2xs ${isCorrect ? 'bg-emerald-50 border-emerald-500' : 'bg-red-50 border-red-500'}`}>
-              <p className={`font-extrabold text-base mb-1.5 ${isCorrect ? 'text-emerald-700' : 'text-red-700'}`}>{isCorrect ? '✓ Correct!' : '✗ Incorrect'}</p>
-              <div className={`leading-relaxed font-medium ${isCorrect ? 'text-emerald-800' : 'text-red-800'}`}><MathText text={q?.explanation} /></div>
-              {!isCorrect && <div className="text-emerald-700 font-extrabold mt-3 pt-2 border-t border-red-100 flex items-center gap-1">Correct answer: <MathText text={q?.correctAnswer} /></div>}
+            <div className={`rounded-3xl border-l-4 p-5 mb-5 text-sm shadow-2xs ${isCorrect ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500' : 'bg-red-50 dark:bg-red-950/60 border-red-500'}`}>
+              <p className={`font-extrabold text-base mb-1.5 ${isCorrect ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`}>{isCorrect ? '✓ Correct!' : '✗ Incorrect'}</p>
+              <div className={`leading-relaxed font-medium ${isCorrect ? 'text-emerald-800 dark:text-emerald-200' : 'text-red-800 dark:text-red-200'}`}><MathText text={q?.explanation} /></div>
+              {!isCorrect && <div className="text-emerald-700 dark:text-emerald-400 font-extrabold mt-3 pt-2 border-t border-red-100 dark:border-red-900/40 flex items-center gap-1">Correct answer: <MathText text={q?.correctAnswer} /></div>}
             </div>
           )}
         </div>
 
         {/* Sticky footer */}
-        <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 pb-6 sm:pb-4 shadow-lg z-20">
+        <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 p-4 pb-6 sm:pb-4 shadow-lg z-20">
           <div className="max-w-3xl mx-auto">
             {!showExplanation ? (
               <button onClick={handleConfirm} disabled={!selectedAnswer}
-                className="w-full bg-purple-600 text-white font-extrabold py-4 rounded-2xl hover:bg-purple-700 disabled:opacity-50 transition-all shadow-md shadow-purple-600/20">
+                style={{ backgroundColor: primaryColor }}
+                className="w-full text-white font-extrabold py-4 rounded-2xl disabled:opacity-50 transition-all shadow-md">
                 Confirm Answer
               </button>
             ) : (
               <button onClick={handleNext}
-                className="w-full bg-[#4b41e1] hover:bg-[#3d33d0] text-white font-extrabold py-4 rounded-2xl transition-all shadow-md shadow-purple-600/20 flex items-center justify-center gap-2">
+                style={{ backgroundColor: primaryColor }}
+                className="w-full text-white font-extrabold py-4 rounded-2xl transition-all shadow-md flex items-center justify-center gap-2">
                 {currentIndex < questions.length - 1 ? 'Next Question' : 'Finish & Submit'}
                 <IoArrowForwardOutline size={20} />
               </button>
@@ -665,6 +675,7 @@ function getScoreLabel(score) {
 }
 
 function TopicDetailScreen({ topic, latestDiag, onBack, onPractice }) {
+  const { primaryColor } = useTheme();
   const topicKey = topic.toLowerCase();
   const score = latestDiag?.[`${topicKey}Score`] ?? 0;
   const topicScore = latestDiag?.topicScores?.[topicKey] ?? null;
