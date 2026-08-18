@@ -33,9 +33,21 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.dispatchEvent(new CustomEvent('session-revoked'));
+      const url = error.config?.url || '';
+      const isPublicAuthRoute =
+        url.includes('/auth/login') ||
+        url.includes('/auth/register') ||
+        url.includes('/auth/google') ||
+        url.includes('/auth/2fa/validate') ||
+        url.includes('/auth/forgot-password') ||
+        url.includes('/auth/verify-reset-otp') ||
+        url.includes('/auth/reset-password');
+
+      if (!isPublicAuthRoute) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.dispatchEvent(new CustomEvent('session-revoked'));
+      }
     }
     return Promise.reject(error);
   }

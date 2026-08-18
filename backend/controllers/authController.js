@@ -2,11 +2,12 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { OAuth2Client } from "google-auth-library";
 import axios from "axios";
 import speakeasy from "speakeasy";
 import QRCode from "qrcode";
-import { User, Progress, DiagnosticResult, LoginSession, UserLessonProgress } from "../models/index.js";
+import { User, Progress, DiagnosticResult, LoginSession, UserLessonProgress, Feedback } from "../models/index.js";
 import { AppError, asyncHandler } from "../middleware/index.js";
 
 const getResend = () => new Resend(process.env.RESEND_API_KEY);
@@ -1098,6 +1099,99 @@ export const googleAuth = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * @desc    Submit user feedback and dispatch email to developer
+ * @route   POST /api/auth/feedback
+ * @access  Public
+ */
+export const submitFeedback = asyncHandler(async (req, res) => {
+    const { feedbackText, sourcePlatform, userEmail, displayName } = req.body;
+
+    if (!feedbackText || !feedbackText.trim()) {
+        throw new AppError("Feedback text is required", 400);
+    }
+
+    const email = userEmail || (req.user ? req.user.email : "anonymous@mathmentor.ai");
+    const name = displayName || (req.user ? req.user.displayName : "Student");
+    const platform = sourcePlatform || "app";
+
+    // 1. Save feedback to MongoDB database
+    const feedbackDoc = await Feedback.create({
+        user: req.user ? req.user._id : null,
+        userEmail: email,
+        displayName: name,
+        feedbackText: feedbackText.trim(),
+        sourcePlatform: platform,
+    });
+
+    // 2. Dispatch email to chillrigel05@gmail.com
+    const targetEmail = "chillrigel05@gmail.com";
+    let emailSent = false;
+
+    // Try sending email via Resend if API key is provided
+    if (process.env.RESEND_API_KEY) {
+        try {
+            const resend = getResend();
+            await resend.emails.send({
+                from: "MathMentor AI Feedback <onboarding@resend.dev>",
+                to: targetEmail,
+                subject: `[MathMentor AI Feedback] New feedback from ${name}`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; border: 1px solid #e0e3e5; padding: 24px; border-radius: 16px;">
+                        <h2 style="color: #4b41e1; margin-top: 0;">New User Feedback Received 📣</h2>
+                        <p><strong>From:</strong> ${name} (&lt;${email}&gt;)</p>
+                        <p><strong>Platform:</strong> ${platform.toUpperCase()}</p>
+                        <p><strong>Submitted At:</strong> ${new Date().toLocaleString()}</p>
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 16px 0;" />
+                        <h4 style="margin-bottom: 8px;">Feedback Message:</h4>
+                        <div style="background: #f7f9fb; padding: 16px; border-radius: 12px; font-size: 14px; white-space: pre-wrap; color: #091426;">${feedbackText.trim()}</div>
+                    </div>
+                `,
+            });
+            emailSent = true;
+        } catch (err) {
+            console.error("Resend feedback email error:", err.message);
+        }
+    }
+
+    // Fallback: Send email via Nodemailer SMTP if configured
+    if (!emailSent && (process.env.SMTP_USER || process.env.GMAIL_USER)) {
+        try {
+            const transporter = nodemailer.createTransport({
+                service: "gmail",
+                auth: {
+                    user: process.env.SMTP_USER || process.env.GMAIL_USER,
+                    pass: process.env.SMTP_PASS || process.env.GMAIL_PASS || process.env.GMAIL_APP_PASSWORD,
+                },
+            });
+
+            await transporter.sendMail({
+                from: `MathMentor AI <${process.env.SMTP_USER || process.env.GMAIL_USER}>`,
+                to: targetEmail,
+                subject: `[MathMentor AI Feedback] New feedback from ${name}`,
+                text: `New feedback from ${name} (${email}) [${platform.toUpperCase()}]:\n\n${feedbackText.trim()}`,
+            });
+            emailSent = true;
+        } catch (err) {
+            console.error("Nodemailer feedback error:", err.message);
+        }
+    }
+
+    if (emailSent) {
+        feedbackDoc.emailSent = true;
+        await feedbackDoc.save();
+    }
+
+    res.status(200).json({
+        success: true,
+        message: "Thank you for your feedback! It has been submitted successfully.",
+        data: {
+            id: feedbackDoc._id,
+            emailSent,
+        },
+    });
+});
+
 export default {
     register,
     login,
@@ -1118,5 +1212,6 @@ export default {
     verifyResetOtp,
     resetPassword,
     googleAuth,
-    googleRegister
+    googleRegister,
+    submitFeedback
 };

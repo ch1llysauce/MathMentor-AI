@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../services/api';
 import {
   IoArrowBack,
   IoSearchOutline,
@@ -117,16 +118,27 @@ export default function FAQ() {
     })).filter((cat) => cat.items.length > 0);
   }, [searchQuery]);
 
-  const handleFeedbackSubmit = (e) => {
+  const handleFeedbackSubmit = async (e) => {
     e.preventDefault();
+    if (!feedbackText.trim()) return;
     setFeedbackSubmitted(true);
-    setTimeout(() => {
+
+    const trimmed = feedbackText.trim();
+
+    try {
+      await api.post('/auth/feedback', {
+        feedbackText: trimmed,
+        sourcePlatform: 'web',
+      });
+    } catch (err) {
+      console.log('Feedback API submission note:', err?.message);
+    } finally {
       setFeedbackSubmitted(false);
       setShowFeedbackModal(false);
       setFeedbackText('');
-      setToast('Thank you for your feedback! We appreciate your input.');
-      setTimeout(() => setToast(''), 3000);
-    }, 800);
+      setToast('Thank you! Your feedback has been submitted.');
+      setTimeout(() => setToast(''), 3500);
+    }
   };
 
   return (

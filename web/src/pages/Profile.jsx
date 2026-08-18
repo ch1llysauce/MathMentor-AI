@@ -230,6 +230,20 @@ export default function Profile() {
               <span className="font-bold text-[#091426]">Web Version 1.0.0</span>
             </div>
           </div>
+
+          {/* Sign Out Button (Desktop Left Column) */}
+          <div className="hidden lg:block pt-2">
+            <button
+              onClick={() => setShowSignOutModal(true)}
+              className="w-full flex items-center justify-center gap-2 border border-red-200/80 dark:border-red-900/40 text-[#ba1a1a] dark:text-red-400 bg-red-50/60 dark:bg-red-950/20 hover:bg-red-100/70 dark:hover:bg-red-950/40 font-bold py-3.5 px-4 rounded-2xl transition-all shadow-xs cursor-pointer group"
+            >
+              <IoLogOutOutline size={20} className="group-hover:-translate-x-0.5 transition-transform" />
+              <span>Sign Out</span>
+            </button>
+            <p className="text-center text-xs text-[#75777d] dark:text-[#64748b] mt-3">
+              Version 1.0.0
+            </p>
+          </div>
         </div>
 
         {/* Right Column: Profile Sub-Modules & Forms */}
@@ -310,13 +324,14 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Sign Out Button & Version at bottom of screen */}
-      <div className="mt-8">
+      {/* Sign Out Button & Version (Mobile Responsive - Bottom of screen) */}
+      <div className="block lg:hidden mt-8">
         <button
           onClick={() => setShowSignOutModal(true)}
-          className="w-full flex items-center justify-center gap-2 border border-[#ffdad6] text-[#ba1a1a] bg-white dark:bg-[#1a2333] dark:border-red-900/40 font-bold py-3.5 rounded-2xl hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors shadow-xs cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 border border-red-200/80 dark:border-red-900/40 text-[#ba1a1a] dark:text-red-400 bg-red-50/60 dark:bg-red-950/20 hover:bg-red-100/70 dark:hover:bg-red-950/40 font-bold py-3.5 px-4 rounded-2xl transition-all shadow-xs cursor-pointer group"
         >
-          <IoLogOutOutline size={20} /> Sign Out
+          <IoLogOutOutline size={20} className="group-hover:-translate-x-0.5 transition-transform" />
+          <span>Sign Out</span>
         </button>
         <p className="text-center text-xs text-[#75777d] dark:text-[#64748b] mt-3">
           Version 1.0.0

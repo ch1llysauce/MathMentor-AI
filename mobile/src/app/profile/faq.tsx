@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
+import api from '@/services/api';
 
 const FAQS = [
   {
@@ -110,7 +111,9 @@ export default function FaqScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [infoModalMessage, setInfoModalMessage] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const C = {
@@ -146,25 +149,35 @@ export default function FaqScreen() {
     })).filter((cat) => cat.items.length > 0);
   }, [searchQuery]);
 
-  const handleFeedbackSubmit = () => {
+  const handleFeedbackSubmit = async () => {
     if (!feedbackText.trim()) {
-      Alert.alert('Feedback Required', 'Please type your feedback before submitting.');
+      setFeedbackError('Please type your feedback before submitting.');
       return;
     }
+    setFeedbackError(null);
     Keyboard.dismiss();
     setFeedbackSubmitted(true);
-    setTimeout(() => {
+
+    const trimmed = feedbackText.trim();
+
+    try {
+      await api.post('/auth/feedback', {
+        feedbackText: trimmed,
+        sourcePlatform: 'mobile',
+      });
+    } catch (err: any) {
+      console.log('Feedback API submission note:', err?.message);
+    } finally {
       setFeedbackSubmitted(false);
       setShowFeedbackModal(false);
       setFeedbackText('');
-      setToast('Thank you for your feedback! We appreciate your input.');
+      setToast('Thank you! Your feedback has been submitted.');
       setTimeout(() => setToast(null), 3500);
-    }, 800);
+    }
   };
 
   const handleEmailSupport = () => {
-    Linking.openURL('mailto:support@mathmentor.ai?subject=Support%20Request')
-      .catch(() => Alert.alert('Email Support', 'Please write to support@mathmentor.ai'));
+    setInfoModalMessage('For support inquiries, you can reach out directly to chillrigel05@gmail.com.');
   };
 
   return (
@@ -346,6 +359,14 @@ export default function FaqScreen() {
               </View>
             </View>
 
+            {feedbackError && (
+              <View style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' }}>
+                <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '600', textAlign: 'center' }}>
+                  {feedbackError}
+                </Text>
+              </View>
+            )}
+
             <TextInput
               style={[styles.modalTextarea, { backgroundColor: C.textareaBg, color: C.text, borderColor: C.border }]}
               multiline
@@ -353,7 +374,10 @@ export default function FaqScreen() {
               placeholder="What did you like? What can we improve?"
               placeholderTextColor={C.textLight}
               value={feedbackText}
-              onChangeText={setFeedbackText}
+              onChangeText={(txt) => {
+                setFeedbackText(txt);
+                if (feedbackError) setFeedbackError(null);
+              }}
               textAlignVertical="top"
             />
 
@@ -362,6 +386,7 @@ export default function FaqScreen() {
                 disabled={feedbackSubmitted}
                 onPress={() => {
                   Keyboard.dismiss();
+                  setFeedbackError(null);
                   setShowFeedbackModal(false);
                 }}
                 style={[styles.modalCancelBtn, { backgroundColor: C.textareaBg }]}
@@ -385,6 +410,36 @@ export default function FaqScreen() {
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Custom Info / Notice Modal */}
+      <Modal
+        visible={!!infoModalMessage}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setInfoModalMessage(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: C.modalBg, borderColor: C.border, alignItems: 'center' }]}>
+            <View style={[styles.cardIconBox, { backgroundColor: C.primaryBg, marginBottom: 12, marginRight: 0 }]}>
+              <Ionicons name="information-circle-outline" size={24} color={C.primary} />
+            </View>
+            <Text style={[styles.modalTitle, { color: C.text, textAlign: 'center', marginBottom: 6 }]}>
+              Notice
+            </Text>
+            <Text style={[styles.modalSubtitle, { color: C.textLight, textAlign: 'center', marginBottom: 20 }]}>
+              {infoModalMessage}
+            </Text>
+            <TouchableOpacity
+              style={[styles.feedbackBtn, { backgroundColor: C.feedbackBtnBg, width: '100%' }]}
+              onPress={() => setInfoModalMessage(null)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.feedbackBtnText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </View>
   );

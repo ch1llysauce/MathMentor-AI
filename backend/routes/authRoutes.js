@@ -20,7 +20,8 @@ import {
     verifyResetOtp,
     resetPassword,
     googleAuth,
-    googleRegister
+    googleRegister,
+    submitFeedback
 } from "../controllers/authController.js";
 import {
     authenticate,
@@ -75,6 +76,7 @@ router.post("/login", loginLimiter, validateLogin, login);
 router.post("/google", googleAuth);
 router.post("/google/register", googleRegister);
 router.post("/2fa/validate", twoFALimiter, validate2FA);
+router.post("/feedback", submitFeedback);
 
 // Password reset (public — no auth needed, rate limited)
 router.post("/forgot-password", forgotPasswordLimiter, forgotPassword);

@@ -10,6 +10,7 @@ import UserLessonProgress from "./UserLessonProgress.js";
 import UserProblemAttempt from "./UserProblemAttempt.js";
 import LoginSession from "./LoginSession.js";
 import LessonConversation from "./LessonConversation.js";
+import Feedback from "./Feedback.js";
 
 export {
     User,
@@ -22,5 +23,6 @@ export {
     UserLessonProgress,
     UserProblemAttempt,
     LoginSession,
-    LessonConversation
+    LessonConversation,
+    Feedback
 };

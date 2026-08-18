@@ -84,15 +84,27 @@ api.interceptors.response.use(
 
 
     if (error.response?.status === 401) {
-      // Token expired - clear storage
-      try {
-        await storage.removeItem('token');
-        await storage.removeItem('user');
-      } catch (storageError) {
-        console.warn('Error clearing storage:', storageError);
-      }
-      if (onUnauthorizedCallback) {
-        onUnauthorizedCallback();
+      const url = error.config?.url || '';
+      const isPublicAuthRoute =
+        url.includes('/auth/login') ||
+        url.includes('/auth/register') ||
+        url.includes('/auth/google') ||
+        url.includes('/auth/2fa/validate') ||
+        url.includes('/auth/forgot-password') ||
+        url.includes('/auth/verify-reset-otp') ||
+        url.includes('/auth/reset-password');
+
+      if (!isPublicAuthRoute) {
+        // Token expired / revoked - clear storage
+        try {
+          await storage.removeItem('token');
+          await storage.removeItem('user');
+        } catch (storageError) {
+          console.warn('Error clearing storage:', storageError);
+        }
+        if (onUnauthorizedCallback) {
+          onUnauthorizedCallback();
+        }
       }
     }
 
