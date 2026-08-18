@@ -5,7 +5,6 @@ import {
   IoArrowBack,
   IoMoonOutline,
   IoColorPaletteOutline,
-  IoCloudOfflineOutline,
   IoRefreshOutline,
   IoChevronForwardOutline,
   IoCheckmarkCircleOutline,
@@ -27,21 +26,6 @@ export default function Settings() {
   const navigate = useNavigate();
   const { darkMode, toggleDarkMode, accentTheme, setAccentTheme } = useTheme();
 
-  // Settings state
-  const [offlineMode, setOfflineMode] = useState(() => {
-    return localStorage.getItem('mathmentor_offline_mode') === 'true';
-  });
-
-  const handleOfflineModeToggle = (checked) => {
-    setOfflineMode(checked);
-    localStorage.setItem('mathmentor_offline_mode', String(checked));
-    if (checked) {
-      showToast('Offline Cache Mode enabled. Lessons & formulas pre-cached.');
-    } else {
-      showToast('Offline Cache Mode disabled.');
-    }
-  };
-
   // Modals
   const [showResetModal, setShowResetModal] = useState(false);
 
@@ -54,8 +38,6 @@ export default function Settings() {
   const handleResetSettings = () => {
     if (darkMode) toggleDarkMode();
     setAccentTheme('indigo');
-    setOfflineMode(false);
-    localStorage.removeItem('mathmentor_offline_mode');
 
     setShowResetModal(false);
     showToast('All settings reset to default.');
@@ -81,7 +63,7 @@ export default function Settings() {
         </button>
         <div>
           <h1 className="text-2xl font-bold text-[#091426] tracking-tight">Settings</h1>
-          <p className="text-xs text-[#75777d]">Manage app preferences, display, and data storage</p>
+          <p className="text-xs text-[#75777d]">Manage app preferences and display themes</p>
         </div>
       </div>
 
@@ -153,38 +135,11 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Right Column: Data & Storage, Advanced */}
+        {/* Right Column: System Preferences */}
         <div className="space-y-6">
-          {/* Data & Storage */}
+          {/* System Preferences */}
           <div>
-            <h2 className="text-sm font-semibold text-[#45474c] uppercase tracking-wider mb-2 ml-1">Data & Storage</h2>
-            <div className="bg-white rounded-2xl shadow-sm border border-[#e0e3e5] overflow-hidden">
-              <div className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[rgba(255,152,0,0.1)] flex items-center justify-center text-[#ff9800]">
-                    <IoCloudOfflineOutline size={20} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#091426]">Offline Cache Mode</p>
-                    <p className="text-xs text-[#75777d]">Pre-cache offline lessons</p>
-                  </div>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={offlineMode}
-                    onChange={(e) => handleOfflineModeToggle(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-[#e0e3e5] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#ff9800]"></div>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* Advanced */}
-          <div>
-            <h2 className="text-sm font-semibold text-[#45474c] uppercase tracking-wider mb-2 ml-1">Advanced</h2>
+            <h2 className="text-sm font-semibold text-[#45474c] uppercase tracking-wider mb-2 ml-1">System Preferences</h2>
             <div className="bg-white rounded-2xl shadow-sm border border-[#e0e3e5] overflow-hidden divide-y divide-[#f2f4f6]">
               <button
                 onClick={() => setShowResetModal(true)}

@@ -1,6 +1,10 @@
 import { storage } from '@/utils/storage';
 import { generateProblems } from './clientProblemGenerator';
-import { Lesson, PracticeProblem } from '@/types/lesson';
+import { Lesson } from '@/types/lesson';
+import { CURRICULUM } from '@/constants/curriculum';
+import { PRACTICE_ENDPOINTS } from '@/constants/api';
+import api from '@/services/api';
+import { authService } from './authService';
 
 export interface OfflineFormula {
   id: string;
@@ -15,6 +19,59 @@ export interface OfflineCacheData {
   lessons: Lesson[];
   formulas: OfflineFormula[];
   topics: Array<{ name: string; icon: string; subtopics: string[] }>;
+}
+
+export function getAllCurriculumOfflineLessons(): Lesson[] {
+  const allLessons: Lesson[] = [];
+
+  (Object.keys(CURRICULUM) as Array<keyof typeof CURRICULUM>).forEach((subject) => {
+    const topicName = subject.toLowerCase();
+    const modules = CURRICULUM[subject].modules;
+
+    modules.forEach((mod) => {
+      const subtopicName = mod.moduleName.toLowerCase();
+
+      mod.lessons.forEach((l, index) => {
+        const id = `off_${topicName.slice(0, 3)}_${mod.moduleNumber}_${l.order}`;
+
+        allLessons.push({
+          _id: id,
+          topic: topicName,
+          subtopic: subtopicName,
+          order: l.order,
+          title: l.title,
+          description: `Master ${l.title} in ${mod.moduleName}. ${l.learningObjectives.join(', ')}.`,
+          difficulty: mod.moduleNumber <= 3 ? 'Beginner' : mod.moduleNumber <= 7 ? 'Intermediate' : 'Advanced',
+          estimatedTime: 10 + (index % 3) * 5,
+          isLocked: false,
+          content: {
+            introduction: `Welcome to **${l.title}**! In this lesson, you will explore core mathematical concepts and step-by-step problem solving strategies.`,
+            sections: [
+              {
+                title: 'Core Concepts & Objectives',
+                content: `Key objectives for this lesson:\n${l.learningObjectives.map((obj) => `• ${obj}`).join('\n')}`,
+                examples: [
+                  {
+                    problem: `Apply concepts from ${l.title} to solve step-by-step equations or geometric problems.`,
+                    solution: `Step-by-step verified solution for ${l.title}.`,
+                    steps: [
+                      'Identify key variables and given values.',
+                      'Apply inverse operations or geometric theorems.',
+                      'Verify the final result.',
+                    ],
+                  },
+                ],
+              },
+            ],
+            summary: `Summary of ${l.title}: Review all key formulas and objective checklists before practice.`,
+            keyTakeaways: l.learningObjectives,
+          },
+        });
+      });
+    });
+  });
+
+  return allLessons;
 }
 
 const DEFAULT_OFFLINE_FORMULAS: OfflineFormula[] = [
@@ -118,132 +175,74 @@ const DEFAULT_OFFLINE_TOPICS = [
   },
 ];
 
-const DEFAULT_OFFLINE_LESSONS: Lesson[] = [
-  {
-    _id: 'off_alg_1',
-    topic: 'algebra',
-    subtopic: 'linear equations',
-    order: 1,
-    title: 'Solving Linear Equations in One Variable',
-    description: 'Learn how to solve single variable linear equations using inverse operations.',
-    difficulty: 'Beginner',
-    estimatedTime: 10,
-    isLocked: false,
-    content: {
-      introduction: 'A linear equation in one variable is an equation that can be written in the form $$ax + b = 0$$. To solve for $x$, isolate the variable by applying inverse operations step-by-step.',
-      sections: [
-        {
-          title: 'Core Concept',
-          content: 'Isolate the variable $x$ by adding, subtracting, multiplying, or dividing both sides by non-zero terms.',
-          examples: [
-            {
-              problem: 'Solve $2x + 5 = 15$',
-              solution: '$x = 5$',
-              steps: ['Subtract 5 from both sides: $2x = 10$', 'Divide by 2: $x = 5$'],
-            },
-          ],
-        },
-      ],
-      summary: 'Always perform identical operations on both sides to keep the equation balanced.',
-      keyTakeaways: ['Isolate the variable', 'Perform inverse operations on both sides'],
-    },
-  },
-  {
-    _id: 'off_alg_2',
-    topic: 'algebra',
-    subtopic: 'quadratic equations',
-    order: 2,
-    title: 'Mastering the Quadratic Formula',
-    description: 'Understand and apply the quadratic formula to find roots.',
-    difficulty: 'Intermediate',
-    estimatedTime: 15,
-    isLocked: false,
-    content: {
-      introduction: 'For any quadratic equation in standard form $$ax^2 + bx + c = 0$$, the solutions are given by $$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$.',
-      sections: [
-        {
-          title: 'The Discriminant',
-          content: 'The expression $$b^2 - 4ac$$ determines the number and nature of solutions.',
-          examples: [
-            {
-              problem: 'Solve $x^2 - 5x + 6 = 0$',
-              solution: '$x = 2, 3$',
-              steps: ['Identify $a=1, b=-5, c=6$', 'Apply formula: $x = \\frac{5 \\pm \\sqrt{25 - 24}}{2}$', '$x = \\frac{5 \\pm 1}{2} \\Rightarrow x=3, x=2$'],
-            },
-          ],
-        },
-      ],
-      summary: 'The quadratic formula works for all quadratic equations.',
-      keyTakeaways: ['Standard form: $ax^2+bx+c=0$', 'Discriminant tells if roots are real or complex'],
-    },
-  },
-  {
-    _id: 'off_geo_1',
-    topic: 'geometry',
-    subtopic: 'pythagorean theorem',
-    order: 1,
-    title: 'Pythagorean Theorem & Right Triangles',
-    description: 'Calculate missing side lengths in right triangles.',
-    difficulty: 'Beginner',
-    estimatedTime: 12,
-    isLocked: false,
-    content: {
-      introduction: 'In a right triangle with leg lengths $a$ and $b$ and hypotenuse $c$, the relationship is $$a^2 + b^2 = c^2$$.',
-      sections: [
-        {
-          title: 'Right Triangle Formula',
-          content: 'Use $c = \\sqrt{a^2 + b^2}$ to find the hypotenuse.',
-          examples: [
-            {
-              problem: 'Find hypotenuse when $a=3, b=4$',
-              solution: '$c = 5$',
-              steps: ['$c^2 = 3^2 + 4^2 = 9 + 16 = 25$', '$c = \\sqrt{25} = 5$'],
-            },
-          ],
-        },
-      ],
-      summary: 'The Pythagorean theorem applies exclusively to right-angled triangles.',
-      keyTakeaways: ['$a^2 + b^2 = c^2$', 'Common triple: 3-4-5'],
-    },
-  },
-  {
-    _id: 'off_trig_1',
-    topic: 'trigonometry',
-    subtopic: 'sine, cosine, tangent',
-    order: 1,
-    title: 'Introduction to Trigonometric Ratios',
-    description: 'Master Sine, Cosine, and Tangent definitions.',
-    difficulty: 'Intermediate',
-    estimatedTime: 15,
-    isLocked: false,
-    content: {
-      introduction: 'In right-angled triangles: $$\\sin(\\theta) = \\frac{\\text{opp}}{\\text{hyp}}$$, $$\\cos(\\theta) = \\frac{\\text{adj}}{\\text{hyp}}$$, and $$\\tan(\\theta) = \\frac{\\text{opp}}{\\text{adj}}$$.',
-      sections: [
-        {
-          title: 'SOH CAH TOA',
-          content: 'Remember the acronym SOH CAH TOA for trigonometric ratios.',
-          examples: [
-            {
-              problem: 'Find $\\sin(\\theta)$ if opp=3, hyp=5',
-              solution: '$\\sin(\\theta) = 0.6$',
-              steps: ['$\\sin(\\theta) = \\frac{3}{5} = 0.6$'],
-            },
-          ],
-        },
-      ],
-      summary: 'Trig ratios relate angles to side ratios in right triangles.',
-      keyTakeaways: ['SOH CAH TOA', 'Sine = opposite / hypotenuse'],
-    },
-  },
-];
-
 export const offlineCacheService = {
   /**
-   * Pre-cache all lessons, formulas, topics, and problem templates into persistent storage
+   * Pre-cache all lessons, formulas, topics, problem templates, user profile, diagnostic scores, topic masteries, AND daily challenge status
    */
   async preCacheOfflineData(): Promise<{ cachedCount: number; lessonsCount: number; formulasCount: number }> {
     try {
-      // 1. Generate client-side offline practice problem sets across topics
+      // 0a. Cache User Profile
+      try {
+        await authService.getProfile();
+      } catch (err) {
+        console.log('Profile fetch skipped during offline pre-cache:', err);
+      }
+
+      // 0b. Cache Diagnostic Scores & Topic Mastery Levels
+      try {
+        const diagRes = await api.get('/learning/diagnostic/latest');
+        if (diagRes.data?.success && diagRes.data?.data) {
+          await storage.setItem('mathmentor_offline_user_progress', JSON.stringify(diagRes.data.data));
+        }
+      } catch (err) {
+        console.log('Diagnostic progress fetch skipped during offline pre-cache:', err);
+      }
+
+      // 0c. Cache Daily Challenge Status & Scores
+      try {
+        const dailyRes = await api.get(PRACTICE_ENDPOINTS.DAILY_STATUS);
+        if (dailyRes.data?.success && dailyRes.data?.data) {
+          await storage.setItem('mathmentor_offline_daily_status', JSON.stringify(dailyRes.data.data));
+        }
+      } catch (err) {
+        console.log('Daily challenge status fetch skipped during offline pre-cache:', err);
+      }
+
+      let lessonsList: Lesson[] = [];
+
+      // 1. Try to fetch full lessons from the backend API if online
+      try {
+        const response = await api.get('/learning/lessons');
+        const serverLessons = response.data?.data?.lessons || response.data?.lessons;
+        if (Array.isArray(serverLessons) && serverLessons.length > 0) {
+          lessonsList = serverLessons.map((l: any) => ({
+            _id: l._id || l.id,
+            topic: l.topic,
+            subtopic: l.subtopic || '',
+            order: l.order || 1,
+            title: l.title,
+            description: l.description || '',
+            difficulty: l.difficulty || 'Beginner',
+            estimatedTime: l.estimatedTime || 10,
+            isLocked: l.isLocked || false,
+            content: l.content || {
+              introduction: l.description || 'Offline lesson content',
+              sections: [],
+              summary: l.title,
+              keyTakeaways: [],
+            },
+          }));
+        }
+      } catch (err) {
+        console.log('Backend offline during pre-cache, generating from 116 curriculum lessons structure.');
+      }
+
+      // Fallback: build full 116 curriculum lessons if backend is unreachable or returned empty
+      if (lessonsList.length === 0) {
+        lessonsList = getAllCurriculumOfflineLessons();
+      }
+
+      // 2. Generate client-side offline practice problem sets across topics
       const topicsList = ['algebra', 'geometry', 'trigonometry', 'calculus', 'statistics'];
       let totalProblemsGenerated = 0;
       topicsList.forEach((tp) => {
@@ -251,24 +250,24 @@ export const offlineCacheService = {
         totalProblemsGenerated += probs.length;
       });
 
-      // 2. Build full cache object
+      // 3. Build full cache object
       const cacheData: OfflineCacheData = {
         timestamp: new Date().toISOString(),
-        lessons: DEFAULT_OFFLINE_LESSONS,
+        lessons: lessonsList,
         formulas: DEFAULT_OFFLINE_FORMULAS,
         topics: DEFAULT_OFFLINE_TOPICS,
       };
 
-      // 3. Save to storage
+      // 4. Save to storage
       await storage.setItem('mathmentor_offline_cache', JSON.stringify(cacheData));
       await storage.setItem('mathmentor_offline_mode', 'true');
 
-      const totalItems = DEFAULT_OFFLINE_LESSONS.length + DEFAULT_OFFLINE_FORMULAS.length + totalProblemsGenerated;
+      const totalItems = lessonsList.length + DEFAULT_OFFLINE_FORMULAS.length + totalProblemsGenerated;
 
-      console.log(`✅ Offline cache built successfully with ${totalItems} total resources.`);
+      console.log(`✅ Offline cache built successfully with ${lessonsList.length} lessons, masteries & daily challenge status (${totalItems} total resources).`);
       return {
         cachedCount: totalItems,
-        lessonsCount: DEFAULT_OFFLINE_LESSONS.length,
+        lessonsCount: lessonsList.length,
         formulasCount: DEFAULT_OFFLINE_FORMULAS.length,
       };
     } catch (e) {
@@ -307,12 +306,15 @@ export const offlineCacheService = {
   async getOfflineLessons(topic?: string, subtopic?: string): Promise<Lesson[]> {
     try {
       const raw = await storage.getItem('mathmentor_offline_cache');
-      let list = DEFAULT_OFFLINE_LESSONS;
+      let list: Lesson[] = [];
       if (raw) {
         const parsed: OfflineCacheData = JSON.parse(raw);
         if (parsed.lessons && parsed.lessons.length > 0) {
           list = parsed.lessons;
         }
+      }
+      if (list.length === 0) {
+        list = getAllCurriculumOfflineLessons();
       }
       if (topic) {
         list = list.filter((l) => l.topic.toLowerCase() === topic.toLowerCase());
@@ -322,7 +324,7 @@ export const offlineCacheService = {
       }
       return list;
     } catch (e) {
-      return DEFAULT_OFFLINE_LESSONS;
+      return getAllCurriculumOfflineLessons();
     }
   },
 
@@ -347,6 +349,30 @@ export const offlineCacheService = {
       return DEFAULT_OFFLINE_FORMULAS;
     } catch (e) {
       return DEFAULT_OFFLINE_FORMULAS;
+    }
+  },
+
+  /**
+   * Get cached user progress & diagnostic snapshot (scores & masteries)
+   */
+  async getOfflineUserProgress(): Promise<any | null> {
+    try {
+      const raw = await storage.getItem('mathmentor_offline_user_progress');
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  /**
+   * Get cached daily challenge status & score
+   */
+  async getOfflineDailyStatus(): Promise<any | null> {
+    try {
+      const raw = await storage.getItem('mathmentor_offline_daily_status');
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
     }
   },
 };

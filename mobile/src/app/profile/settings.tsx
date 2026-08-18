@@ -217,9 +217,9 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Advanced */}
+        {/* System Preferences */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: S.textLight }]}>ADVANCED</Text>
+          <Text style={[styles.sectionTitle, { color: S.textLight }]}>SYSTEM PREFERENCES</Text>
           <View style={[styles.cardGroup, { backgroundColor: S.cardBg, borderColor: S.border }]}>
             <TouchableOpacity
               style={styles.cardRow}

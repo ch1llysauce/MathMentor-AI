@@ -17,6 +17,7 @@ import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 import api from '@/services/api';
 import { PRACTICE_ENDPOINTS } from '@/constants/api';
 import { practiceCache } from '@/utils/tabCache';
+import { offlineCacheService } from '@/services/offlineCache';
 
 // Module-level cache so tab re-focuses don't re-fetch from scratch
 // (Imported from tabCache so logout can clear it centrally)
@@ -80,8 +81,18 @@ export default function PracticeScreen() {
         setDailyScore(null);
       }
     } catch {
-      setDailyDone(false);
-      setDailyScore(null);
+      const cachedDaily = await offlineCacheService.getOfflineDailyStatus();
+      if (cachedDaily) {
+        setDailyDone(cachedDaily.done ?? false);
+        if (cachedDaily.done && cachedDaily.score !== null && cachedDaily.total !== null) {
+          setDailyScore({ score: cachedDaily.score, total: cachedDaily.total });
+        } else {
+          setDailyScore(null);
+        }
+      } else {
+        setDailyDone(false);
+        setDailyScore(null);
+      }
     }
   };
 
@@ -122,7 +133,12 @@ export default function PracticeScreen() {
         diagnosticData = response.data.diagnostic;
         setUserMastery(diagnosticData);
       } catch (error) {
-        console.log('No diagnostic data available');
+        console.log('No live diagnostic data available, checking offline cache');
+        const cachedProgress = await offlineCacheService.getOfflineUserProgress();
+        if (cachedProgress) {
+          diagnosticData = cachedProgress.diagnostic || cachedProgress;
+          setUserMastery(diagnosticData);
+        }
       }
 
       // Load all lessons to build topic list
