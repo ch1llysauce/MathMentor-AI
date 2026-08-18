@@ -1,128 +1,148 @@
 # MathMentor AI
 
-An adaptive mathematics learning platform for senior high school students, powered by an AI tutor and a diagnostic-driven personalized learning path. Built with React Native (Expo) for mobile and Node.js/Express for the backend.
+An adaptive mathematics learning platform for senior high school students (Algebra, Geometry, Trigonometry), powered by an AI tutor and diagnostic-driven personalized learning paths. Available as a **React Web Application** and a **React Native (Expo) Mobile Application**, both powered by a unified **Node.js/Express** backend and MongoDB database.
 
-## Monorepo Structure
+---
+
+## 🏗️ Repository Structure
 
 ```
 mathmentor-ai/
-├── backend/    # Node.js/Express REST API
-└── mobile/     # React Native (Expo) mobile app
+├── backend/    # Node.js / Express 5 REST API & MongoDB database models
+├── mobile/     # React Native (Expo SDK 57) mobile application for Android
+└── web/        # React 19 / Vite responsive web application
 ```
 
-## Tech Stack
+---
 
-| Layer    | Technology |
-|----------|------------|
-| Backend  | Node.js, Express 5, MongoDB (Mongoose), JWT, Google OAuth 2.0 |
-| AI       | Groq (LLaMA 3.3 70B) → Gemini 1.5 Flash → Rule-based fallback |
-| Mobile   | React Native 0.86, Expo 57, Expo Router v3, TypeScript |
+## 🛠️ Tech Stack
 
-## Getting Started
+| Layer | Technology |
+|---|---|
+| **Web Platform** | React 19, Vite, React Router v7, Tailwind CSS, KaTeX (LaTeX math rendering), React Icons |
+| **Mobile App** | React Native 0.86, Expo SDK 57, Expo Router v3, TypeScript |
+| **Backend API** | Node.js, Express.js 5, MongoDB (Mongoose), JWT, Google OAuth 2.0 |
+| **AI Services** | Groq (LLaMA 3.3 70B) → Gemini 1.5 Flash → Rule-based fallback |
+| **Security & Auth**| bcryptjs, TOTP 2FA (`speakeasy`), OTP Password Reset (`resend`), Multi-device session revocation |
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+
-- MongoDB Atlas account (or local MongoDB)
-- Groq API key — [console.groq.com](https://console.groq.com/keys)
-- Google OAuth Client ID — [Google Cloud Console](https://console.cloud.google.com)
+- **Node.js**: v18 or higher
+- **MongoDB**: MongoDB Atlas cluster or local instance
+- **Groq API Key**: [console.groq.com](https://console.groq.com)
+- **Google OAuth Web Client ID**: [Google Cloud Console](https://console.cloud.google.com)
 
-### Backend
+---
+
+### 1. Backend Setup
 
 ```bash
 cd backend
 npm install
-# Copy and fill in .env (see backend/README.md for all variables)
-npm run dev        # development (nodemon)
-npm start          # production
+
+# Create .env file (see backend/README.md for reference)
+npm run dev        # Starts development server on http://localhost:5000
 ```
 
-Runs on `http://localhost:5000`. See [backend/README.md](./backend/README.md) for the full API reference.
+---
 
-### Mobile
+### 2. Web Application Setup
+
+```bash
+cd web
+npm install
+
+# Create .env file (VITE_API_URL=http://localhost:5000/api)
+npm run dev        # Starts Vite dev server on http://localhost:5173
+```
+
+---
+
+### 3. Mobile Application Setup
 
 ```bash
 cd mobile
 npm install
-# Set EXPO_PUBLIC_API_URL in mobile/.env
-npx expo start          # Expo Go (most features)
-npx expo run:android    # Full dev build (required for native modules)
+
+# Configure API URL in src/constants/api.ts or EXPO_PUBLIC_API_URL
+npx expo start          # Expo Go / Development Client
+npx expo run:android    # Local Native Android build
 ```
 
-> The app requires a **dev build** (`expo run:android`) rather than Expo Go for any native module features.
+---
 
-## Key Features
+## ✨ Key Features Across Platforms
 
-### Learning
-- **Diagnostic assessment** — 15-question placement test across Algebra, Geometry, and Trigonometry that builds a personalized learning path
-- **Adaptive learning path** — topics and difficulty auto-adjust based on diagnostic mastery scores
-- **113 structured lessons** — across 28 modules in 3 subjects, with lesson content, examples, and key takeaways
-- **In-lesson AI chat** — per-lesson AI tutor with persistent conversation history
-- **Daily challenge** — 10 mixed problems per day with server-side score tracking per user
+### 🎯 Diagnostic & Adaptive Learning
+- **15-Question Placement Test**: Benchmarks knowledge across Algebra, Geometry, and Trigonometry.
+- **Dynamic Learning Paths**: Automatically ranks topic mastery and generates personalized study recommendations based on diagnostic results.
+- **116 Structured Lessons**: 28 modules across 3 subjects with lesson objectives, step-by-step examples, and key takeaways.
 
-### Practice
-- **Client-side problem generation** — instant practice sets without network calls
-- **Multiple question types** — multiple choice, true/false, free response
-- **Scientific calculator** — built-in during practice sessions
-- **Score results screen** — breakdown of correct/incorrect after each session
+### ✍️ Practice & Assessment
+- **Topic-Based Practice**: Multiple question types (multiple choice, true/false, free response) with instant grading.
+- **KaTeX LaTeX Math Rendering**: Formatted mathematical formulas and equations across web and mobile.
+- **Adaptive Question Generator**: Generates practice questions matching student mastery levels.
+- **Floating Scientific Calculator**: Available globally on web and integrated into practice sessions.
 
-### Progress & Dashboard
-- **Knowledge Map** — mastery rings per topic with weak area cards
-- **Mastery timeline** — bar chart with Y-axis labels tracking score history
-- **Accuracy stat** — shown as diagnostic fraction (e.g. `18/30`) on the dashboard
-- **Streak tracking** — daily activity streaks
+### 🤖 Tutor AI Assistant
+- **Socratic Pedagogy**: Primary provider Groq LLaMA 3.3 70B with Gemini 1.5 Flash fallback.
+- **Personalized Responses**: Adapts explanations according to user language preferences and custom settings.
+- **Persistent Chat History**: Saves lesson conversation sessions to MongoDB.
 
-### AI Tutor
-- **Socratic tutoring** — Groq LLaMA 3.3 70B as primary, Gemini 1.5 Flash as fallback
-- **Persistent conversations** — lesson chat history saved to MongoDB per user
-- **Multi-language aware** — AI responds in whatever language the user writes in
+### 👤 Profile, Security & Customization
+- **Theme Engine**: Dark/Light mode support with 9 dynamic accent color themes and custom banner gradient previews.
+- **Session Security**: Multi-device session management with IP address and city/location tracking, plus single-click session revocation.
+- **Downloadable APK**: Built-in direct download for the native Android build (`.apk`).
 
-### Auth
-- Email/password registration and login
-- Google Sign-In (Android)
-- TOTP two-factor authentication
-- OTP-based password reset via email
-- Multi-session management with per-session revocation
+---
 
-## Environment Variables
+## 🔐 Environment Variables
 
-**backend/.env**
+### `backend/.env`
 ```env
-MONGO_URI=<mongodb_connection_string>
-JWT_SECRET=<secret_32_chars_minimum>
-GROQ_API_KEY=<key>
-GEMINI_API_KEY=<key>
-GOOGLE_WEB_CLIENT_ID=<client_id>
-RESEND_API_KEY=<key>
+MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/mathmentor
 PORT=5000
 NODE_ENV=development
+JWT_SECRET=your_super_secret_jwt_key_32_chars_min
+JWT_EXPIRE=7d
+GOOGLE_WEB_CLIENT_ID=your_google_web_client_id
+GROQ_API_KEY=your_groq_api_key
+GEMINI_API_KEY=your_gemini_api_key
+RESEND_API_KEY=your_resend_api_key
 ```
 
-**mobile/.env**
+### `web/.env`
 ```env
-EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=<google_client_id>
+VITE_API_URL=http://localhost:5000/api
 ```
 
-API URL is set in `mobile/src/constants/api.ts`:
-```ts
-const USE_LOCAL = false;  // true = local backend, false = Render
-const PRODUCTION_URL = 'https://mathmentor-ai-i8sl.onrender.com/api';
-const LOCAL_URL = 'http://<your_local_ip>:5000/api';
+### `mobile/.env`
+```env
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your_google_web_client_id
 ```
 
-## Deployment
+---
 
-- **Backend** — Render (`https://mathmentor-ai-i8sl.onrender.com`)
-- **Mobile** — EAS Build (`eas build --platform android`)
+## 🌐 Deployment
 
-## Curriculum
+- **Backend**: Render (`https://mathmentor-ai-i8sl.onrender.com`)
+- **Web App**: Vercel / Render / Netlify
+- **Mobile APK**: Built via EAS Build (`eas build --platform android --profile preview`)
 
-- **Algebra** — 10 modules, 47 lessons
-- **Geometry** — 9 modules, 36 lessons
-- **Trigonometry** — 9 modules, 30 lessons
-- **Total** — 113 lessons across 28 modules
+---
 
-See [CURRICULUM-STRUCTURE.md](./CURRICULUM-STRUCTURE.md) for the full breakdown.
+## 📚 Curriculum Breakdown
 
-## License
+- **Algebra**: 10 modules · 45 lessons
+- **Geometry**: 9 modules · 40 lessons
+- **Trigonometry**: 9 modules · 31 lessons
+- **Total**: 116 lessons across 28 modules
 
-MIT — see [LICENSE](./LICENSE).
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](./LICENSE).

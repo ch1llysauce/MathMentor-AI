@@ -1,308 +1,130 @@
 # MathMentor AI — Web Application
 
-MathMentor AI is a cloud-based adaptive mathematics learning system designed to help students learn and practice Algebra, Geometry, and Trigonometry through AI-powered tutoring, personalized assessment, and progress tracking.
-
-The web application serves as the browser-based counterpart to the MathMentor AI mobile application. It provides the same core learning functionalities through a responsive web interface while communicating with the existing centralized backend and database.
+The **MathMentor AI Web Application** is a responsive, feature-rich web platform for senior high school mathematics (Algebra, Geometry, Trigonometry). Built with **React 19**, **Vite**, and **Tailwind CSS**, it communicates with the centralized MathMentor AI backend API and database to deliver an adaptive learning experience.
 
 ---
 
-## Scope
+## ✨ Key Features & Modules
 
-The MathMentor AI Web Application covers the following major areas:
+### 1. 🏠 Landing Page
+- **Curriculum Overview**: Highlights the 116 lessons and 28 modules across Algebra, Geometry, and Trigonometry.
+- **Interactive Feature Breakdown**: Showcases diagnostic placement, adaptive practice, Tutor AI, and progress tracking.
+- **Direct APK Download**: Built-in Android APK download buttons (`/MathMentorAI.apk`) for immediate mobile access.
 
-### 1. Landing Page
+### 2. 📊 Dashboard
+- **Progress Summary**: Displays overall curriculum completion, diagnostic fraction score, active learning streaks, and subject mastery.
+- **Weak Area Highlights**: Highlights topics needing review with direct jump-to-practice shortcuts.
+- **Learning Path**: Recommends the next optimal lesson based on adaptive diagnostic scores.
 
-A public-facing page that introduces MathMentor AI and provides information about the system.
+### 3. ✍️ Practice & Lessons
+- **Adaptive Practice Engine**: Topic-based problem sets supporting multiple-choice, true/false, and free-response questions with real-time feedback.
+- **KaTeX LaTeX Math Rendering**: Clear formatting for algebraic expressions, geometric formulas, and trigonometric identities.
+- **AI Hints & Explanations**: Instant step-by-step assistance when tackling difficult problems.
 
-Features include:
+### 4. 🎯 Diagnostic Assessment
+- **Placement Benchmark**: 15-question diagnostic evaluation spanning Algebra, Geometry, and Trigonometry.
+- **Automatic Scoring & Mastery Breakdown**: Ranks subject mastery (Novice, Intermediate, Master) and identifies weak areas.
+- **Diagnostic Retake System**: Retake assessments anytime to update learning path recommendations.
 
-- System introduction
-- Overview of major features
-- Supported mathematics subjects:
-  - Algebra
-  - Geometry
-  - Trigonometry
-- Explanation of how MathMentor AI works
-- Access to the web application
-- Download link for the Android APK
-- Call-to-action for students to get started
+### 5. 🤖 Tutor AI Assistant
+- **Socratic Math Tutor**: Interactive AI chat powered by Groq LLaMA 3.3 70B (with Gemini Flash fallback).
+- **Personalized Responses**: Aligns explanations with the student's selected language and font preferences.
+- **Persistent Conversation Memory**: Saves lesson chat threads per user in MongoDB.
 
-### 2. Dashboard
+### 6. 🧮 Global Scientific Calculator
+- **Floating Launcher**: Accessible from any page via a persistent floating button.
+- **Full Functions**: Trigonometric functions (sin, cos, tan), logarithms, powers, roots, and parenthetical expressions.
 
-The Dashboard provides students with an overview of their learning progress and performance.
-
-It may display:
-
-- Overall learning progress
-- Practice performance
-- Topic mastery
-- Weak areas
-- Learning streaks
-- Recent activity
-- Personalized recommendations
-- Learning-path information
-
-### 3. Practice
-
-The Practice module allows students to practice mathematics according to their selected subject and topic.
-
-Supported subjects:
-
-- Algebra
-- Geometry
-- Trigonometry
-
-The module may provide:
-
-- Topic-based questions
-- Different difficulty levels
-- Multiple-choice questions
-- Answer submission
-- Immediate feedback
-- Explanations
-- AI-generated hints
-- Practice results
-- Progress recording
-
-AI-generated questions are constrained according to the selected mathematics subject, topic, and difficulty to maintain alignment with the system's curriculum.
-
-### 4. Diagnosis
-
-The Diagnosis module evaluates the student's current mathematical knowledge and identifies areas of strength and weakness.
-
-It includes:
-
-- Diagnostic assessments
-- Topic-based evaluation
-- Automatic scoring
-- Performance analysis
-- Identification of weak areas
-- Learning recommendations
-- Diagnostic history
-
-The results can be used by the system to provide more personalized learning recommendations and support through Tutor AI.
-
-### 5. Tutor AI
-
-Tutor AI provides an interactive AI-powered mathematics tutoring experience.
-
-Students can:
-
-- Ask mathematics-related questions
-- Request explanations
-- Request hints
-- Ask for clarification
-- Receive step-by-step guidance
-- Receive context-aware assistance
-
-Tutor AI focuses on Algebra, Geometry, and Trigonometry and can utilize relevant learning context to provide more personalized assistance.
-
-### 6. Profile
-
-The Profile module manages the student's account and personal application settings.
-
-It includes functionality such as:
-
-- Account information
-- Profile management
-- Account settings
-- Authentication-related settings
-- Session/account management
+### 7. 👤 Profile & Customization
+- **Theme Customization Engine**: Dark/Light mode toggle with **9 Accent Color Schemes** (Indigo, Emerald, Sunset, Ocean, Obsidian, Amethyst, Rose, Aurora, Unicorn).
+- **Live Banner Previews**: Dynamic linear-gradient headers customizable in real time.
+- **Active Session Security**: View active login sessions complete with IP address, device metadata, and city/location tracking, with single-click remote session revocation.
+- **Mobile Application Downloads**: Built-in Android `.apk` download card inside Settings and Sidebar.
 
 ---
 
-## System Architecture
-
-The web application follows a client-server architecture in which the React frontend communicates with the existing centralized backend through RESTful services.
-
-```
-┌──────────────────────┐
-│      Students        │
-└──────────┬───────────┘
-           │
-┌──────────▼───────────┐
-│    React Web App     │
-│                      │
-│  Landing Page        │
-│  Dashboard           │
-│  Practice            │
-│  Diagnosis           │
-│  Tutor AI            │
-│  Profile             │
-└──────────┬───────────┘
-           │
-      HTTPS / REST
-           │
-┌──────────▼───────────┐
-│   Node.js / Express  │
-│      Backend         │
-└──────┬───────┬───────┘
-       │       │
-       ▼       ▼
-┌──────────┐  ┌──────────────────┐
-│ MongoDB  │  │   AI Provider    │
-│ Atlas    │  │                  │
-│          │  │ AI Tutor         │
-│ Users    │  │ Explanations     │
-│ Questions│  │ Hints            │
-│ Progress │  │ AI Generation    │
-│ Learning │  └──────────────────┘
-│ Data     │
-└──────────┘
-```
-
-### Shared Backend Architecture
-
-The web application uses the same centralized backend as the existing mobile application.
-
-```
-┌───────────────┐     ┌────────────────┐
-│  Mobile APK   │     │   React Web    │
-└───────┬───────┘     └───────┬────────┘
-        │                     │
-        └──────────┬──────────┘
-                   │
-          ┌────────▼────────┐
-          │  Express API    │
-          │    Backend      │
-          └────────┬────────┘
-                   │
-          ┌────────▼────────┐
-          │  MongoDB Atlas  │
-          └────────┬────────┘
-                   │
-          ┌────────▼────────┐
-          │    AI APIs      │
-          └─────────────────┘
-```
-
-This allows the mobile and web applications to share:
-
-- User accounts
-- Authentication
-- Questions
-- Practice results
-- Diagnostic results
-- Learning progress
-- Recommendations
-- AI services
-
----
-
-## Tech Stack
-
-### Frontend
+## 🛠️ Tech Stack
 
 | Technology | Purpose |
 |---|---|
-| **React** | Component-based user interface |
-| **Vite** | Frontend development and build tool |
-| **TypeScript** | Type-safe development and improved maintainability |
-| **React Router** | Client-side navigation between pages and authenticated modules |
-| **Tailwind CSS** | Responsive styling and UI development |
-
-### Backend
-
-The web application uses the existing MathMentor AI backend.
-
-| Technology | Purpose |
-|---|---|
-| **Node.js** | Runtime environment for the backend server |
-| **Express.js** | REST API framework handling requests from web and mobile clients |
-| **RESTful Architecture** | Communication between the React web app and the centralized backend |
-
-### Database
-
-| Technology | Purpose |
-|---|---|
-| **MongoDB Atlas** | Cloud-hosted database storing student accounts, questions, practice results, diagnostic results, progress, learning sessions, and recommendations |
-
-### Artificial Intelligence
-
-| Technology | Purpose |
-|---|---|
-| **Groq / LLM APIs** | AI-powered tutoring, explanations, hints, AI-assisted question generation, and personalized learning assistance |
-
-The AI model is accessed through the backend rather than directly from the web client. This keeps API credentials and model configuration on the server side.
-
-### Deployment
-
-| Service | Purpose |
-|---|---|
-| **Render** | Hosts the backend API so both mobile and web can communicate without requiring the developer's machine to remain online |
-| **MongoDB Atlas** | Cloud database |
-
-The web frontend can be deployed separately to a suitable static/frontend hosting service.
+| **React 19** | Component-driven frontend user interface |
+| **Vite** | Lightning-fast build tool and local dev server |
+| **React Router v7** | Client-side routing with route guards |
+| **Tailwind CSS** | Responsive styling and custom theme token engine |
+| **KaTeX** | Fast LaTeX mathematical formula rendering |
+| **React Icons (Ionicons 5)** | Sleek, modern icon set |
+| **Axios** | HTTP client for communicating with Express backend |
 
 ---
 
-## Responsive Design
-
-The web application is designed to be responsive across:
-
-- Desktop
-- Laptop
-- Tablet
-- Mobile browsers
-
-The web application does not attempt to duplicate the mobile application's interface exactly. Instead, it adapts the same functionality to larger screens while remaining usable on smaller screens.
-
-**Desktop layout:**
+## 📁 Project Structure
 
 ```
-┌──────────┬────────────────────────────┐
-│ Sidebar  │ Main Content               │
-│          │                            │
-│Dashboard │ Dashboard / Practice / etc.│
-│Practice  │                            │
-│Diagnosis │                            │
-│Tutor AI  │                            │
-│Profile   │                            │
-└──────────┴────────────────────────────┘
+web/
+├── public/
+│   ├── MathMentorAI.apk      # Downloadable Android APK build asset
+│   ├── favicon.png
+│   └── logo.png
+├── src/
+│   ├── components/           # AppLayout, ScientificCalculator, Modals, Navbar
+│   ├── context/              # AuthContext, ThemeContext, ActiveSessionContext
+│   ├── pages/
+│   │   ├── Dashboard.jsx     # Main student dashboard
+│   │   ├── Diagnosis.jsx     # Diagnostic assessment & retakes
+│   │   ├── Landing.jsx       # Public landing page
+│   │   ├── Login.jsx         # Sign in with email & Google OAuth
+│   │   ├── Profile.jsx       # Student profile & stats
+│   │   ├── Register.jsx      # Account creation
+│   │   ├── TutorAI.jsx       # Standalone AI tutor chat
+│   │   ├── practice/         # Practice index, Lesson viewer, Problem sets
+│   │   └── profile/          # Settings, Privacy, Session security
+│   ├── services/             # API services (auth, practice, tutor, diagnosis)
+│   ├── App.jsx               # Router & global provider wrapper
+│   ├── index.css             # Tailwind & custom CSS utility styles
+│   └── main.jsx              # Application entry point
+├── package.json
+└── vite.config.js
 ```
-
-**Mobile browser layout:**
-
-Navigation collapses into a mobile menu or bottom navigation bar while content switches to a single-column layout.
 
 ---
 
-## Relationship to the Mobile Application
+## 🚀 Getting Started
 
-The web application is the browser-based counterpart of the existing MathMentor AI mobile application. Both platforms provide the same core learning modules: Dashboard, Practice, Diagnosis, Tutor AI, and Profile. The main difference is the user interface and interaction model.
+### 1. Install Dependencies
 
-```
-          MathMentor AI System
-                   │
-      ┌────────────┴────────────┐
-      │                         │
- Mobile Application       Web Application
-  (React Native)              (React)
-      │                         │
-      └────────────┬────────────┘
-                   │
-           Centralized Backend
-                   │
-            MongoDB Atlas
-                   │
-               AI APIs
+```bash
+cd web
+npm install
 ```
 
-This architecture allows MathMentor AI to provide a consistent learning experience across mobile and web platforms while maintaining a centralized backend and data source.
+### 2. Configure Environment Variables
+
+Create a `.env` file in `web/`:
+
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+*(For production, set `VITE_API_URL` to `https://mathmentor-ai-i8sl.onrender.com/api`)*
+
+### 3. Run Development Server
+
+```bash
+npm run dev
+```
+
+App will run locally at `http://localhost:5173`.
+
+### 4. Build for Production
+
+```bash
+npm run build
+```
+
+Production assets will be output to the `dist/` directory.
 
 ---
 
-## Development Goal
+## 📄 License
 
-The goal of the web application is to provide a fully responsive browser-based version of MathMentor AI that maintains the core functionality of the existing mobile application while taking advantage of the larger screen space and interaction capabilities available on desktop and laptop devices.
-
-The web application should prioritize:
-
-- Consistent functionality with the mobile application
-- Responsive design
-- Accessible navigation
-- Clear mathematics-focused UI
-- Reusable React components
-- Integration with the existing backend
-- Secure communication with backend services
-- Maintainable and scalable frontend architecture
+MIT License — see root [LICENSE](../LICENSE) file.

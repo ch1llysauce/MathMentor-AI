@@ -78,12 +78,18 @@ export default function Landing() {
             MathMentor AI is an adaptive learning platform for Algebra, Geometry, and Trigonometry.
             Get personalized assessments, practice problems, and an AI tutor — all in one place.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
             {isAuthenticated ? (
-              <Link to="/dashboard"
-                className="inline-flex items-center justify-center gap-2 bg-white text-[#4b41e1] font-bold px-8 py-3.5 rounded-2xl hover:bg-[#f2f4f6] transition-colors shadow-lg text-sm cursor-pointer">
-                Go to Dashboard <IoArrowForwardOutline size={16} />
-              </Link>
+              <>
+                <Link to="/dashboard"
+                  className="inline-flex items-center justify-center gap-2 bg-white text-[#4b41e1] font-bold px-8 py-3.5 rounded-2xl hover:bg-[#f2f4f6] transition-colors shadow-lg text-sm cursor-pointer">
+                  Go to Dashboard <IoArrowForwardOutline size={16} />
+                </Link>
+                <a href="/MathMentorAI.apk" download="MathMentor-AI.apk"
+                  className="inline-flex items-center justify-center gap-2 border border-white/30 text-white font-semibold px-6 py-3.5 rounded-2xl hover:bg-white/10 transition-colors text-sm cursor-pointer">
+                  <IoDownloadOutline size={18} /> Download Android APK
+                </a>
+              </>
             ) : (
               <>
                 <Link to="/register"
@@ -91,9 +97,13 @@ export default function Landing() {
                   Start Learning Free <IoArrowForwardOutline size={16} />
                 </Link>
                 <Link to="/login"
-                  className="inline-flex items-center justify-center border border-white/30 text-white font-semibold px-8 py-3.5 rounded-2xl hover:bg-white/10 transition-colors text-sm">
+                  className="inline-flex items-center justify-center border border-white/30 text-white font-semibold px-6 py-3.5 rounded-2xl hover:bg-white/10 transition-colors text-sm">
                   Sign in
                 </Link>
+                <a href="/MathMentorAI.apk" download="MathMentor-AI.apk"
+                  className="inline-flex items-center justify-center gap-2 bg-white/15 text-white font-semibold px-6 py-3.5 rounded-2xl hover:bg-white/25 transition-colors text-sm cursor-pointer backdrop-blur-xs">
+                  <IoDownloadOutline size={18} /> Android APK
+                </a>
               </>
             )}
           </div>
@@ -177,8 +187,8 @@ export default function Landing() {
                 Create Account <IoArrowForwardOutline size={16} />
               </Link>
             )}
-            <a href="https://mathmentor-ai-i8sl.onrender.com" target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 border border-[#e0e3e5] dark:border-[#374151] text-[#45474c] dark:text-gray-300 font-semibold px-8 py-3.5 rounded-2xl hover:bg-[#f2f4f6] dark:hover:bg-[#252f40] transition-colors text-sm">
+            <a href="/MathMentorAI.apk" download="MathMentor-AI.apk"
+              className="inline-flex items-center justify-center gap-2 border border-[#e0e3e5] dark:border-[#374151] text-[#45474c] dark:text-gray-300 font-semibold px-8 py-3.5 rounded-2xl hover:bg-[#f2f4f6] dark:hover:bg-[#252f40] transition-colors text-sm cursor-pointer">
               <IoDownloadOutline size={18} /> Download Android APK
             </a>
           </div>

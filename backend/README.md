@@ -1,51 +1,55 @@
-# MathMentor AI — Backend
+# MathMentor AI — Backend API
 
-REST API for the MathMentor AI adaptive mathematics learning platform.
+Centralized REST API for the **MathMentor AI** platform, powering both the **React Web Application** and the **React Native Mobile Application**. Built with **Node.js**, **Express.js 5**, **MongoDB**, and **Groq / Gemini AI APIs**.
 
-## Tech Stack
+---
 
-- **Runtime:** Node.js
+## 🛠️ Tech Stack
+
+- **Runtime:** Node.js (v18+)
 - **Framework:** Express.js 5
-- **Database:** MongoDB (Mongoose)
+- **Database:** MongoDB Atlas (Mongoose ODM)
 - **Authentication:** JWT + Google OAuth 2.0 (`google-auth-library`)
 - **2FA:** TOTP via `speakeasy`
 - **Password Reset:** OTP via email (`resend`)
-- **AI Services:** Groq (LLaMA 3.3 70B) → Gemini 1.5 Flash → Rule-based fallback
-- **Security:** bcryptjs, express-validator
-- **Deployment:** Render
+- **AI Services:** Groq (LLaMA 3.3 70B primary) → Gemini 1.5 Flash (fallback) → Rule-based fallback
+- **Security:** bcryptjs, express-validator, rate-limiting
+- **Deployment:** Render (`https://mathmentor-ai-i8sl.onrender.com`)
 
-## Project Structure
+---
+
+## 📁 Project Structure
 
 ```
 backend/
 ├── config/
-│   └── db.js                    # MongoDB connection
+│   └── db.js                    # MongoDB connection config
 ├── controllers/
-│   ├── authController.js        # Auth, Google OAuth, 2FA, password reset, sessions
-│   ├── aiController.js          # AI tutor logic
-│   ├── diagnosticController.js  # Diagnostic assessments
-│   ├── learningController.js    # Learning sessions + diagnostic submission
-│   ├── practiceController.js    # Practice problems + daily challenge
-│   ├── progressController.js    # Progress tracking + learning path
-│   ├── questionController.js    # Question bank
-│   └── tutorController.js       # AI tutor chat
+│   ├── authController.js        # Auth, Google OAuth, 2FA, password reset, active sessions
+│   ├── aiController.js          # AI tutor prompting & preference formatting
+│   ├── diagnosticController.js  # Diagnostic evaluation & timeline scoring
+│   ├── learningController.js    # Learning sessions & diagnostic submission
+│   ├── practiceController.js    # Practice problems & daily challenge completion
+│   ├── progressController.js    # Topic mastery progress & adaptive learning paths
+│   ├── questionController.js    # Question bank management
+│   └── tutorController.js       # AI chat history per lesson/user
 ├── middleware/
-│   ├── auth.js                  # JWT verification
-│   ├── validator.js             # Request validation
+│   ├── auth.js                  # JWT validation & user attachment
+│   ├── validator.js             # Input sanitizer & express-validator
 │   ├── errorHandler.js          # Global error handler
 │   └── index.js
 ├── models/
-│   ├── User.js                  # User (Google OAuth, 2FA, streaks, daily challenge)
+│   ├── User.js                  # User profile, Google OAuth, 2FA, streaks, daily challenges
 │   ├── Progress.js              # Topic mastery tracking
 │   ├── Question.js              # Diagnostic question bank
-│   ├── DiagnosticResult.js      # Diagnostic results per submission
+│   ├── DiagnosticResult.js      # Diagnostic result histories
 │   ├── Session.js               # Learning sessions
-│   ├── LoginSession.js          # Active session tracking (per-device)
-│   ├── LessonConversation.js    # AI tutor conversation history per lesson
+│   ├── LoginSession.js          # Multi-device session tracking (IP, location, user-agent)
+│   ├── LessonConversation.js    # Saved AI tutor conversation history per lesson
 │   ├── UserLessonProgress.js    # Per-lesson completion status
 │   ├── UserProblemAttempt.js    # Problem attempt history
 │   ├── PracticeProblem.js       # Practice problem bank
-│   ├── Lesson.js                # Lesson content (sections, examples, takeaways)
+│   ├── Lesson.js                # Full curriculum content (116 lessons, 28 modules)
 │   └── index.js
 ├── routes/
 │   ├── authRoutes.js            # /api/auth
@@ -55,35 +59,37 @@ backend/
 │   ├── learningRoutes.js        # /api/learning
 │   ├── practiceRoutes.js        # /api/practice
 │   ├── diagnosticRoutes.js      # /api/diagnostic
-│   ├── tutorRoutes.js           # /api/tutor
-│   └── index.js
+│   └── tutorRoutes.js           # /api/tutor
 ├── services/
 │   ├── aiRouter.js              # Groq → Gemini → Rule-based fallback chain
-│   ├── mathService.js           # Math validation helpers
+│   ├── mathService.js           # LaTeX & math string validation helpers
 │   ├── learningPath.js          # Adaptive learning path algorithm
-│   └── diagnosticGenerator.js  # Diagnostic question generation
-├── .env                         # Environment variables (gitignored)
-└── server.js                    # Express entry point
+│   └── diagnosticGenerator.js  # Diagnostic question set generator
+├── seed-full-curriculum.js     # Seeds 116 lessons & 28 modules into MongoDB
+├── server.js                    # Express entry point
+└── package.json
 ```
 
-## Quick Start
+---
 
-### 1. Install dependencies
+## 🚀 Quick Start
+
+### 1. Install Dependencies
 
 ```bash
 cd backend
 npm install
 ```
 
-### 2. Configure environment variables
+### 2. Environment Variables
 
-Create a `.env` file:
+Create a `.env` file in `backend/`:
 
 ```env
-MONGO_URI=your_mongodb_connection_string
+MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/mathmentor
 PORT=5000
 NODE_ENV=development
-JWT_SECRET=your_jwt_secret_32_chars_minimum
+JWT_SECRET=your_super_secret_jwt_key_32_chars_min
 JWT_EXPIRE=7d
 GOOGLE_WEB_CLIENT_ID=your_google_web_client_id
 GROQ_API_KEY=your_groq_api_key
@@ -91,198 +97,58 @@ GEMINI_API_KEY=your_gemini_api_key
 RESEND_API_KEY=your_resend_api_key
 ```
 
-### 3. Seed the database
+### 3. Seed Database Curriculum
 
 ```bash
-node seed-production.js          # Questions + basic curriculum
-node seed-full-curriculum.js     # Full lesson content (recommended)
-node seed-lesson-content.js      # Lesson body text (AI-generated via Groq)
+node seed-production.js          # Diagnostic questions & initial structure
+node seed-full-curriculum.js     # Full curriculum (116 lessons across 28 modules)
 ```
 
-### 4. Start the server
+### 4. Run Backend Server
 
 ```bash
-npm run dev    # development (nodemon)
-npm start      # production
+npm run dev        # Development mode (nodemon)
+npm start          # Production mode
 ```
 
-Server runs on `http://localhost:5000`.
+Server runs locally on `http://localhost:5000`.
 
 ---
 
-## API Reference
+## 🛰️ Key API Endpoints
 
-### Authentication — `/api/auth`
+### 🔐 Authentication (`/api/auth`)
+- `POST /register` — Register email & password.
+- `POST /login` — Login user, creates `LoginSession` record with IP & city location.
+- `POST /google` & `POST /google/register` — Google OAuth 2.0 authentication.
+- `GET /profile` & `PUT /profile` — Fetch/update profile and tutor preferences (language, font size).
+- `GET /sessions` — List active multi-device login sessions.
+- `DELETE /sessions/:id` & `DELETE /sessions/others/all` — Revoke active login sessions.
+- `POST /forgot-password` & `POST /verify-reset-otp` & `POST /reset-password` — OTP password reset.
+- `POST /2fa/setup` & `POST /2fa/verify` & `POST /2fa/validate` — TOTP 2FA setup & validation.
 
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| POST | `/register` | Public | Register with email/password |
-| POST | `/login` | Public | Login — returns JWT |
-| POST | `/google` | Public | Google Sign-In / link existing account |
-| POST | `/google/register` | Public | Complete Google registration |
-| GET | `/profile` | Private | Get current user profile |
-| PUT | `/profile` | Private | Update display name, grade, preferences |
-| POST | `/logout` | Private | Logout (revoke current session) |
-| GET | `/sessions` | Private | List active login sessions |
-| DELETE | `/sessions/:id` | Private | Revoke a specific session |
-| DELETE | `/sessions/others/all` | Private | Revoke all other sessions |
-| GET | `/data-export` | Private | Export all user data |
-| DELETE | `/account` | Private | Delete account permanently |
-| POST | `/forgot-password` | Public | Send 6-digit OTP to email |
-| POST | `/verify-reset-otp` | Public | Verify OTP → short-lived reset token |
-| POST | `/reset-password` | Public | Reset password with reset token |
-| POST | `/2fa/setup` | Private | Generate 2FA secret + QR code |
-| POST | `/2fa/verify` | Private | Enable 2FA (confirm TOTP code) |
-| POST | `/2fa/validate` | Public | Validate TOTP during login |
-| POST | `/2fa/disable` | Private | Disable 2FA |
+### 🤖 AI Tutor (`/api/ai` & `/api/tutor`)
+- `POST /api/ai/ask` — Ask Socratic AI tutor (integrates user language & settings preferences).
+- `POST /api/ai/explain` — Request detailed concept explanation.
+- `POST /api/ai/hint` — Request hint for a specific math problem.
+- `POST /api/tutor/chat` — Save and retrieve persistent lesson chat thread.
 
-### AI Tutor — `/api/ai`
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/ask` | Ask the AI tutor (Socratic method, lesson-aware) |
-| POST | `/explain` | Get a full explanation of a concept |
-| POST | `/hint` | Get a hint for a problem |
-| GET | `/status` | Check AI service availability and active model |
-
-### Questions — `/api/questions`
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/` | List questions with filters |
-| GET | `/random` | Random practice questions |
-| GET | `/diagnostic` | Diagnostic question set (9 questions) |
-| POST | `/submit` | Submit an answer |
-
-### Progress — `/api/progress`
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/` | All user progress records |
-| GET | `/stats/summary` | Progress summary with topic stats |
-| GET | `/weak-areas` | Weak topic areas (mastery < 50%) |
-| GET | `/learning-path` | Personalized learning path from diagnostic |
-| GET | `/next-recommendation` | Next recommended subtopic |
-| POST | `/update-streak` | Update daily activity streak |
-
-### Learning — `/api/learning`
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/session/start` | Start a learning session |
-| PUT | `/session/:id/end` | End a session |
-| POST | `/diagnostic/submit` | Submit diagnostic answers → builds learning path |
-| GET | `/diagnostic/latest` | Latest diagnostic result |
-
-### Practice — `/api/practice`
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/categories` | Available topics and categories |
-| GET | `/problems` | Lesson-specific problems (requires `lessonId`) |
-| GET | `/daily-status` | Today's daily challenge status + score for the current user |
-| POST | `/daily-complete` | Record daily challenge completion with score |
-
-> General practice problems are generated client-side (`clientProblemGenerator.ts`) — no backend call needed.
-
-### Diagnostic — `/api/diagnostic`
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/dashboard` | Full diagnostic dashboard with history |
-| GET | `/timeline` | Score history for timeline chart (`?period=week\|month\|6months`) |
-| GET | `/weak-areas` | Detailed weak areas with priority ratings |
-| GET | `/recommendations` | Personalized study recommendations |
-| GET | `/compare` | Compare last two diagnostic results |
-
-### Tutor — `/api/tutor`
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/chat` | Send a message to the AI tutor (with conversation context) |
-| DELETE | `/conversation/:id` | Clear a tutor conversation |
+### 🎯 Diagnostic & Practice (`/api/diagnostic` & `/api/practice`)
+- `GET /api/questions/diagnostic` — Fetch 15-question benchmark test.
+- `POST /api/learning/diagnostic/submit` — Submit test answers, recalculates topic mastery & generates learning path.
+- `GET /api/diagnostic/dashboard` & `GET /api/diagnostic/timeline` — Diagnostic history & score trends.
+- `GET /api/practice/daily-status` & `POST /api/practice/daily-complete` — Account-bound daily challenge tracking.
 
 ---
 
-## Key Data Models
+## 🔒 Security & Data Integrity
 
-### User
-Stores profile, auth credentials, streak, and daily challenge completions. The `dailyChallengeCompletions` array tracks per-day scores server-side so progress is account-bound, not device-local.
-
-```js
-dailyChallengeCompletions: [{
-  date: String,       // "YYYY-MM-DD"
-  topic: String,
-  score: Number,      // correct answers
-  total: Number,      // total problems
-  completedAt: Date
-}]
-```
-
-### DiagnosticResult
-Stores per-topic scores (algebra/geometry/trigonometry), weak/strong topic arrays, and timestamps. The mobile dashboard reads `correctAnswers / totalQuestions` from here for the accuracy stat.
-
-### Lesson
-Full lesson content with sections, examples, step-by-step solutions, and key takeaways. Content was AI-generated via Groq and stored in MongoDB.
-
-### LessonConversation
-Persists AI tutor chat history per lesson per user. Restored on re-entry so students can continue where they left off.
+1. **Session Isolation**: Each login generates a unique `jti` JWT identifier tied to a `LoginSession` model, allowing users to inspect active locations/IPs and revoke specific sessions.
+2. **Password & OTP Hashing**: Passwords and 6-digit reset OTPs are securely hashed with `bcryptjs`.
+3. **AI Fallback Resilience**: 3-stage fallback pipeline ensures 100% tutor uptime even if third-party LLM providers rate-limit or fail.
 
 ---
 
-## Authentication Flow
+## 📄 License
 
-```
-Email/Password
-  → bcrypt verify → JWT + LoginSession created
-
-Google Sign-In
-  → ID token verified server-side via google-auth-library
-  → Existing account: JWT issued
-  → New user: requiresRegistration flag → client completes /google/register
-
-Two-Factor Authentication
-  → Login returns requiresTwoFactor: true + userId
-  → Client posts TOTP code to /2fa/validate
-  → JWT issued on success
-
-Password Reset
-  → /forgot-password → 6-digit OTP sent via Resend email API
-  → /verify-reset-otp validates OTP → short-lived reset token (10 min)
-  → /reset-password uses reset token → new password set, OTP cleared
-```
-
-## AI System
-
-```
-User Message
-     ↓
-  AI Router
-     ↓
-1. Groq — LLaMA 3.3 70B (128k context)   ← Primary (free tier)
-     ↓ on failure
-2. Gemini 1.5 Flash                        ← Fallback
-     ↓ on failure
-3. Rule-based responses                    ← Always available
-```
-
-## Security
-
-- JWT with unique `jti` (JWT ID) per session — allows per-session revocation
-- bcryptjs password hashing (10 salt rounds)
-- Google ID tokens verified server-side (not client-side)
-- TOTP 2FA with `speakeasy` (30-second window)
-- OTPs hashed with bcrypt before DB storage
-- Per-email rate limiting on password reset (60-second cooldown)
-- Input validation on all write endpoints via `express-validator`
-- 401 responses never reveal whether an email exists
-
-## Deployment (Render)
-
-Live URL: `https://mathmentor-ai-i8sl.onrender.com`
-
-Set all environment variables in the Render dashboard. Ensure `NODE_ENV=production` and a strong `JWT_SECRET` are configured. The free tier spins down after inactivity — first request may take ~30 seconds to cold-start.
-
-## License
-
-MIT
+MIT License — see root [LICENSE](../LICENSE) file.

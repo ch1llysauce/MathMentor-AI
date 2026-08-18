@@ -1,135 +1,117 @@
-# MathMentor AI — Mobile App
+# MathMentor AI — Mobile Application
 
-A React Native (Expo) mobile app for adaptive mathematics learning, powered by an AI tutor.
+A cross-platform native mobile application for Android built with **React Native** and **Expo SDK 57**, delivering adaptive mathematics learning, diagnostic placement tests, and AI tutoring on mobile devices.
 
-## Tech Stack
+---
+
+## ✨ Key Mobile Features
+
+- **Adaptive Diagnostic Assessment**: 15-question placement test evaluating student mastery across Algebra, Geometry, and Trigonometry.
+- **Adaptive Practice Sets**: Client-side & server-side problem sets with step-by-step hint generation and KaTeX math formatting.
+- **AI Math Tutor**: Socratic AI chat assistant (Groq LLaMA 3.3 70B primary, Gemini Flash fallback) tailored to student learning preferences.
+- **Theme & Personalization Engine**: Dark/Light mode support with 9 dynamic accent color themes and live banner gradient preview builder.
+- **Session Security**: Location-aware active session management (city/location, IP address, device model) with single-tap remote session revocation.
+- **Authentication**: Email/password authentication, Google OAuth 2.0 Sign-In (`@react-native-google-signin/google-signin`), TOTP 2FA, and OTP password resets.
+
+---
+
+## 🛠️ Tech Stack
 
 - **Framework:** Expo SDK 57 / React Native 0.86
-- **Navigation:** Expo Router (file-based routing)
+- **Navigation:** Expo Router v3 (file-based routing)
 - **Language:** TypeScript
 - **Auth:** JWT + Google Sign-In (`@react-native-google-signin/google-signin` v16)
-- **HTTP:** Axios
-- **Storage:** AsyncStorage
-- **Styling:** StyleSheet (dark/light theme support)
-- **Build:** EAS Build
+- **HTTP Client:** Axios with auto-retry interceptors
+- **Storage:** `@react-native-async-storage/async-storage`
+- **Styling:** Dynamic StyleSheet theme provider (Dark/Light mode + 9 accent colors)
+- **Build System:** EAS Build (`eas build --platform android`)
 
-## Project Structure
+---
+
+## 📁 Project Structure
 
 ```
 mobile/
 ├── src/
 │   ├── app/                  # File-based routes (Expo Router)
-│   │   ├── (tabs)/           # Bottom tab screens (dashboard, practice, tutor, diagnostic, profile)
-│   │   ├── auth/             # Login, register, forgot-password
-│   │   ├── practice/         # Lesson, lesson-chat, problems, topic
-│   │   ├── profile/          # Settings, edit-profile, about, faq, help, privacy
-│   │   ├── diagnostic/       # Retake, topic-detail
-│   │   ├── legal/            # Terms, privacy-policy
+│   │   ├── (tabs)/           # Main tab screens (Dashboard, Practice, Tutor, Diagnostic, Profile)
+│   │   ├── auth/             # Login, Register, Forgot Password
+│   │   ├── practice/         # Lesson viewer, Lesson AI chat, Problems runner, Topic list
+│   │   ├── profile/          # Settings, Edit Profile, Active Sessions, Privacy
+│   │   ├── diagnostic/       # Retake assessment, Topic details
 │   │   └── _layout.tsx       # Root layout (AuthProvider + ThemeProvider)
-│   ├── components/           # Reusable UI components
-│   ├── constants/            # API endpoints, colors, theme, curriculum
+│   ├── components/           # Reusable UI components (Modals, Cards, Math text)
+│   ├── constants/            # API config, color presets, curriculum data
 │   ├── context/              # AuthContext, ThemeContext
-│   ├── hooks/                # useAuth, useTheme, useColorScheme
-│   ├── services/             # API calls (auth, tutor, practice, lessons, etc.)
-│   ├── types/                # TypeScript types
-│   └── utils/                # Storage helpers
-├── android/                  # Native Android project
-├── assets/                   # Images and icons
-├── app.json                  # Expo config
+│   ├── hooks/                # Custom React hooks (useAuth, useTheme)
+│   ├── services/             # API services (auth, practice, tutor, diagnostic)
+│   ├── types/                # TypeScript interfaces & types
+│   └── utils/                # Storage & formatting helpers
+├── assets/                   # App icons, splash screens, logos
+├── app.json                  # Expo app configuration
 ├── eas.json                  # EAS Build profiles
-└── google-services.json      # Firebase/Google config (gitignored)
+└── google-services.json      # Firebase / Google OAuth configuration
 ```
 
-## Getting Started
+---
 
-### 1. Install dependencies
+## 🚀 Getting Started
+
+### 1. Install Dependencies
 
 ```bash
 cd mobile
 npm install
 ```
 
-### 2. Configure environment variables
+### 2. Environment Configuration
 
-Create a `.env` file in the `mobile/` directory:
+Create a `.env` file in `mobile/`:
 
 ```env
-EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your_web_client_id
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your_google_web_client_id
 ```
 
-> For EAS builds, set this in your [Expo project dashboard](https://expo.dev) under **Environment Variables** as a **Sensitive** variable for all environments (Development, Preview, Production).
+### 3. API URL Configuration
 
-### 3. Run locally (Expo Go / dev build)
+Edit `mobile/src/constants/api.ts`:
+
+```ts
+const USE_LOCAL = false;  // false = Production (Render), true = Local Backend
+const PRODUCTION_URL = 'https://mathmentor-ai-i8sl.onrender.com/api';
+const LOCAL_URL = 'http://<your_local_ip>:5000/api';
+```
+
+### 4. Run Development Client
 
 ```bash
+# Start Metro bundler
 npx expo start
-```
 
-> Note: Google Sign-In requires a native build and will not work in Expo Go.
-
-### 4. Run native Android build locally
-
-```bash
+# Run native Android build on connected device / emulator
 npx expo run:android
 ```
 
-### 5. Build APK via EAS
+> **Note:** Google Sign-In requires native module support and runs on dev builds (`npx expo run:android`) or compiled APK builds.
+
+---
+
+## 📦 Building Android APK via EAS
+
+### Preview Build (Standalone `.apk` for testing)
 
 ```bash
-# Preview (internal distribution APK)
 eas build --platform android --profile preview
+```
 
-# Production
+### Production Build (`.aab` bundle for Google Play)
+
+```bash
 eas build --platform android --profile production
 ```
 
-## Features
+---
 
-- Email/password authentication with JWT
-- Google Sign-In (OAuth 2.0)
-- Two-factor authentication (TOTP)
-- Forgot password with OTP via email
-- Adaptive diagnostic assessment
-- AI-powered math tutor (chat interface)
-- Practice problems by topic
-- Progress tracking and mastery rings
-- Dark / light theme
-- Session management (view and revoke active sessions)
+## 📄 License
 
-## Authentication Flow
-
-```
-Login Screen
-├── Email + Password → JWT token stored in AsyncStorage
-├── Google Sign-In → Google ID token → backend /api/auth/google → JWT
-│   └── New Google user → redirected to Register screen
-└── 2FA → TOTP code modal → /api/auth/2fa/validate → JWT
-```
-
-## API Configuration
-
-The app points to the production backend by default. To switch to a local backend, edit `src/constants/api.ts`:
-
-```ts
-const USE_LOCAL = true; // set to true for local development
-const LOCAL_URL = 'http://<your-local-ip>:5000/api';
-```
-
-## Google Sign-In Setup
-
-1. Create an Android OAuth 2.0 client in [Google Cloud Console](https://console.cloud.google.com)
-2. Register your app's SHA-1 certificate fingerprint
-3. Download `google-services.json` and place it in `mobile/`
-4. Set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in your `.env` and EAS dashboard
-
-## Build Profiles
-
-| Profile | Distribution | Use case |
-|---|---|---|
-| `development` | Internal | Dev client builds |
-| `preview` | Internal | APK for testing |
-| `production` | Store | Play Store release |
-
-## License
-
-MIT License — see LICENSE file for details.
+MIT License — see root [LICENSE](../LICENSE) file.

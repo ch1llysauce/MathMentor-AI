@@ -156,7 +156,7 @@ export default function Settings() {
                 Take MathMentor AI on the go! Practice anytime, anywhere with offline support and fluid touch interactions.
               </p>
               <a
-                href="/mathmentor-ai.apk"
+                href="/MathMentorAI.apk"
                 download="MathMentor-AI.apk"
                 className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-white text-xs font-bold transition-all shadow-md active:scale-98 cursor-pointer"
                 style={{ background: themeGradient }}
