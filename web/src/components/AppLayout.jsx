@@ -113,7 +113,7 @@ export default function AppLayout() {
           Take MathMentor AI on the go! Practice anytime, anywhere.
         </p>
         <a
-          href="/MathMentorAI.apk"
+          href={import.meta.env.VITE_APK_DOWNLOAD_URL || "/MathMentorAI.apk"}
           download="MathMentor-AI.apk"
           className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-white text-xs font-bold hover:bg-white/90 transition-all shadow-xs active:scale-98 cursor-pointer"
           style={{ color: primaryColor }}
