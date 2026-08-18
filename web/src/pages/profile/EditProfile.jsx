@@ -17,6 +17,7 @@ import {
   IoAlertCircleOutline,
 } from 'react-icons/io5';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { authApi } from '../../services/api';
 
 const BANNER_THEMES = [
@@ -34,6 +35,7 @@ const BANNER_THEMES = [
 export default function EditProfile() {
   const navigate = useNavigate();
   const { user, refreshProfile, saveAuth, logout } = useAuth();
+  const { setAccentTheme } = useTheme();
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [profileImage, setProfileImage] = useState(user?.profileImage || '');
   const [bannerTheme, setBannerTheme] = useState(user?.bannerTheme || 'indigo');
@@ -180,6 +182,9 @@ export default function EditProfile() {
         const updatedUser = payload.user || payload;
         if (updatedUser) {
           saveAuth(updatedUser, localStorage.getItem('token'));
+        }
+        if (bannerChanged) {
+          setAccentTheme(bannerTheme);
         }
         await refreshProfile();
       }

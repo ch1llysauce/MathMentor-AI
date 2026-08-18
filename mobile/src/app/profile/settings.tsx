@@ -6,10 +6,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 import { storage } from '@/utils/storage';
 import { offlineCacheService } from '@/services/offlineCache';
+import { BANNER_THEMES } from '@/constants/bannerThemes';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { darkMode, toggleDarkMode } = useTheme();
+  const { darkMode, toggleDarkMode, accentTheme, setAccentTheme } = useTheme();
 
   // Offline Mode State persisted to storage
   const [offlineMode, setOfflineMode] = useState(false);
@@ -61,6 +62,7 @@ export default function SettingsScreen() {
     if (darkMode) {
       toggleDarkMode();
     }
+    await setAccentTheme('indigo');
     setOfflineMode(false);
     try {
       await offlineCacheService.setOfflineCacheEnabled(false);
@@ -145,6 +147,46 @@ export default function SettingsScreen() {
                 thumbColor="#ffffff"
                 ios_backgroundColor={darkMode ? '#3a3a3a' : '#e0e3e5'}
               />
+            </View>
+
+            {/* Accent Theme Color Scheme */}
+            <View style={[styles.cardRow, { flexDirection: 'column', alignItems: 'flex-start', borderTopWidth: 1, borderTopColor: S.itemBorder, paddingTop: 14, paddingBottom: 14 }]}>
+              <View style={styles.cardRowLeft}>
+                <View style={[styles.iconBox, { backgroundColor: darkMode ? 'rgba(96,165,250,0.15)' : 'rgba(33,150,243,0.1)' }]}>
+                  <Ionicons name="color-palette-outline" size={20} color={darkMode ? '#60a5fa' : '#2196f3'} />
+                </View>
+                <View>
+                  <Text style={[styles.rowTitle, { color: S.text }]}>Accent Color Scheme</Text>
+                  <Text style={[styles.rowSubtitle, { color: S.textLight }]}>Set app accent colors based on preset themes</Text>
+                </View>
+              </View>
+
+              {/* 9 Swatches Grid */}
+              <View style={styles.accentGrid}>
+                {BANNER_THEMES.map((theme) => {
+                  const isSelected = accentTheme === theme.id;
+                  return (
+                    <TouchableOpacity
+                      key={theme.id}
+                      style={[
+                        styles.accentSwatchItem,
+                        {
+                          backgroundColor: theme.primaryColor,
+                          borderColor: isSelected ? S.text : 'transparent',
+                          borderWidth: isSelected ? 2.5 : 0,
+                        },
+                      ]}
+                      onPress={async () => {
+                        await setAccentTheme(theme.id);
+                        showToast(`Accent theme set to ${theme.name}`);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      {isSelected && <Ionicons name="checkmark" size={14} color="#ffffff" />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
           </View>
         </View>
@@ -345,6 +387,26 @@ const styles = StyleSheet.create({
   rowValueText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+
+  accentGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 12,
+    width: '100%',
+  },
+  accentSwatchItem: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
   },
 
   /* Modal Styles */

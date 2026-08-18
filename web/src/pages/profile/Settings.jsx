@@ -4,17 +4,28 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   IoArrowBack,
   IoMoonOutline,
-  IoTextOutline,
+  IoColorPaletteOutline,
   IoCloudOfflineOutline,
   IoRefreshOutline,
   IoChevronForwardOutline,
   IoCheckmarkCircleOutline,
-  IoCloseOutline,
 } from 'react-icons/io5';
+
+const ACCENT_THEMES = [
+  { id: 'indigo', name: 'Indigo', color: '#4b41e1' },
+  { id: 'emerald', name: 'Emerald', color: '#00a472' },
+  { id: 'sunset', name: 'Sunset', color: '#ea580c' },
+  { id: 'ocean', name: 'Ocean', color: '#2563eb' },
+  { id: 'midnight', name: 'Obsidian', color: '#0f172a' },
+  { id: 'amethyst', name: 'Amethyst', color: '#7c3aed' },
+  { id: 'rose', name: 'Rose', color: '#e11d48' },
+  { id: 'aurora', name: 'Aurora', color: '#0d9488' },
+  { id: 'unicorn', name: 'Unicorn', color: '#ec4899' },
+];
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { darkMode, toggleDarkMode, fontSize, setFontSize } = useTheme();
+  const { darkMode, toggleDarkMode, accentTheme, setAccentTheme } = useTheme();
 
   // Settings state
   const [offlineMode, setOfflineMode] = useState(() => {
@@ -32,7 +43,6 @@ export default function Settings() {
   };
 
   // Modals
-  const [showFontModal, setShowFontModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
 
   const [toast, setToast] = useState('');
@@ -43,10 +53,10 @@ export default function Settings() {
 
   const handleResetSettings = () => {
     if (darkMode) toggleDarkMode();
+    setAccentTheme('indigo');
     setOfflineMode(false);
     localStorage.removeItem('mathmentor_offline_mode');
 
-    setFontSize('Medium');
     setShowResetModal(false);
     showToast('All settings reset to default.');
   };
@@ -77,7 +87,7 @@ export default function Settings() {
 
       {/* Responsive Grid for PC */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-        {/* Left Column: Appearance, Interface */}
+        {/* Left Column: Appearance */}
         <div className="space-y-6">
           {/* Appearance */}
           <div>
@@ -103,28 +113,42 @@ export default function Settings() {
                   <div className="w-11 h-6 bg-[#e0e3e5] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4b41e1]"></div>
                 </label>
               </div>
-            </div>
-          </div>
 
-          {/* Interface */}
-          <div>
-            <h2 className="text-sm font-semibold text-[#45474c] uppercase tracking-wider mb-2 ml-1">Interface</h2>
-            <div className="bg-white rounded-2xl shadow-sm border border-[#e0e3e5] overflow-hidden divide-y divide-[#f2f4f6]">
-              <button
-                onClick={() => setShowFontModal(true)}
-                className="w-full flex items-center justify-between p-4 hover:bg-[#f7f9fb] transition-colors text-left cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[rgba(75,65,225,0.1)] flex items-center justify-center text-[#4b41e1]">
-                    <IoTextOutline size={20} />
+              {/* Accent Color Scheme */}
+              <div className="p-4 border-t border-[#f2f4f6]">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-[rgba(33,150,243,0.1)] flex items-center justify-center text-[#2196f3]">
+                    <IoColorPaletteOutline size={20} />
                   </div>
-                  <span className="text-sm font-semibold text-[#091426]">Font Size</span>
+                  <div>
+                    <p className="text-sm font-semibold text-[#091426]">Accent Color Scheme</p>
+                    <p className="text-xs text-[#75777d]">Set app accent colors based on preset themes</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-[#75777d] text-sm">
-                  <span>{fontSize}</span>
-                  <IoChevronForwardOutline size={18} />
+
+                <div className="flex flex-wrap gap-2.5 mt-2">
+                  {ACCENT_THEMES.map((theme) => {
+                    const isSelected = accentTheme === theme.id;
+                    return (
+                      <button
+                        key={theme.id}
+                        type="button"
+                        onClick={() => {
+                          setAccentTheme(theme.id);
+                          showToast(`Accent theme set to ${theme.name}`);
+                        }}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-xs ${
+                          isSelected ? 'ring-2 ring-offset-2 ring-[#091426]' : 'hover:scale-105'
+                        }`}
+                        style={{ backgroundColor: theme.color }}
+                        title={theme.name}
+                      >
+                        {isSelected && <IoCheckmarkCircleOutline className="text-white text-base drop-shadow-xs" />}
+                      </button>
+                    );
+                  })}
                 </div>
-              </button>
+              </div>
             </div>
           </div>
         </div>
@@ -178,36 +202,6 @@ export default function Settings() {
           </div>
         </div>
       </div>
-
-      {/* Font Size Modal */}
-      {showFontModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-[#091426]">Font Size</h3>
-              <button onClick={() => setShowFontModal(false)} className="text-[#75777d] hover:text-[#091426]">
-                <IoCloseOutline size={22} />
-              </button>
-            </div>
-            <div className="space-y-2">
-              {['Small', 'Medium', 'Large', 'Extra Large'].map((size) => (
-                <button
-                  key={size}
-                  onClick={() => {
-                    setFontSize(size);
-                    setShowFontModal(false);
-                    showToast(`Font size changed to ${size}`);
-                  }}
-                  className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-colors ${fontSize === size ? 'bg-[#4b41e1] text-white' : 'hover:bg-[#f7f9fb] text-[#091426]'
-                    }`}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Reset Confirmation Modal */}
       {showResetModal && (

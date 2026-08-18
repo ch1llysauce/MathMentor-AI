@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema({
 
     bannerTheme: {
         type: String,
-        enum: ["indigo", "emerald", "sunset", "ocean", "midnight", "amethyst"],
+        enum: ["indigo", "emerald", "sunset", "ocean", "midnight", "amethyst", "rose", "aurora", "unicorn"],
         default: "indigo"
     },
 

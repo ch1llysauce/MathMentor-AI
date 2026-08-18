@@ -26,7 +26,7 @@ import { BANNER_THEMES, getBannerGradientColors } from '@/constants/bannerThemes
 export default function EditProfileScreen() {
   const router = useRouter();
   const { user, updateUser, logout } = useAuth();
-  const { darkMode } = useTheme();
+  const { darkMode, setAccentTheme } = useTheme();
 
   const EP = {
     bg: darkMode ? '#0a0a0a' : '#f7f9fb',
@@ -130,6 +130,9 @@ export default function EditProfileScreen() {
           profileImage,
           bannerTheme,
         });
+        if (bannerChanged) {
+          await setAccentTheme(bannerTheme);
+        }
       }
 
       if (newPassword && currentPassword) {

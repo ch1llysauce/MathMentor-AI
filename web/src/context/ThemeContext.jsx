@@ -1,28 +1,34 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
 
-const FONT_SIZES = {
-  'Small': '14px',
-  'Medium': '16px',
-  'Large': '18px',
-  'Extra Large': '20px',
+const ACCENT_PRIMARY_MAP = {
+  indigo: '#4b41e1',
+  emerald: '#00a472',
+  sunset: '#ea580c',
+  ocean: '#2563eb',
+  midnight: '#0f172a',
+  amethyst: '#7c3aed',
+  rose: '#e11d48',
+  aurora: '#0d9488',
+  unicorn: '#ec4899',
 };
 
 export const ThemeContext = createContext({
   darkMode: false,
   toggleDarkMode: () => {},
-  fontSize: 'Medium',
-  setFontSize: () => {},
+  accentTheme: 'indigo',
+  setAccentTheme: () => {},
+  primaryColor: '#4b41e1',
 });
 
 export const ThemeProvider = ({ children }) => {
   const [darkMode, setDarkMode] = useState(() => {
     const stored = localStorage.getItem("darkMode");
     if (stored !== null) return stored === "true";
-    return false; // Default to light mode explicitly
+    return false;
   });
 
-  const [fontSize, setFontSizeState] = useState(() => {
-    return localStorage.getItem("fontSize") || "Medium";
+  const [accentTheme, setAccentThemeState] = useState(() => {
+    return localStorage.getItem("accentTheme") || "indigo";
   });
 
   useEffect(() => {
@@ -36,16 +42,16 @@ export const ThemeProvider = ({ children }) => {
   }, [darkMode]);
 
   useEffect(() => {
-    const sizePx = FONT_SIZES[fontSize] || '16px';
-    document.documentElement.style.fontSize = sizePx;
-    localStorage.setItem("fontSize", fontSize);
-  }, [fontSize]);
+    localStorage.setItem("accentTheme", accentTheme);
+  }, [accentTheme]);
 
   const toggleDarkMode = () => setDarkMode((prev) => !prev);
-  const setFontSize = (size) => setFontSizeState(size);
+  const setAccentTheme = (themeId) => setAccentThemeState(themeId);
+
+  const primaryColor = ACCENT_PRIMARY_MAP[accentTheme] || '#4b41e1';
 
   return (
-    <ThemeContext.Provider value={{ darkMode, toggleDarkMode, fontSize, setFontSize }}>
+    <ThemeContext.Provider value={{ darkMode, toggleDarkMode, accentTheme, setAccentTheme, primaryColor }}>
       {children}
     </ThemeContext.Provider>
   );
