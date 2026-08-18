@@ -14,6 +14,7 @@ export function AuthProvider({ children }) {
   });
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [loading, setLoading] = useState(false);
+  const [sessionRevoked, setSessionRevoked] = useState(false);
 
   const isAuthenticated = Boolean(token && user);
 
@@ -31,11 +32,25 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token');
   };
 
+  // Listen for session-revoked events from the API interceptor
+  useEffect(() => {
+    const handleSessionRevoked = () => {
+      setSessionRevoked(true);
+      setUser(null);
+      setToken(null);
+    };
+    window.addEventListener('session-revoked', handleSessionRevoked);
+    return () => window.removeEventListener('session-revoked', handleSessionRevoked);
+  }, []);
+
+  const dismissSessionRevoked = useCallback(() => {
+    setSessionRevoked(false);
+  }, []);
+
   const login = async (credentials) => {
     setLoading(true);
     try {
       const { data } = await authApi.login(credentials);
-      // Backend wraps response in data.data
       const payload = data.data ?? data;
 
       if (data.requiresTwoFactor || payload.requiresTwoFactor) {
@@ -80,7 +95,7 @@ export function AuthProvider({ children }) {
       setUser(updated);
       localStorage.setItem('user', JSON.stringify(updated));
     } catch {
-      // ignore
+      // ignore — 401 is handled globally by the interceptor
     }
   }, [token]);
 
@@ -88,14 +103,12 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    // Check session on mount and when tab gains focus
     refreshProfile();
 
     const handleFocus = () => {
       refreshProfile();
     };
 
-    // 15-second heartbeat poll to enforce real-time session revocation
     const intervalId = setInterval(() => {
       refreshProfile();
     }, 15000);
@@ -108,7 +121,7 @@ export function AuthProvider({ children }) {
   }, [isAuthenticated, refreshProfile]);
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated, loading, login, register, logout, refreshProfile, saveAuth }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated, loading, login, register, logout, refreshProfile, saveAuth, sessionRevoked, dismissSessionRevoked }}>
       {children}
     </AuthContext.Provider>
   );

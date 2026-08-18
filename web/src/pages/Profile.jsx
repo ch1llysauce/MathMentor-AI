@@ -16,6 +16,7 @@ import {
   IoSparklesOutline,
   IoSchoolOutline,
   IoGlobeOutline,
+  IoKeyOutline,
 } from 'react-icons/io5';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../services/api';
@@ -78,6 +79,7 @@ export default function Profile() {
   const [pwLoading, setPwLoading] = useState(false);
   const [pwSuccess, setPwSuccess] = useState('');
   const [pwError, setPwError] = useState('');
+  const [showPasswordSuccessModal, setShowPasswordSuccessModal] = useState(false);
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
@@ -117,11 +119,18 @@ export default function Profile() {
       setPwSuccess('Password changed successfully.');
       setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setPwOpen(false);
+      setShowPasswordSuccessModal(true);
     } catch (err) {
       setPwError(err.response?.data?.message || 'Failed to change password.');
     } finally {
       setPwLoading(false);
     }
+  };
+
+  const handlePasswordSuccessLogout = async () => {
+    setShowPasswordSuccessModal(false);
+    await logout();
+    navigate('/login');
   };
 
   const inputClass =
@@ -234,7 +243,7 @@ export default function Profile() {
               <MenuCardItem
                 icon={IoSettingsOutline}
                 title="App Settings"
-                description="Configure dark mode, offline cache mode, and app preferences"
+                description="Configure dark mode and app preferences"
                 iconBg="bg-[rgba(33,150,243,0.1)]"
                 iconColor="text-[#2196f3]"
                 onClick={() => navigate('/profile/settings')}
@@ -299,6 +308,27 @@ export default function Profile() {
           navigate('/');
         }}
       />
+
+      {/* Password Changed Success Modal */}
+      {showPasswordSuccessModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#1a2333] rounded-3xl p-6 max-w-sm w-full shadow-xl text-center">
+            <div className="w-12 h-12 rounded-full bg-[rgba(75,65,225,0.1)] text-[#4b41e1] flex items-center justify-center mx-auto mb-3">
+              <IoKeyOutline size={28} />
+            </div>
+            <h3 className="text-lg font-bold text-[#091426] dark:text-[#f0f4f9] mb-2">Password Changed Successfully</h3>
+            <p className="text-xs text-[#75777d] dark:text-[#94a3b8] mb-6 leading-relaxed">
+              Your password has been updated. For security reasons, you will now be logged out. Please sign in with your new password.
+            </p>
+            <button
+              onClick={handlePasswordSuccessLogout}
+              className="w-full bg-[#4b41e1] text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-[#3323cc] transition-colors cursor-pointer"
+            >
+              Log In Now
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

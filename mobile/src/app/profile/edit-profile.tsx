@@ -65,6 +65,7 @@ export default function EditProfileScreen() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showDiscardModal, setShowDiscardModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showPasswordSuccessModal, setShowPasswordSuccessModal] = useState(false);
 
   // Detect unsaved changes
   const hasChanges = useMemo(() => {
@@ -135,11 +136,18 @@ export default function EditProfileScreen() {
         }
       }
 
+      let passwordChanged = false;
       if (newPassword && currentPassword) {
         await api.put('/auth/change-password', {
           currentPassword,
           newPassword,
         });
+        passwordChanged = true;
+      }
+
+      if (passwordChanged) {
+        setShowPasswordSuccessModal(true);
+        return;
       }
 
       router.back();
@@ -149,6 +157,12 @@ export default function EditProfileScreen() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handlePasswordSuccessLogout = async () => {
+    setShowPasswordSuccessModal(false);
+    await logout();
+    router.replace('/auth/login');
   };
 
   const executeDeleteAccount = async () => {
@@ -468,6 +482,29 @@ export default function EditProfileScreen() {
                 <Text style={[styles.modalCancelBtnText, { color: EP.text }]}>Keep Editing</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Password Changed Success Modal */}
+      <Modal visible={showPasswordSuccessModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: EP.modalBg, borderColor: EP.border }]}>
+            <View style={[styles.modalIconBox, { backgroundColor: 'rgba(75, 65, 225, 0.12)' }]}>
+              <Ionicons name="key-outline" size={28} color="#4b41e1" />
+            </View>
+            <Text style={[styles.modalTitle, { color: EP.text }]}>Password Changed</Text>
+            <Text style={[styles.modalSubtitle, { color: EP.textLight }]}>
+              Your password has been changed successfully. For security reasons, you will now be logged out. Please log in with your new password.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.modalBtn, { backgroundColor: '#4b41e1' }]}
+              onPress={handlePasswordSuccessLogout}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modalConfirmBtnText}>Log In Now</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>

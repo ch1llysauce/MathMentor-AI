@@ -16,9 +16,24 @@ import {
   IoCopyOutline,
   IoQrCodeOutline,
   IoLocationOutline,
+  IoTimeOutline,
 } from 'react-icons/io5';
 import { useAuth } from '../../context/AuthContext';
 import { authApi } from '../../services/api';
+
+const formatSessionDate = (dateStr) => {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+};
 
 export default function Privacy() {
   const navigate = useNavigate();
@@ -150,14 +165,19 @@ export default function Privacy() {
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword,
       });
-      setModalType(null);
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      showToast('Password changed successfully!');
+      setModalType('password-success');
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to change password.');
     } finally {
       setPasswordLoading(false);
     }
+  };
+
+  const handlePasswordSuccessLogout = async () => {
+    setModalType(null);
+    await logout();
+    navigate('/login');
   };
 
   // Download Data
@@ -240,10 +260,10 @@ export default function Privacy() {
     try {
       await authApi.revokeOtherSessions();
       setSessions((prev) => prev.filter((s) => s.isCurrent));
-      setModalType(null);
-      showToast('Signed out from all other devices.');
+      setModalType('revoke-others-success');
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to revoke other sessions.');
+      setModalType(null);
     } finally {
       setRevokeOthersLoading(false);
     }
@@ -645,6 +665,27 @@ export default function Privacy() {
         </div>
       )}
 
+      {/* Password Changed Success Modal */}
+      {modalType === 'password-success' && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-xl text-center">
+            <div className="w-12 h-12 rounded-full bg-[rgba(75,65,225,0.1)] text-[#4b41e1] flex items-center justify-center mx-auto mb-3">
+              <IoKeypadOutline size={24} />
+            </div>
+            <h3 className="text-lg font-bold text-[#091426] mb-2">Password Changed Successfully</h3>
+            <p className="text-xs text-[#75777d] mb-6 leading-relaxed">
+              Your password has been updated. For security reasons, you will now be logged out. Please sign in with your new password.
+            </p>
+            <button
+              onClick={handlePasswordSuccessLogout}
+              className="w-full bg-[#4b41e1] text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-[#3323cc] transition-colors cursor-pointer"
+            >
+              Log In Now
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Active Sessions Modal */}
       {modalType === 'sessions' && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
@@ -668,7 +709,11 @@ export default function Privacy() {
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <IoDesktopOutline className={s.isCurrent ? 'text-[#4b41e1]' : 'text-[#75777d]'} size={22} />
+                      {/mobile|android|iphone|ipad|ios|okhttp/i.test(s.deviceInfo) ? (
+                        <IoPhonePortraitOutline className={s.isCurrent ? 'text-[#4b41e1]' : 'text-[#75777d]'} size={22} />
+                      ) : (
+                        <IoDesktopOutline className={s.isCurrent ? 'text-[#4b41e1]' : 'text-[#75777d]'} size={22} />
+                      )}
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold text-[#091426]">{s.deviceInfo}</p>
@@ -680,7 +725,11 @@ export default function Privacy() {
                         </div>
                         <p className="text-xs text-[#75777d] flex items-center gap-1 mt-0.5">
                           <IoLocationOutline size={13} className="text-[#75777d] shrink-0" />
-                          <span>{s.city || s.location || 'Manila, Philippines'}</span>
+                          <span>{s.city || s.location || 'Unknown Location'}</span>
+                        </p>
+                        <p className="text-xs text-[#75777d] flex items-center gap-1 mt-0.5">
+                          <IoTimeOutline size={13} className="text-[#75777d] shrink-0" />
+                          <span>Last active {formatSessionDate(s.lastActiveAt)}</span>
                         </p>
                       </div>
                     </div>
@@ -804,17 +853,38 @@ export default function Privacy() {
               <button
                 onClick={confirmRevokeOtherSessions}
                 disabled={revokeOthersLoading}
-                className="flex-1 bg-[#ff9800] text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-[#e68a00] disabled:opacity-60 transition-colors"
+                className="flex-1 bg-[#ff9800] text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-[#e68a00] disabled:opacity-60 transition-colors cursor-pointer"
               >
                 {revokeOthersLoading ? 'Signing Out…' : 'Sign Out Devices'}
               </button>
               <button
                 onClick={() => setModalType(null)}
-                className="flex-1 bg-[#f2f4f6] text-[#45474c] py-2.5 rounded-xl font-semibold text-sm hover:bg-[#e0e3e5] transition-colors"
+                className="flex-1 bg-[#f2f4f6] text-[#45474c] py-2.5 rounded-xl font-semibold text-sm hover:bg-[#e0e3e5] transition-colors cursor-pointer"
               >
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Revoke All Other Sessions Success Modal */}
+      {modalType === 'revoke-others-success' && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-xl text-center">
+            <div className="w-12 h-12 rounded-full bg-[rgba(0,164,114,0.1)] text-[#00a472] flex items-center justify-center mx-auto mb-3">
+              <IoCheckmarkCircleOutline size={28} />
+            </div>
+            <h3 className="text-lg font-bold text-[#091426] mb-2">Signed Out All Other Devices</h3>
+            <p className="text-xs text-[#75777d] mb-6 leading-relaxed">
+              All other active sessions have been successfully logged out. You remain signed in on this current device.
+            </p>
+            <button
+              onClick={() => setModalType(null)}
+              className="w-full bg-[#4b41e1] text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-[#3323cc] transition-colors cursor-pointer"
+            >
+              Got It
+            </button>
           </div>
         </div>
       )}

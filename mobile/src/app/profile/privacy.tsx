@@ -12,7 +12,7 @@ import { authService } from '@/services/authService';
 import api from '@/services/api';
 import { AUTH_ENDPOINTS } from '@/constants/api';
 
-type ModalType = null | 'setup-key' | 'setup-verify' | 'disable' | 'policy' | 'sessions';
+type ModalType = null | 'setup-key' | 'setup-verify' | 'disable' | 'policy' | 'sessions' | 'revoke-others-confirm' | 'revoke-others-success';
 
 export default function PrivacySecurityScreen() {
   const router = useRouter();
@@ -52,6 +52,8 @@ export default function PrivacySecurityScreen() {
     lastActiveAt: string;
     createdAt: string;
     isCurrent: boolean;
+    city?: string;
+    location?: string;
   }
   const [sessions, setSessions] = useState<LoginSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
@@ -254,30 +256,22 @@ export default function PrivacySecurityScreen() {
     }
   };
 
-  const handleRevokeOtherSessions = async () => {
-    Alert.alert(
-      'Sign Out Other Devices',
-      'This will sign out all other devices. You will remain logged in on this device.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out Others',
-          style: 'destructive',
-          onPress: async () => {
-            setRevokeAllLoading(true);
-            try {
-              const response = await api.delete(AUTH_ENDPOINTS.REVOKE_OTHER_SESSIONS);
-              Alert.alert('Done', response.data.message);
-              setSessions(prev => prev.filter(s => s.isCurrent));
-            } catch (error: any) {
-              Alert.alert('Error', 'Failed to sign out other devices');
-            } finally {
-              setRevokeAllLoading(false);
-            }
-          },
-        },
-      ]
-    );
+  const handleRevokeOtherSessions = () => {
+    setModalType('revoke-others-confirm');
+  };
+
+  const confirmRevokeOtherSessions = async () => {
+    setRevokeAllLoading(true);
+    try {
+      await api.delete(AUTH_ENDPOINTS.REVOKE_OTHER_SESSIONS);
+      setSessions(prev => prev.filter(s => s.isCurrent));
+      setModalType('revoke-others-success');
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.message || 'Failed to sign out other devices');
+      setModalType(null);
+    } finally {
+      setRevokeAllLoading(false);
+    }
   };
 
   const formatSessionDate = (dateStr: string) => {
@@ -673,7 +667,7 @@ export default function PrivacySecurityScreen() {
                     <View style={styles.sessionIcon}>
                       <Ionicons
                         name={
-                          /android|ios/i.test(session.deviceInfo)
+                          /mobile|android|iphone|ipad|ios|okhttp/i.test(session.deviceInfo)
                             ? 'phone-portrait-outline'
                             : 'desktop-outline'
                         }
@@ -692,14 +686,18 @@ export default function PrivacySecurityScreen() {
                           </View>
                         )}
                       </View>
-                      <Text style={[styles.sessionMeta, { color: PV.textLight }]}>
-                        Last active {formatSessionDate(session.lastActiveAt)}
-                      </Text>
-                      {!!session.ipAddress && (
+                      <View style={styles.sessionMetaRow}>
+                        <Ionicons name="location-outline" size={13} color={PV.textLight} />
                         <Text style={[styles.sessionMeta, { color: PV.textLight }]}>
-                          {session.ipAddress}
+                          {session.city || session.location || 'Unknown Location'}
                         </Text>
-                      )}
+                      </View>
+                      <View style={styles.sessionMetaRow}>
+                        <Ionicons name="time-outline" size={13} color={PV.textLight} />
+                        <Text style={[styles.sessionMeta, { color: PV.textLight }]}>
+                          Last active {formatSessionDate(session.lastActiveAt)}
+                        </Text>
+                      </View>
                     </View>
                     {!session.isCurrent && (
                       <TouchableOpacity
@@ -783,6 +781,69 @@ export default function PrivacySecurityScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Revoke Other Sessions Confirmation Modal ── */}
+      <Modal
+        visible={modalType === 'revoke-others-confirm'}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={closeModal}
+      >
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeModal} />
+          <View style={[styles.modalBox, { backgroundColor: PV.card }]}>
+            <View style={styles.modalHandle} />
+            <View style={[styles.modalIconContainer, { backgroundColor: 'rgba(255,152,0,0.12)' }]}>
+              <Ionicons name="log-out-outline" size={30} color="#ff9800" />
+            </View>
+            <Text style={[styles.modalTitle, { color: PV.text }]}>Sign Out All Other Devices?</Text>
+            <Text style={[styles.modalSubtitle, { color: PV.textLight }]}>
+              This will log out all other active sessions across all devices. You will remain logged in on this device.
+            </Text>
+            <TouchableOpacity
+              style={[styles.primaryButton, { backgroundColor: '#ff9800' }, revokeAllLoading && styles.buttonDisabled]}
+              onPress={confirmRevokeOtherSessions}
+              disabled={revokeAllLoading}
+            >
+              {revokeAllLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.primaryButtonText}>Sign Out Devices</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.ghostButton} onPress={closeModal}>
+              <Text style={[styles.ghostButtonText, { color: PV.textLight }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Revoke Other Sessions Success Modal ── */}
+      <Modal
+        visible={modalType === 'revoke-others-success'}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={closeModal}
+      >
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeModal} />
+          <View style={[styles.modalBox, { backgroundColor: PV.card }]}>
+            <View style={styles.modalHandle} />
+            <View style={[styles.modalIconContainer, { backgroundColor: 'rgba(0,164,114,0.12)' }]}>
+              <Ionicons name="checkmark-circle-outline" size={32} color="#00a472" />
+            </View>
+            <Text style={[styles.modalTitle, { color: PV.text }]}>Signed Out All Other Devices</Text>
+            <Text style={[styles.modalSubtitle, { color: PV.textLight }]}>
+              All other active sessions have been successfully logged out. You remain signed in on this device.
+            </Text>
+            <TouchableOpacity style={styles.primaryButton} onPress={closeModal}>
+              <Text style={styles.primaryButtonText}>Got It</Text>
+            </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -926,7 +987,8 @@ const styles = StyleSheet.create({
   sessionInfo: { flex: 1 },
   sessionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   sessionDevice: { fontSize: 14, fontWeight: '600' },
-  sessionMeta: { fontSize: 11, marginTop: 2 },
+  sessionMeta: { fontSize: 11 },
+  sessionMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
   currentBadge: {
     backgroundColor: '#4b41e1', borderRadius: 8,
     paddingHorizontal: 7, paddingVertical: 2,

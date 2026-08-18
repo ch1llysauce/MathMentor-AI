@@ -1,10 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ActiveSessionProvider } from './context/ActiveSessionContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppLayout from './components/AppLayout';
+import { IoShieldOutline } from 'react-icons/io5';
 
 import Landing      from './pages/Landing';
 import Login        from './pages/Login';
@@ -29,6 +30,36 @@ import LessonScreen   from './pages/practice/Lesson';
 import LessonChat     from './pages/practice/LessonChat';
 import ProblemsScreen from './pages/practice/Problems';
 
+function SessionRevokedModal() {
+  const { sessionRevoked, dismissSessionRevoked } = useAuth();
+  const navigate = useNavigate();
+
+  if (!sessionRevoked) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-[#1a2333] rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center animate-[fadeIn_0.2s_ease-out]">
+        <div className="w-14 h-14 rounded-full bg-[rgba(255,152,0,0.1)] text-[#ff9800] flex items-center justify-center mx-auto mb-4">
+          <IoShieldOutline size={30} />
+        </div>
+        <h3 className="text-lg font-bold text-[#091426] dark:text-[#f0f4f9] mb-2">Session Ended</h3>
+        <p className="text-xs text-[#75777d] dark:text-[#94a3b8] mb-6 leading-relaxed">
+          You have been signed out of this device by another active session. If this wasn't you, please sign in and change your password immediately.
+        </p>
+        <button
+          onClick={() => {
+            dismissSessionRevoked();
+            navigate('/login');
+          }}
+          className="w-full bg-[#4b41e1] text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-[#3323cc] transition-colors cursor-pointer"
+        >
+          Sign In Again
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ''}>
@@ -36,6 +67,7 @@ export default function App() {
         <AuthProvider>
           <ActiveSessionProvider>
             <BrowserRouter>
+              <SessionRevokedModal />
               <Routes>
                 {/* Public */}
                 <Route path="/"                element={<Landing />} />
@@ -81,3 +113,4 @@ export default function App() {
     </GoogleOAuthProvider>
   );
 }
+
