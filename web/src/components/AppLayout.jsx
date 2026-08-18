@@ -62,29 +62,19 @@ export default function AppLayout() {
           <img src="/logo.png" alt="MathMentor AI Logo" className="w-9 h-9 rounded-xl object-contain shadow-xs shrink-0" />
           <span className="text-lg font-bold text-[#091426] dark:text-white tracking-tight truncate">MathMentor AI</span>
         </NavLink>
-        <div className="flex items-center gap-1">
+        {onNav && (
           <button
             type="button"
-            onClick={() => setCalcOpen(true)}
-            className="text-[#75777d] hover:text-[#4b41e1] dark:hover:text-white p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#252f40] transition-colors cursor-pointer"
-            title="Open Scientific Calculator"
+            onClick={(e) => {
+              e.stopPropagation();
+              onNav();
+            }}
+            className="text-[#75777d] hover:text-[#091426] dark:hover:text-white p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#252f40] transition-colors cursor-pointer"
+            aria-label="Close menu"
           >
-            <IoCalculatorOutline size={20} />
+            <IoCloseOutline size={22} />
           </button>
-          {onNav && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onNav();
-              }}
-              className="text-[#75777d] hover:text-[#091426] dark:hover:text-white p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#252f40] transition-colors cursor-pointer"
-              aria-label="Close menu"
-            >
-              <IoCloseOutline size={22} />
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Nav */}
