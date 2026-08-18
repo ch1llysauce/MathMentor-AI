@@ -16,6 +16,11 @@ export default function SettingsScreen() {
   const [offlineMode, setOfflineMode] = useState(false);
   const [isCaching, setIsCaching] = useState(false);
 
+  // Real-Time Progress Modal State
+  const [showCacheModal, setShowCacheModal] = useState(false);
+  const [cacheStage, setCacheStage] = useState('');
+  const [cachePercent, setCachePercent] = useState(0);
+
   useEffect(() => {
     const loadOfflineMode = async () => {
       try {
@@ -32,15 +37,24 @@ export default function SettingsScreen() {
     setOfflineMode(checked);
     if (checked) {
       setIsCaching(true);
-      showToast('Pre-caching lessons, formulas & problem templates...');
+      setShowCacheModal(true);
+      setCachePercent(0);
+      setCacheStage('Initializing Offline Pre-cache...');
+
       try {
-        const result = await offlineCacheService.setOfflineCacheEnabled(true);
-        showToast(`Offline Cache Mode enabled. ${result.cachedCount} items pre-cached for offline use.`);
+        const result = await offlineCacheService.setOfflineCacheEnabled(true, (stage, percent) => {
+          setCacheStage(stage);
+          setCachePercent(percent);
+        });
+        showToast(`Offline Cache Mode enabled. ${result.cachedCount} items cached.`);
       } catch (e) {
         console.warn('Failed to enable offline cache', e);
         showToast('Failed to pre-cache offline data.');
       } finally {
-        setIsCaching(false);
+        setTimeout(() => {
+          setShowCacheModal(false);
+          setIsCaching(false);
+        }, 600);
       }
     } else {
       await offlineCacheService.setOfflineCacheEnabled(false);
@@ -121,23 +135,20 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Appearance */}
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Appearance Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: S.textLight }]}>APPEARANCE</Text>
           <View style={[styles.cardGroup, { backgroundColor: S.cardBg, borderColor: S.border }]}>
+            {/* Dark Mode */}
             <View style={styles.cardRow}>
               <View style={styles.cardRowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: darkMode ? 'rgba(165,180,252,0.15)' : 'rgba(75,65,225,0.1)' }]}>
-                  <Ionicons name="moon-outline" size={20} color={darkMode ? '#a5b4fc' : '#4b41e1'} />
+                <View style={[styles.iconBox, { backgroundColor: 'rgba(75,65,225,0.1)' }]}>
+                  <Ionicons name="moon-outline" size={20} color="#4b41e1" />
                 </View>
                 <View>
                   <Text style={[styles.rowTitle, { color: S.text }]}>Dark Mode</Text>
-                  <Text style={[styles.rowSubtitle, { color: S.textLight }]}>Use dark theme throughout the app</Text>
+                  <Text style={[styles.rowSubtitle, { color: S.textLight }]}>Toggle app color theme</Text>
                 </View>
               </View>
               <Switch
@@ -238,6 +249,39 @@ export default function SettingsScreen() {
         </View>
       </ScrollView>
 
+      {/* Real-Time Pre-Caching Percentage Progress Modal */}
+      <Modal visible={showCacheModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: S.modalBg, borderColor: S.border, alignItems: 'center', paddingVertical: 26, paddingHorizontal: 22 }]}>
+            <View style={styles.cacheModalIconBox}>
+              <Ionicons name="cloud-download-outline" size={32} color="#ff9800" />
+            </View>
+
+            <Text style={[styles.modalTitle, { color: S.text, textAlign: 'center', marginBottom: 4, marginTop: 12 }]}>
+              Building Offline Cache
+            </Text>
+
+            <Text style={[styles.modalSubtitle, { color: S.textLight, textAlign: 'center', marginBottom: 20, fontSize: 13 }]}>
+              Downloading lessons, formulas, stats, and diagnostic masteries for offline access.
+            </Text>
+
+            {/* Percentage Display Badge */}
+            <View style={styles.percentBadge}>
+              <Text style={styles.percentText}>{cachePercent}%</Text>
+            </View>
+
+            {/* Progress Bar Track */}
+            <View style={[styles.progressBarTrack, { backgroundColor: darkMode ? '#2e2e2e' : '#e0e3e5' }]}>
+              <View style={[styles.progressBarFill, { width: `${cachePercent}%` }]} />
+            </View>
+
+            {/* Stage Detail Label */}
+            <Text style={[styles.stageText, { color: S.textLight }]} numberOfLines={1}>
+              {cacheStage}
+            </Text>
+          </View>
+        </View>
+      </Modal>
 
       {/* Reset Confirmation Modal */}
       <Modal visible={showResetModal} transparent animationType="fade">
@@ -250,25 +294,26 @@ export default function SettingsScreen() {
             <Text style={[styles.modalTitle, { color: S.text, textAlign: 'center', marginBottom: 8 }]}>
               Reset All Settings?
             </Text>
-            <Text style={[styles.modalSubtitle, { color: S.textLight, textAlign: 'center', marginBottom: 20 }]}>
-              This will reset all user preferences to default. Your learning progress will not be affected.
+
+            <Text style={[styles.modalSubtitle, { color: S.textLight, textAlign: 'center', marginBottom: 24 }]}>
+              This will restore theme, accent colors, and data storage settings back to factory defaults.
             </Text>
 
             <View style={styles.modalBtnRow}>
               <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: '#ff9800' }]}
-                onPress={handleResetSettings}
-                activeOpacity={0.8}
+                style={[styles.modalBtn, { backgroundColor: darkMode ? '#2a2a2a' : '#f0f0f0' }]}
+                onPress={() => setShowResetModal(false)}
+                activeOpacity={0.7}
               >
-                <Text style={styles.resetConfirmText}>Reset</Text>
+                <Text style={[styles.cancelBtnText, { color: S.text }]}>Cancel</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: darkMode ? '#242424' : '#f2f4f6' }]}
-                onPress={() => setShowResetModal(false)}
-                activeOpacity={0.8}
+                style={[styles.modalBtn, { backgroundColor: '#ff9800' }]}
+                onPress={handleResetSettings}
+                activeOpacity={0.7}
               >
-                <Text style={[styles.cancelBtnText, { color: S.text }]}>Cancel</Text>
+                <Text style={styles.resetConfirmText}>Reset All</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -287,18 +332,18 @@ const styles = StyleSheet.create({
     top: 60,
     left: 20,
     right: 20,
-    zIndex: 9999,
+    zIndex: 999,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
+    gap: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
     elevation: 6,
   },
   toastText: {
@@ -309,45 +354,40 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    letterSpacing: -0.3,
+    fontSize: 18,
+    fontWeight: '700',
   },
   headerSubtitle: {
     fontSize: 12,
-    marginTop: 2,
+    marginTop: 1,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
+  content: {
+    padding: 16,
+    gap: 24,
   },
   section: {
-    marginBottom: 24,
+    gap: 8,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1,
-    marginBottom: 10,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
     marginLeft: 4,
   },
   cardGroup: {
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -355,46 +395,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   cardRowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     flex: 1,
-    marginRight: 10,
-  },
-  cardRowRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
   },
   iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   rowTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   rowSubtitle: {
     fontSize: 12,
     marginTop: 2,
   },
-  rowValueText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
   accentGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 12,
-    width: '100%',
+    gap: 12,
+    marginTop: 14,
+    paddingHorizontal: 4,
   },
   accentSwatchItem: {
     width: 32,
@@ -412,7 +442,7 @@ const styles = StyleSheet.create({
   /* Modal Styles */
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -424,12 +454,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 24,
   },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
   modalTitle: {
     fontSize: 18,
     fontWeight: '800',
@@ -438,14 +462,42 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  fontOptionBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 14,
+  cacheModalIconBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,152,0,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  fontOptionText: {
-    fontSize: 14,
-    fontWeight: '700',
+  percentBadge: {
+    backgroundColor: 'rgba(255,152,0,0.15)',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginBottom: 14,
+  },
+  percentText: {
+    color: '#ff9800',
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  progressBarTrack: {
+    width: '100%',
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#ff9800',
+    borderRadius: 4,
+  },
+  stageText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   resetIconBox: {
     width: 52,

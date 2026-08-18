@@ -175,20 +175,26 @@ const DEFAULT_OFFLINE_TOPICS = [
   },
 ];
 
+const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
 export const offlineCacheService = {
   /**
-   * Pre-cache all lessons, formulas, topics, problem templates, user profile, dashboard stats, diagnostic scores, timeline history, AND completed lessons
+   * Pre-cache all lessons, formulas, topics, problem templates, user profile, dashboard stats, diagnostic scores, timeline history, AND completed lessons with progress callback
    */
-  async preCacheOfflineData(): Promise<{ cachedCount: number; lessonsCount: number; formulasCount: number }> {
+  async preCacheOfflineData(
+    onProgress?: (stage: string, percent: number) => void
+  ): Promise<{ cachedCount: number; lessonsCount: number; formulasCount: number }> {
     try {
-      // 0a. Cache User Profile
+      onProgress?.('Fetching user profile & preferences...', 10);
+      await delay(150);
       try {
         await authService.getProfile();
       } catch (err) {
         console.log('Profile fetch skipped during offline pre-cache:', err);
       }
 
-      // 0b. Cache Dashboard Summary & Stats
+      onProgress?.('Syncing dashboard summary & study statistics...', 25);
+      await delay(150);
       try {
         const summaryRes = await api.get(PROGRESS_ENDPOINTS.SUMMARY);
         if (summaryRes.data?.success && summaryRes.data?.data) {
@@ -198,7 +204,6 @@ export const offlineCacheService = {
         console.log('Dashboard summary fetch skipped during offline pre-cache:', err);
       }
 
-      // 0c. Cache Dashboard Recommendation Next Step
       try {
         const recRes = await api.get(PROGRESS_ENDPOINTS.NEXT_RECOMMENDATION);
         if (recRes.data?.success && recRes.data?.data) {
@@ -208,7 +213,8 @@ export const offlineCacheService = {
         console.log('Dashboard recommendation fetch skipped during offline pre-cache:', err);
       }
 
-      // 0d. Cache Diagnostic Scores & Topic Mastery Levels
+      onProgress?.('Saving diagnostic scores & topic mastery levels...', 40);
+      await delay(150);
       try {
         const diagRes = await api.get('/learning/diagnostic/latest');
         if (diagRes.data?.success && diagRes.data?.data) {
@@ -218,7 +224,6 @@ export const offlineCacheService = {
         console.log('Diagnostic progress fetch skipped during offline pre-cache:', err);
       }
 
-      // 0e. Cache Diagnostic History Timeline
       try {
         const historyRes = await api.get('/learning/diagnostic/history');
         if (historyRes.data?.success && historyRes.data?.data) {
@@ -228,7 +233,8 @@ export const offlineCacheService = {
         console.log('Diagnostic history fetch skipped during offline pre-cache:', err);
       }
 
-      // 0f. Cache Daily Challenge Status & Scores
+      onProgress?.('Caching daily challenge completion states...', 55);
+      await delay(150);
       try {
         const dailyRes = await api.get(PRACTICE_ENDPOINTS.DAILY_STATUS);
         if (dailyRes.data?.success && dailyRes.data?.data) {
@@ -238,9 +244,10 @@ export const offlineCacheService = {
         console.log('Daily challenge status fetch skipped during offline pre-cache:', err);
       }
 
+      onProgress?.('Downloading & storing 116 curriculum lessons...', 75);
+      await delay(200);
       let lessonsList: Lesson[] = [];
 
-      // 1. Try to fetch full lessons from the backend API if online
       try {
         const response = await api.get('/learning/lessons');
         const serverLessons = response.data?.data?.lessons || response.data?.lessons;
@@ -285,12 +292,12 @@ export const offlineCacheService = {
         console.log('Backend offline during pre-cache, generating from 116 curriculum lessons structure.');
       }
 
-      // Fallback: build full 116 curriculum lessons if backend is unreachable or returned empty
       if (lessonsList.length === 0) {
         lessonsList = getAllCurriculumOfflineLessons();
       }
 
-      // 2. Generate client-side offline practice problem sets across topics
+      onProgress?.('Generating client offline practice problem templates...', 90);
+      await delay(150);
       const topicsList = ['algebra', 'geometry', 'trigonometry', 'calculus', 'statistics'];
       let totalProblemsGenerated = 0;
       topicsList.forEach((tp) => {
@@ -298,7 +305,6 @@ export const offlineCacheService = {
         totalProblemsGenerated += probs.length;
       });
 
-      // 3. Build full cache object
       const cacheData: OfflineCacheData = {
         timestamp: new Date().toISOString(),
         lessons: lessonsList,
@@ -306,13 +312,16 @@ export const offlineCacheService = {
         topics: DEFAULT_OFFLINE_TOPICS,
       };
 
-      // 4. Save to storage
+      onProgress?.('Finalizing offline cache setup...', 98);
+      await delay(150);
       await storage.setItem('mathmentor_offline_cache', JSON.stringify(cacheData));
       await storage.setItem('mathmentor_offline_mode', 'true');
 
       const totalItems = lessonsList.length + DEFAULT_OFFLINE_FORMULAS.length + totalProblemsGenerated;
 
-      console.log(`✅ Offline cache built successfully with ${lessonsList.length} lessons, dashboard stats & diagnostic timeline (${totalItems} total resources).`);
+      onProgress?.('Offline Cache Ready!', 100);
+      await delay(200);
+
       return {
         cachedCount: totalItems,
         lessonsCount: lessonsList.length,
@@ -337,11 +346,14 @@ export const offlineCacheService = {
   },
 
   /**
-   * Toggle Offline Cache Mode
+   * Toggle Offline Cache Mode with optional progress reporting
    */
-  async setOfflineCacheEnabled(enabled: boolean): Promise<{ cachedCount: number; lessonsCount: number; formulasCount: number }> {
+  async setOfflineCacheEnabled(
+    enabled: boolean,
+    onProgress?: (stage: string, percent: number) => void
+  ): Promise<{ cachedCount: number; lessonsCount: number; formulasCount: number }> {
     if (enabled) {
-      return await this.preCacheOfflineData();
+      return await this.preCacheOfflineData(onProgress);
     } else {
       await storage.setItem('mathmentor_offline_mode', 'false');
       return { cachedCount: 0, lessonsCount: 0, formulasCount: 0 };
