@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,9 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  BackHandler,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import CustomAlertModal from '@/components/common/CustomAlertModal';
@@ -175,6 +176,20 @@ export default function RetakeDiagnosticScreen() {
   const showAlert = (title: string, message: string, type: 'error' | 'success' | 'warning' | 'info' = 'error') => {
     setAlertConfig({ visible: true, title, message, type });
   };
+
+  // Intercept Android hardware / bottom navbar back press during active diagnostic test
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (screen === 'test') {
+          setShowQuitModal(true);
+          return true;
+        }
+        return false;
+      });
+      return () => subscription.remove();
+    }, [screen])
+  );
   const startTimeRef = useRef<number>(Date.now());
 
   const currentQuestion = questions[currentIndex] ?? null;

@@ -175,10 +175,13 @@ export default function AppLayout() {
               <IoWarningOutline size={32} />
             </div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-              {activeSession?.type === 'diagnostic' ? 'Leave Diagnostic Test?' : 'Leave Practice Session?'}
+              {activeSession?.type === 'profile' ? 'Unsaved Changes' :
+               activeSession?.type === 'diagnostic' ? 'Leave Diagnostic Test?' :
+               'Leave Practice Session?'}
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-              Are you sure you want to leave? Your current progress in this session will not be saved.
+              {activeSession?.type === 'profile' ? 'You have unsaved profile changes. Are you sure you want to leave without saving?' :
+               'Are you sure you want to leave? Your current progress in this session will not be saved.'}
             </p>
             <div className="flex gap-3">
               <button
@@ -186,7 +189,9 @@ export default function AppLayout() {
                 onClick={() => { setShowSessionModal(false); setPendingPath(null); }}
                 className="flex-1 bg-gray-100 dark:bg-[#252f40] hover:bg-gray-200 dark:hover:bg-[#2d3748] text-gray-700 dark:text-gray-200 font-bold py-3.5 px-4 rounded-2xl text-sm transition-colors cursor-pointer"
               >
-                {activeSession?.type === 'diagnostic' ? 'Keep Testing' : 'Keep Practicing'}
+                {activeSession?.type === 'profile' ? 'Keep Editing' :
+                 activeSession?.type === 'diagnostic' ? 'Keep Testing' :
+                 'Keep Practicing'}
               </button>
               <button
                 type="button"
@@ -203,7 +208,7 @@ export default function AppLayout() {
                 }}
                 className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3.5 px-4 rounded-2xl text-sm transition-colors shadow-md shadow-red-500/20 cursor-pointer"
               >
-                Leave Session
+                {activeSession?.type === 'profile' ? 'Discard Changes' : 'Leave Session'}
               </button>
             </div>
           </div>

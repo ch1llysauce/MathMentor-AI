@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,8 +8,9 @@ import {
   Alert,
   TextInput,
   Modal,
+  BackHandler,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { lessonService } from '@/services/lessonService';
@@ -102,11 +103,23 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
     setAlertConfig({ visible: true, title, message, type });
   };
 
-  // Scoring — use a ref so the count is always synchronously current
-  // when handleNextProblem reads it immediately after handleSubmitAnswer.
   const correctCountRef = useRef(0);
   const [correctCount, setCorrectCount] = useState(0); // drives the results UI
   const [showResults, setShowResults] = useState(false);
+
+  // Intercept Android hardware / bottom navbar back press during active practice session
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (!showResults) {
+          setShowQuitModal(true);
+          return true;
+        }
+        return false;
+      });
+      return () => subscription.remove();
+    }, [showResults])
+  );
 
   useEffect(() => {
     correctCountRef.current = 0;

@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   IoArrowBack,
@@ -19,6 +19,7 @@ import {
 } from 'react-icons/io5';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useActiveSession } from '../../context/ActiveSessionContext';
 import { authApi } from '../../services/api';
 
 const BANNER_THEMES = [
@@ -37,6 +38,7 @@ export default function EditProfile() {
   const navigate = useNavigate();
   const { user, refreshProfile, saveAuth, logout } = useAuth();
   const { setAccentTheme } = useTheme();
+  const { setActiveSession, clearActiveSession } = useActiveSession();
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [profileImage, setProfileImage] = useState(user?.profileImage || '');
   const [bannerTheme, setBannerTheme] = useState(user?.bannerTheme || 'indigo');
@@ -73,6 +75,46 @@ export default function EditProfile() {
     const passwordStarted = currentPassword.length > 0 || newPassword.length > 0 || confirmPassword.length > 0;
     return nameChanged || imageChanged || bannerChanged || passwordStarted;
   }, [displayName, profileImage, bannerTheme, currentPassword, newPassword, confirmPassword, user]);
+
+  const allowLeaveRef = useRef(false);
+
+  // Register active session for AppLayout sidebar navigation protection
+  useEffect(() => {
+    if (hasChanges) {
+      setActiveSession({ type: 'profile', allowLeaveRef });
+    } else {
+      clearActiveSession();
+    }
+    return () => clearActiveSession();
+  }, [hasChanges, setActiveSession, clearActiveSession]);
+
+  // Intercept browser back button (popstate) & tab close (beforeunload) when there are unsaved changes
+  useEffect(() => {
+    if (!hasChanges || allowLeaveRef.current) return;
+
+    window.history.pushState({ profileGuard: true }, '');
+
+    const handleBeforeUnload = (e) => {
+      if (hasChanges && !allowLeaveRef.current) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    const handlePopState = () => {
+      if (hasChanges && !allowLeaveRef.current) {
+        window.history.pushState({ profileGuard: true }, '');
+        setShowDiscardModal(true);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [hasChanges]);
 
   const handleCancel = () => {
     if (hasChanges) {
@@ -198,6 +240,8 @@ export default function EditProfile() {
         return;
       }
 
+      allowLeaveRef.current = true;
+      clearActiveSession();
       setSuccessToast('Profile updated successfully!');
       setTimeout(() => {
         navigate('/profile');
@@ -455,7 +499,12 @@ export default function EditProfile() {
               </button>
               <button
                 type="button"
-                onClick={() => navigate('/profile')}
+                onClick={() => {
+                  allowLeaveRef.current = true;
+                  clearActiveSession();
+                  setShowDiscardModal(false);
+                  navigate('/profile');
+                }}
                 className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-semibold text-xs bg-red-50 dark:bg-red-950/40 text-[#ba1a1a] dark:text-red-400 border border-red-200 dark:border-red-800/40 hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors cursor-pointer"
               >
                 Discard Changes

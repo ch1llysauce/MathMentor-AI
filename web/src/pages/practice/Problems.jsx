@@ -65,16 +65,33 @@ export default function Problems() {
     return () => clearActiveSession();
   }, [showResults, problems.length, setActiveSession, clearActiveSession]);
 
-  // Prevent accidental navigation / tab closure while session is active
+  // Prevent accidental navigation / tab closure / browser back button while session is active
   useEffect(() => {
+    if (showResults || allowLeaveRef.current) return;
+
+    // Push dummy history state to intercept browser back button (popstate)
+    window.history.pushState({ sessionGuard: true }, '');
+
     const handleBeforeUnload = (e) => {
       if (!showResults && !allowLeaveRef.current) {
         e.preventDefault();
         e.returnValue = '';
       }
     };
+
+    const handlePopState = () => {
+      if (!showResults && !allowLeaveRef.current) {
+        window.history.pushState({ sessionGuard: true }, '');
+        setShowQuitModal(true);
+      }
+    };
+
     window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
   }, [showResults]);
 
   const handleBackClick = () => {
