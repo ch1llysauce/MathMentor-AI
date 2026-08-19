@@ -1,6 +1,6 @@
 # MathMentor AI — Web Application
 
-The **MathMentor AI Web Application** is a responsive, feature-rich web platform for senior high school mathematics (Algebra, Geometry, Trigonometry). Built with **React 19**, **Vite**, and **Tailwind CSS**, it communicates with the centralized MathMentor AI backend API and database to deliver an adaptive learning experience.
+The **MathMentor AI Web Application** is a responsive, feature-rich web platform for high school mathematics (Algebra, Geometry, Trigonometry). Built with **React 19**, **Vite**, and **Tailwind CSS**, it communicates with the centralized MathMentor AI backend API and database to deliver an adaptive learning experience.
 
 ---
 

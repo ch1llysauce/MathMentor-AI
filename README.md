@@ -1,6 +1,6 @@
 # MathMentor AI
 
-An adaptive mathematics learning platform for senior high school students (Algebra, Geometry, Trigonometry), powered by an AI tutor and diagnostic-driven personalized learning paths. Available as a **React Web Application** and a **React Native (Expo) Mobile Application**, both powered by a unified **Node.js/Express** backend and MongoDB database.
+An adaptive mathematics learning platform for high school students (Algebra, Geometry, Trigonometry), powered by an AI tutor and diagnostic-driven personalized learning paths. Available as a **React Web Application** and a **React Native (Expo) Mobile Application**, both powered by a unified **Node.js/Express** backend and MongoDB database.
 
 ---
 
