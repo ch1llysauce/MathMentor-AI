@@ -21,6 +21,7 @@ import { TopicScores } from '@/types/diagnostic';
 import { useTheme } from '@/context/ThemeContext';
 import MessageRenderer from '@/components/MessageRenderer';
 import ScientificCalculator from '@/components/ScientificCalculator';
+import { findMatchingChoice } from '@/utils/choiceUtils';
 import { useAuth } from '@/hooks/useAuth';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -610,14 +611,8 @@ export default function RetakeDiagnosticScreen() {
           visible={showCalculator}
           onClose={() => setShowCalculator(false)}
           onUseResult={(val) => {
-            if (currentQuestion.choices && Array.isArray(currentQuestion.choices)) {
-              const match = currentQuestion.choices.find(
-                c => c.trim().toLowerCase() === val.trim().toLowerCase() || c.includes(val)
-              );
-              handleSelectAnswer(match ?? val);
-            } else {
-              handleSelectAnswer(val);
-            }
+            const match = findMatchingChoice(currentQuestion?.choices, val);
+            handleSelectAnswer(match);
             setShowCalculator(false);
           }}
           darkMode={darkMode}

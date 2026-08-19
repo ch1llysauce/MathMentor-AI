@@ -19,6 +19,7 @@ import { useTheme, ScaledText as Text } from '@/context/ThemeContext';
 import MessageRenderer from '@/components/MessageRenderer';
 import MathToolbar from '@/components/MathToolbar';
 import ScientificCalculator from '@/components/ScientificCalculator';
+import { findMatchingChoice } from '@/utils/choiceUtils';
 import api from '@/services/api';
 import { PRACTICE_ENDPOINTS } from '@/constants/api';
 import CustomAlertModal from '@/components/common/CustomAlertModal';
@@ -163,8 +164,15 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
       // Generated IDs follow the pattern: "algebra-basic-timestamp-index-random"
       // DB problems have MongoDB ObjectId format (24 hex chars).
       const isGenerated = currentProblem._id.includes('-');
+      const pType = currentProblem.type as string;
+      const isFreeResponse =
+        pType === 'free-response' ||
+        pType === 'short-answer' ||
+        pType === 'numeric' ||
+        !currentProblem.options ||
+        currentProblem.options.length === 0;
 
-      if (isGenerated || currentProblem.type === 'free-response') {
+      if (isGenerated || isFreeResponse) {
         let correct = false;
 
         if (currentProblem.type === 'multiple-choice' || currentProblem.type === 'true-false') {
@@ -195,7 +203,7 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
           const correctNorm = normalize(correctRaw);
 
           // 1. Direct exact or normalized match
-          let correct = selectedAnswer.trim().toLowerCase() === correctRaw.trim().toLowerCase() || userNorm === correctNorm;
+          correct = selectedAnswer.trim().toLowerCase() === correctRaw.trim().toLowerCase() || userNorm === correctNorm;
 
           // 2. If not matched, try splitting multi-value answers by "or" or "and"
           if (!correct) {
@@ -226,6 +234,12 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
         }
         setIsCorrect(correct);
         setShowExplanation(true);
+
+        // Async submit for DB-backed problems to keep user progress synced
+        if (!isGenerated) {
+          const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+          lessonService.submitAnswer(currentProblem._id, selectedAnswer, timeSpent, hintsUsed).catch(() => {});
+        }
         return;
       }
 
@@ -659,7 +673,11 @@ const { lessonId, difficulty, category, count, title, topic, isDaily } = useLoca
       <ScientificCalculator
         visible={showCalculator}
         onClose={() => setShowCalculator(false)}
-        onUseResult={(val) => setSelectedAnswer(val)}
+        onUseResult={(val) => {
+          const match = findMatchingChoice(currentProblem?.options, val);
+          setSelectedAnswer(match);
+          setShowCalculator(false);
+        }}
         darkMode={darkMode}
       />
 

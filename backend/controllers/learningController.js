@@ -632,9 +632,44 @@ export const submitPracticeAnswer = asyncHandler(async (req, res) => {
         
         isCorrect = selectedOption ? selectedOption.isCorrect : false;
         console.log('  Is correct:', isCorrect);
-    } else if (problem.type === 'free-response') {
-        // Simple string comparison for now (can be enhanced with AI grading)
-        isCorrect = userAnswer.trim().toLowerCase() === problem.correctAnswer.trim().toLowerCase();
+    } else {
+        const normalize = (s) =>
+          String(s || '')
+            .trim()
+            .toLowerCase()
+            .replace(/\$([^$]+)\$/g, '$1')
+            .replace(/π/g, 'pi')
+            .replace(/\s+/g, '')
+            .replace(/x\s*=\s*/g, '')
+            .replace(/[°²³]/g, '')
+            .replace(/cm|m²|m³|cm²|cm³/g, '')
+            .replace(/≈/g, '')
+            .replace(/\*/g, '');
+
+        const extractNums = (s) => s.match(/-?\d+\.?\d*/g) ?? [];
+        const userNorm = normalize(userAnswer);
+        const correctRaw = problem.correctAnswer || '';
+        const correctNorm = normalize(correctRaw);
+
+        isCorrect = (userAnswer || '').trim().toLowerCase() === correctRaw.trim().toLowerCase() || userNorm === correctNorm;
+
+        if (!isCorrect) {
+          const correctParts = correctRaw.split(/\s+or\s+|\s+and\s+/i).map(normalize);
+          const userNums = extractNums(userNorm).map(n => parseFloat(n)).filter(n => !isNaN(n));
+
+          isCorrect = correctParts.some((part) => {
+            const partNorm = normalize(part);
+            if (userNorm === partNorm) return true;
+
+            const partNums = extractNums(partNorm).map(n => parseFloat(n)).filter(n => !isNaN(n));
+            if (userNums.length > 0 && partNums.length > 0) {
+              return userNums.some((uNum) =>
+                partNums.some((pNum) => Math.abs(uNum - pNum) < 0.02 || uNum.toFixed(2) === pNum.toFixed(2))
+              );
+            }
+            return false;
+          });
+        }
     }
 
     // Calculate points (reduce points for hints used)

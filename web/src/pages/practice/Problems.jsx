@@ -16,6 +16,7 @@ import { generateProblems } from '../../services/clientProblemGenerator';
 import { practiceApi } from '../../services/api';
 import MathToolbar from '../../components/MathToolbar';
 import ScientificCalculator from '../../components/ScientificCalculator';
+import { findMatchingChoice } from '../../utils/choiceUtils';
 import MathText from '../../components/MathText';
 import { useActiveSession } from '../../context/ActiveSessionContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -252,7 +253,11 @@ export default function Problems() {
       <ScientificCalculator
         visible={showCalc}
         onClose={() => setShowCalc(false)}
-        onUseResult={(val) => { setSelected(val); setShowCalc(false); }}
+        onUseResult={(val) => {
+          const match = findMatchingChoice(current?.options || current?.choices, val);
+          setSelected(match);
+          setShowCalc(false);
+        }}
       />
 
       {/* Leave Practice Warning Modal */}

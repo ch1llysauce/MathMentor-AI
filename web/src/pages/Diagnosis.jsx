@@ -22,6 +22,7 @@ import {
 import { questionApi, learningApi } from '../services/api';
 import MathText from '../components/MathText';
 import ScientificCalculator from '../components/ScientificCalculator';
+import { findMatchingChoice } from '../utils/choiceUtils';
 import { useActiveSession } from '../context/ActiveSessionContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -395,17 +396,8 @@ function TestScreen({ questions, onSubmit, onFinish, onCancel }) {
         isOpen={showCalc}
         onClose={() => setShowCalc(false)}
         onUseResult={(val) => {
-          if (q?.choices && Array.isArray(q.choices)) {
-            const match = q.choices.find(
-              (c) =>
-                c.trim().toLowerCase() === val.trim().toLowerCase() ||
-                c.startsWith(val) ||
-                c.includes(val)
-            );
-            setSelectedAnswer(match ?? val);
-          } else {
-            setSelectedAnswer(val);
-          }
+          const match = findMatchingChoice(q?.choices, val);
+          setSelectedAnswer(match);
           setShowCalc(false);
         }}
       />
