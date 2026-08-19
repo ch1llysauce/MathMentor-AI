@@ -22,12 +22,12 @@ The **MathMentor AI Web Application** is a responsive, feature-rich web platform
 - **AI Hints & Explanations**: Instant step-by-step assistance when tackling difficult problems.
 
 ### 4. 🎯 Diagnostic Assessment
-- **Placement Benchmark**: 15-question diagnostic evaluation spanning Algebra, Geometry, and Trigonometry.
+- **Placement Benchmark**: 9-question diagnostic evaluation spanning Algebra, Geometry, and Trigonometry (3 per subject).
 - **Automatic Scoring & Mastery Breakdown**: Ranks subject mastery (Novice, Intermediate, Master) and identifies weak areas.
 - **Diagnostic Retake System**: Retake assessments anytime to update learning path recommendations.
 
 ### 5. 🤖 Tutor AI Assistant
-- **Socratic Math Tutor**: Interactive AI chat powered by Groq LLaMA 3.3 70B (with Gemini Flash fallback).
+- **Socratic Math Tutor**: Interactive AI chat powered by Groq (`openai/gpt-oss-120b`).
 - **Personalized Responses**: Aligns explanations with the student's selected language and font preferences.
 - **Persistent Conversation Memory**: Saves lesson chat threads per user in MongoDB.
 

@@ -13,7 +13,7 @@ This official initial release delivers the native **Android Application (.apk)**
 ## ✨ Key Features & Technical Highlights
 
 ### 🎯 1. Diagnostic Assessment & Adaptive Learning Paths
-- **Placement Benchmark**: 15-question placement evaluation across Algebra, Geometry, and Trigonometry to establish initial student competency.
+- **Placement Benchmark**: 9-question placement evaluation across Algebra, Geometry, and Trigonometry (3 per subject) to establish initial student competency.
 - **Diagnostic Attempt History**: Comprehensive attempt review with question snapshots, user vs. correct answer highlights, and step-by-step LaTeX explanations across web and mobile.
 - **Adaptive Recommendations**: Automated subject mastery scoring (*Novice*, *Intermediate*, *Master*) that dynamically tailors a personalized learning path.
 - **Curriculum Scope**: 116 structured lessons across 28 modules with lesson objectives, step-by-step examples, and key takeaways.
@@ -24,7 +24,7 @@ This official initial release delivers the native **Android Application (.apk)**
 - **Instant AI Hints**: On-demand step-by-step hints to guide students through complex problem-solving without revealing direct answers.
 
 ### 🤖 3. Socratic Tutor AI Assistant
-- **Dual-Model Resilience**: Primary AI provider Groq (LLaMA 3.3 70B) with automatic failover to Gemini 1.5 Flash for 100% service availability.
+- **AI Model Provider**: High-performance AI tutoring powered by Groq (`openai/gpt-oss-120b`).
 - **Socratic Pedagogy**: Guides students step-by-step through mathematical reasoning instead of just displaying raw solutions.
 - **Personalized Learning Context**: Adapts explanations according to user language preferences and display configurations.
 - **Persistent Chat History**: Saved conversation threads per lesson stored in MongoDB.

@@ -1,6 +1,6 @@
 # MathMentor AI — Backend API
 
-Centralized REST API for the **MathMentor AI** platform, powering both the **React Web Application** and the **React Native Mobile Application**. Built with **Node.js**, **Express.js 5**, **MongoDB**, and **Groq / Gemini AI APIs**.
+Centralized REST API for the **MathMentor AI** platform, powering both the **React Web Application** and the **React Native Mobile Application**. Built with **Node.js**, **Express.js 5**, **MongoDB**, and **Groq API**.
 
 ---
 
@@ -12,7 +12,7 @@ Centralized REST API for the **MathMentor AI** platform, powering both the **Rea
 - **Authentication:** JWT + Google OAuth 2.0 (`google-auth-library`)
 - **2FA:** TOTP via `speakeasy`
 - **Password Reset:** OTP via email (`resend`)
-- **AI Services:** Groq (LLaMA 3.3 70B primary) → Gemini 1.5 Flash (fallback) → Rule-based fallback
+- **AI Services:** Groq API (`openai/gpt-oss-120b`)
 - **Security:** bcryptjs, express-validator, rate-limiting
 - **Deployment:** Render (`https://mathmentor-ai-i8sl.onrender.com`)
 
@@ -61,7 +61,7 @@ backend/
 │   ├── diagnosticRoutes.js      # /api/diagnostic
 │   └── tutorRoutes.js           # /api/tutor
 ├── services/
-│   ├── aiRouter.js              # Groq → Gemini → Rule-based fallback chain
+│   ├── aiRouter.js              # Groq AI tutoring service
 │   ├── mathService.js           # LaTeX & math string validation helpers
 │   ├── learningPath.js          # Adaptive learning path algorithm
 │   └── diagnosticGenerator.js  # Diagnostic question set generator
@@ -134,7 +134,7 @@ Server runs locally on `http://localhost:5000`.
 - `POST /api/tutor/chat` — Save and retrieve persistent lesson chat thread.
 
 ### 🎯 Diagnostic & Practice (`/api/diagnostic` & `/api/practice`)
-- `GET /api/questions/diagnostic` — Fetch 15-question benchmark test.
+- `GET /api/questions/diagnostic` — Fetch 9-question benchmark test.
 - `POST /api/learning/diagnostic/submit` — Submit test answers, recalculates topic mastery & generates learning path.
 - `GET /api/diagnostic/dashboard` & `GET /api/diagnostic/timeline` — Diagnostic history & score trends.
 - `GET /api/practice/daily-status` & `POST /api/practice/daily-complete` — Account-bound daily challenge tracking.

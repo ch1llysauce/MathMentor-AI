@@ -7,7 +7,7 @@ This directory contains the core business logic services for MathMentor AI.
 ### `aiRouter.js`
 AI tutoring service with multi-provider fallback system.
 
-**Architecture:** Groq (Primary) → Gemini (Fallback) → Rule-based (Backup)
+**Model:** Groq (`openai/gpt-oss-120b`)
 
 **Functions:**
 - `askAITutor(prompt, context)` - Main AI tutor interface with automatic fallback
@@ -31,7 +31,7 @@ const response = await askAITutor(
 );
 
 console.log(response.response); // AI tutor's Socratic guidance
-console.log(response.source);   // "Groq", "Gemini", or "Rule-based"
+console.log(response.source);   // "Groq"
 ```
 
 ---
@@ -166,6 +166,6 @@ const path = generateLearningPath(mockDiagnosticResult);
 ## 📊 Based On
 
 All services implement the MathMentor AI specification:
-- **AI Router:** Multi-AI fallback system (Groq + Gemini + Rule-based)
+- **AI Router:** Groq AI tutoring service (`openai/gpt-oss-120b`)
 - **Math Service:** math.js-based validation engine
 - **Learning Path:** Adaptive learning algorithm for personalized education

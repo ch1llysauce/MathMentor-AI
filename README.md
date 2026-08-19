@@ -22,7 +22,7 @@ mathmentor-ai/
 | **Web Platform** | React 19, Vite, React Router v7, Tailwind CSS, KaTeX (LaTeX math rendering), React Icons |
 | **Mobile App** | React Native 0.86, Expo SDK 57, Expo Router v3, TypeScript |
 | **Backend API** | Node.js, Express.js 5, MongoDB (Mongoose), JWT, Google OAuth 2.0 |
-| **AI Services** | Groq (LLaMA 3.3 70B) → Gemini 1.5 Flash → Rule-based fallback |
+| **AI Services** | Groq (`openai/gpt-oss-120b`) |
 | **Security & Auth**| bcryptjs, TOTP 2FA (`speakeasy`), OTP Password Reset (`resend`), Multi-device session revocation |
 
 ---
@@ -77,7 +77,7 @@ npx expo run:android    # Local Native Android build
 ## ✨ Key Features Across Platforms
 
 ### 🎯 Diagnostic & Adaptive Learning
-- **15-Question Placement Test**: Benchmarks knowledge across Algebra, Geometry, and Trigonometry.
+- **9-Question Placement Test**: Benchmarks knowledge across Algebra, Geometry, and Trigonometry (1 Easy, 1 Medium, 1 Hard per subject).
 - **Diagnostic History & Question Review**: Comprehensive past attempt reviews with question snapshots, LaTeX formulas, user vs. correct answer highlights, and explanations on mobile and web.
 - **Dynamic Learning Paths**: Automatically ranks topic mastery and generates personalized study recommendations based on diagnostic results.
 - **116 Structured Lessons**: 28 modules across 3 subjects with lesson objectives, step-by-step examples, and key takeaways.
@@ -89,7 +89,7 @@ npx expo run:android    # Local Native Android build
 - **Floating Scientific Calculator**: Available globally on web and integrated into practice sessions.
 
 ### 🤖 Tutor AI Assistant
-- **Socratic Pedagogy**: Primary provider Groq LLaMA 3.3 70B with Gemini 1.5 Flash fallback.
+- **Socratic Pedagogy**: Powered by Groq (`openai/gpt-oss-120b`).
 - **Personalized Responses**: Adapts explanations according to user language preferences and custom settings.
 - **Persistent Chat History**: Saves lesson conversation sessions to MongoDB.
 

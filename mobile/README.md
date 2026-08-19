@@ -6,9 +6,9 @@ A cross-platform native mobile application for Android built with **React Native
 
 ## ✨ Key Mobile Features
 
-- **Adaptive Diagnostic Assessment**: 15-question placement test evaluating student mastery across Algebra, Geometry, and Trigonometry.
+- **Adaptive Diagnostic Assessment**: 9-question placement test evaluating student mastery across Algebra, Geometry, and Trigonometry.
 - **Adaptive Practice Sets**: Client-side & server-side problem sets with step-by-step hint generation and KaTeX math formatting.
-- **AI Math Tutor**: Socratic AI chat assistant (Groq LLaMA 3.3 70B primary, Gemini Flash fallback) tailored to student learning preferences.
+- **AI Math Tutor**: Socratic AI chat assistant powered by Groq (`openai/gpt-oss-120b`) tailored to student learning preferences.
 - **Theme & Personalization Engine**: Dark/Light mode support with 9 dynamic accent color themes and live banner gradient preview builder.
 - **Session Security**: Location-aware active session management (city/location, IP address, device model) with single-tap remote session revocation.
 - **Authentication**: Email/password authentication, Google OAuth 2.0 Sign-In (`@react-native-google-signin/google-signin`), TOTP 2FA, and OTP password resets.
