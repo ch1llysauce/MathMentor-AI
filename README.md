@@ -78,6 +78,7 @@ npx expo run:android    # Local Native Android build
 
 ### 🎯 Diagnostic & Adaptive Learning
 - **15-Question Placement Test**: Benchmarks knowledge across Algebra, Geometry, and Trigonometry.
+- **Diagnostic History & Question Review**: Comprehensive past attempt reviews with question snapshots, LaTeX formulas, user vs. correct answer highlights, and explanations on mobile and web.
 - **Dynamic Learning Paths**: Automatically ranks topic mastery and generates personalized study recommendations based on diagnostic results.
 - **116 Structured Lessons**: 28 modules across 3 subjects with lesson objectives, step-by-step examples, and key takeaways.
 

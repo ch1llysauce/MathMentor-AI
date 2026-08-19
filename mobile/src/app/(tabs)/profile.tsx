@@ -107,9 +107,7 @@ function MenuCardItem({
       </View>
 
       {rightElement ?? (
-        <View style={[styles.chevronCircle, { backgroundColor: darkMode ? '#242e42' : '#f7f9fb' }]}>
-          <Ionicons name="chevron-forward" size={16} color={darkMode ? '#94a3b8' : '#75777d'} />
-        </View>
+        <Ionicons name="chevron-forward" size={18} color={darkMode ? '#94a3b8' : '#75777d'} style={{ marginLeft: 6 }} />
       )}
     </TouchableOpacity>
   );

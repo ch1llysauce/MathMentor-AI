@@ -134,7 +134,7 @@ export default function TopicDetailScreen() {
             strokeWidth={10}
             topic={topic}
             subtitle={getScoreLabel(score)}
-            color={topic === 'Algebra' ? '#2563eb' : topic === 'Geometry' ? '#8b5cf6' : topic === 'Trigonometry' ? '#f59e0b' : getScoreColor(score, primaryColor)}
+            color={topic === 'Algebra' ? '#2563eb' : topic === 'Geometry' ? '#8b5cf6' : topic === 'Trigonometry' ? '#ef4444' : getScoreColor(score, primaryColor)}
           />
           <View style={styles.statsRow}>
             <View style={[styles.statBox, { backgroundColor: darkMode ? '#1e1b4b' : '#f3e8ff' }]}>

@@ -46,7 +46,7 @@ export const MasteryRing: React.FC<MasteryRingProps> = ({
   const defaultColor =
     topic === 'Algebra' ? '#2563eb' :
     topic === 'Geometry' ? '#8b5cf6' :
-    topic === 'Trigonometry' ? '#f59e0b' :
+    topic === 'Trigonometry' ? '#ef4444' :
     (percentage >= 80 ? '#00a472' : percentage >= 60 ? '#f59e0b' : '#ef4444');
 
   const ringColor = color || defaultColor;

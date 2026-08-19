@@ -282,7 +282,7 @@ export default function DiagnosticScreen() {
               percentage={diagnostic.trigonometryScore}
               topic="Trigonometry"
               subtitle={getTopicSubtitle('Trigonometry', diagnostic.trigonometryScore)}
-              color="#f59e0b"
+              color="#ef4444"
               size={72}
               strokeWidth={6}
               onPress={() => handleTopicPress('Trigonometry', diagnostic.trigonometryScore)}

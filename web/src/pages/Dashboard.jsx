@@ -20,13 +20,19 @@ import { progressApi, learningApi } from '../services/api';
 const TOPIC_META = {
   Algebra: { Icon: IoCalculatorOutline, color: '#2563eb', description: 'Build your foundation with equations, expressions, and algebraic reasoning.' },
   Geometry: { Icon: IoShapesOutline, color: '#8b5cf6', description: 'Explore angles, shapes, areas, and spatial relationships.' },
-  Trigonometry: { Icon: IoCompassOutline, color: '#f59e0b', description: 'Master ratios, triangles, and the unit circle with confidence.' },
+  Trigonometry: { Icon: IoCompassOutline, color: '#ef4444', description: 'Master ratios, triangles, and the unit circle with confidence.' },
 };
 
-function StatCard({ label, value, sub, icon: Icon, iconBg, iconColor }) {
+function StatCard({ label, value, sub, icon: Icon, primaryColor }) {
   return (
     <div className="bg-white dark:bg-[#1a2333] rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
-      <div className={`w-12 h-12 rounded-2xl ${iconBg} flex items-center justify-center ${iconColor} mb-3`}>
+      <div
+        className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-colors"
+        style={{
+          backgroundColor: primaryColor ? `${primaryColor}1a` : 'rgba(75,65,225,0.1)',
+          color: primaryColor || '#4b41e1',
+        }}
+      >
         <Icon size={22} />
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{label}</p>
@@ -328,15 +334,13 @@ export default function Dashboard() {
             value={stats.accuracyTotal > 0 ? `${stats.accuracy}%` : '—'}
             sub={stats.accuracyTotal > 0 ? `${stats.accuracyCorrect}/${stats.accuracyTotal} · Diagnostic Results` : undefined}
             icon={IoCheckmarkDoneOutline}
-            iconBg="bg-indigo-50 dark:bg-indigo-950/40"
-            iconColor="text-indigo-600 dark:text-indigo-400"
+            primaryColor={primaryColor}
           />
           <StatCard
-            label="Avg. Speed"
+            label="Average Speed"
             value={stats.avgSpeed > 0 ? `${stats.avgSpeed}s` : '—'}
             icon={IoTimerOutline}
-            iconBg="bg-red-50 dark:bg-red-950/40"
-            iconColor="text-red-500 dark:text-red-400"
+            primaryColor={primaryColor}
           />
         </div>
       </div>

@@ -79,6 +79,7 @@ web/
 │   │   ├── practice/         # Practice index, Lesson viewer, Problem sets
 │   │   └── profile/          # Settings, Privacy, Session security
 │   ├── services/             # API services (auth, practice, tutor, diagnosis)
+│   ├── utils/                # Utility helpers (apkUtils hand-off for In-App Browsers)
 │   ├── App.jsx               # Router & global provider wrapper
 │   ├── index.css             # Tailwind & custom CSS utility styles
 │   └── main.jsx              # Application entry point

@@ -19,6 +19,8 @@ import {
   IoSchoolOutline,
   IoPlayOutline,
   IoCalculatorOutline,
+  IoRibbonOutline,
+  IoCalendarOutline,
 } from 'react-icons/io5';
 import { questionApi, learningApi } from '../services/api';
 import MathText from '../components/MathText';
@@ -258,14 +260,20 @@ function TimelineChart({ data }) {
                 const barH = (pct / 100) * (chartH - 24); // 24 = label space
                 const color = pct >= 100 ? (primaryColor || '#4b41e1') : pct >= 70 ? '#00a472' : pct >= 40 ? '#f59e0b' : '#ef4444';
                 return (
-                  <div key={i} className="flex flex-col items-center gap-1" style={{ minWidth: `${barW}px` }}>
+                  <div
+                    key={i}
+                    onClick={() => point.rawItem && onSelectPoint && onSelectPoint(point.rawItem)}
+                    className="flex flex-col items-center gap-1 cursor-pointer group"
+                    title={`Diagnostic on ${point.date}: ${point.score}% - Click to view detailed summary`}
+                    style={{ minWidth: `${barW}px` }}
+                  >
                     <div className="flex flex-col justify-end flex-1 w-full px-1">
                       <div
-                        className="w-full rounded-t-lg transition-all"
+                        className="w-full rounded-t-lg transition-all group-hover:opacity-80 group-hover:scale-y-105 transform origin-bottom"
                         style={{ height: `${barH}px`, backgroundColor: color }}
                       />
                     </div>
-                    <span className="text-xs text-gray-400 dark:text-gray-500 truncate w-full text-center font-medium">{point.date}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500 truncate w-full text-center font-medium group-hover:text-purple-600 dark:group-hover:text-purple-400">{point.date}</span>
                   </div>
                 );
               })}
@@ -606,7 +614,7 @@ function SubmittingScreen() {
   );
 }
 
-function HistoryDetailView({ item, onBack }) {
+function HistoryDetailView({ item, onBack, number }) {
   const { primaryColor } = useTheme();
   const [expandedQ, setExpandedQ] = useState(null);
 
@@ -621,7 +629,7 @@ function HistoryDetailView({ item, onBack }) {
   const subjects = [
     { name: 'Algebra', score: item.topicScores?.algebra?.score ?? item.algebraScore ?? 0, color: '#3b82f6' },
     { name: 'Geometry', score: item.topicScores?.geometry?.score ?? item.geometryScore ?? 0, color: '#8b5cf6' },
-    { name: 'Trigonometry', score: item.topicScores?.trigonometry?.score ?? item.trigonometryScore ?? 0, color: '#f59e0b' },
+    { name: 'Trigonometry', score: item.topicScores?.trigonometry?.score ?? item.trigonometryScore ?? 0, color: '#ef4444' },
   ];
 
   const formatTime = (seconds) => {
@@ -660,11 +668,19 @@ function HistoryDetailView({ item, onBack }) {
               stroke={9}
             />
             <div className="space-y-1.5 text-sm">
+              {number && (
+                <div className="flex items-center gap-2 mb-1">
+                  <IoRibbonOutline size={20} style={{ color: primaryColor || '#4b41e1' }} />
+                  <span className="text-base sm:text-lg font-extrabold tracking-tight" style={{ color: primaryColor || '#4b41e1' }}>
+                    Diagnostic #{number}
+                  </span>
+                </div>
+              )}
               <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300 font-medium">
                 <IoTimeOutline size={16} className="text-purple-600 dark:text-purple-400" /> Time Spent: <strong className="text-gray-900 dark:text-white">{formatTime(timeSpent)}</strong>
               </p>
               <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300 font-medium">
-                <IoSchoolOutline size={16} className="text-purple-600 dark:text-purple-400" /> Overall Score: <strong className="text-gray-900 dark:text-white">{overallScore}%</strong>
+                <IoCalendarOutline size={16} className="text-purple-600 dark:text-purple-400" /> Completed: <strong className="text-gray-900 dark:text-white">{dateStr}</strong>
               </p>
             </div>
           </div>
@@ -811,36 +827,44 @@ function HistoryDetailView({ item, onBack }) {
   );
 }
 
-function HistoryScreen({ onBack }) {
+function HistoryScreen({ onBack, initialItem }) {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDetail, setSelectedDetail] = useState(null);
+  const [selectedNumber, setSelectedNumber] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
-  useEffect(() => {
-    learningApi.getDiagnosticHistory()
-      .then(({ data }) => setHistory(data?.data?.diagnostics ?? data?.diagnostics ?? []))
-      .catch(() => setHistory([]))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleSelectHistoryItem = async (item) => {
+  const handleSelectHistoryItem = async (item, itemNum) => {
     if (!item?._id) return;
     setLoadingDetail(true);
     try {
       const { data } = await learningApi.getDiagnosticById(item._id);
       const fullDoc = data?.data?.diagnostic ?? data?.diagnostic ?? item;
       setSelectedDetail(fullDoc);
+      const calculatedNum = itemNum ?? (history.length > 0 ? (history.length - history.findIndex(h => h._id === item._id)) : 1);
+      setSelectedNumber(calculatedNum > 0 ? calculatedNum : 1);
     } catch (err) {
       console.error('Error loading diagnostic detail:', err);
       setSelectedDetail(item);
+      setSelectedNumber(itemNum || 1);
     } finally {
       setLoadingDetail(false);
     }
   };
 
+  useEffect(() => {
+    learningApi.getDiagnosticHistory()
+      .then(({ data }) => setHistory(data?.data?.diagnostics ?? data?.diagnostics ?? []))
+      .catch(() => setHistory([]))
+      .finally(() => setLoading(false));
+
+    if (initialItem) {
+      handleSelectHistoryItem(initialItem);
+    }
+  }, [initialItem]);
+
   if (selectedDetail) {
-    return <HistoryDetailView item={selectedDetail} onBack={() => setSelectedDetail(null)} />;
+    return <HistoryDetailView item={selectedDetail} onBack={() => setSelectedDetail(null)} number={selectedNumber} />;
   }
 
   return (
@@ -860,7 +884,7 @@ function HistoryScreen({ onBack }) {
           {history.map((h, i) => (
             <div
               key={h._id || i}
-              onClick={() => handleSelectHistoryItem(h)}
+              onClick={() => handleSelectHistoryItem(h, history.length - i)}
               className="bg-white dark:bg-[#1a2333] border border-gray-100 dark:border-[#2d3748] rounded-2xl p-4 shadow-2xs hover:shadow-md hover:border-purple-300 dark:hover:border-purple-700 transition-all cursor-pointer flex justify-between items-center group"
             >
               <div className="flex items-center gap-3.5">
@@ -1096,6 +1120,7 @@ export default function Diagnosis() {
   const [loadingDiag, setLoadingDiag] = useState(true);
   const [timelineData, setTimelineData] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState('week');
+  const [initialHistoryItem, setInitialHistoryItem] = useState(null);
   const [loadingQ, setLoadingQ]   = useState(false);
   const [error, setError]         = useState('');
 
@@ -1129,10 +1154,16 @@ export default function Diagnosis() {
         .map((d) => ({
           date:  new Date(d.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           score: d.overallScore,
+          rawItem: d,
         }))
         .reverse();
       setTimelineData(filtered);
     } catch { setTimelineData([]); }
+  };
+
+  const handleSelectTimelinePoint = (item) => {
+    setInitialHistoryItem(item);
+    setView('history');
   };
 
   const startTest = async () => {
@@ -1207,7 +1238,7 @@ export default function Diagnosis() {
   if (view === 'intro')      return <IntroScreen onStart={startTest} loading={loadingQ} />;
   if (view === 'test')       return <TestScreen questions={questions} onSubmit={handleSubmit} onCancel={() => setView('menu')} />;
   if (view === 'submitting') return <SubmittingScreen />;
-  if (view === 'history')    return <HistoryScreen onBack={() => setView('menu')} />;
+  if (view === 'history')    return <HistoryScreen onBack={() => { setView('menu'); setInitialHistoryItem(null); }} initialItem={initialHistoryItem} />;
   if (view === 'topicDetail' && selectedTopic) {
     return (
       <TopicDetailScreen
@@ -1302,12 +1333,21 @@ export default function Diagnosis() {
         <p className="text-gray-500 mb-8 max-w-sm">
           Complete a diagnostic test to unlock personalized learning paths and track your progress.
         </p>
-        <button
-          onClick={() => setView('intro')}
-          className="bg-purple-600 text-white font-bold px-12 py-4 rounded-2xl hover:bg-purple-700 transition-colors shadow-lg shadow-purple-200"
-        >
-          START DIAGNOSTIC
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => setView('intro')}
+            className="bg-purple-600 text-white font-bold px-8 py-4 rounded-2xl hover:bg-purple-700 transition-colors shadow-lg shadow-purple-200 cursor-pointer"
+          >
+            START DIAGNOSTIC
+          </button>
+          <button
+            onClick={() => { setInitialHistoryItem(null); setView('history'); }}
+            className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 font-bold px-8 py-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-2"
+          >
+            <IoTimeOutline size={18} />
+            View Past History
+          </button>
+        </div>
       </div>
     );
   }
@@ -1315,7 +1355,7 @@ export default function Diagnosis() {
   const subjects = [
     { name: 'Algebra',      score: latestDiag.algebraScore ?? 0, color: '#3b82f6' }, // Blue
     { name: 'Geometry',     score: latestDiag.geometryScore ?? 0, color: '#8b5cf6' }, // Purple
-    { name: 'Trigonometry', score: latestDiag.trigonometryScore ?? 0, color: '#f59e0b' }, // Amber
+    { name: 'Trigonometry', score: latestDiag.trigonometryScore ?? 0, color: '#ef4444' }, // Red
   ];
 
   return (
@@ -1323,15 +1363,22 @@ export default function Diagnosis() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[rgba(75,65,225,0.1)] text-[#4b41e1] flex items-center justify-center">
               <IoAnalyticsOutline size={22} />
             </div>
             Knowledge Map
           </h1>
-          <p className="text-sm font-medium text-gray-500 mt-2">Visualizing your path to mathematical excellence</p>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-2">Visualizing your path to mathematical excellence</p>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => { setInitialHistoryItem(null); setView('history'); }}
+            className="inline-flex items-center gap-1.5 bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 hover:text-purple-600 dark:hover:text-purple-400 hover:border-purple-300 dark:hover:border-purple-700 px-3.5 py-2 rounded-xl text-xs font-bold border border-gray-200 dark:border-gray-800 shadow-2xs transition-all cursor-pointer"
+          >
+            <IoTimeOutline size={16} />
+            Diagnostic History
+          </button>
           <span className="inline-flex items-center gap-1.5 bg-purple-100 text-purple-700 px-4 py-2 rounded-xl text-sm font-extrabold border border-purple-200 shadow-sm">
             <IoSparklesOutline size={16} />
             Overall {Math.round(latestDiag.overallScore ?? 0)}%
@@ -1411,7 +1458,7 @@ export default function Diagnosis() {
             </div>
 
             <div className="mt-4">
-              <TimelineChart data={timelineData} />
+              <TimelineChart data={timelineData} onSelectPoint={handleSelectTimelinePoint} />
             </div>
           </div>
         </div>

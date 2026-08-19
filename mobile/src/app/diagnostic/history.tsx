@@ -97,7 +97,7 @@ export default function DiagnosticHistoryScreen() {
             return (
               <TouchableOpacity
                 key={item._id || index}
-                onPress={() => item._id && router.push(`/diagnostic/detail?id=${item._id}` as any)}
+                onPress={() => item._id && router.push(`/diagnostic/detail?id=${item._id}&number=${itemNum}` as any)}
                 activeOpacity={0.7}
                 style={[styles.historyCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               >

@@ -21,7 +21,7 @@ import { useTheme } from '../../context/ThemeContext';
 const TOPIC_META = {
   Algebra: { color: '#2563eb', bg: 'rgba(37,99,235,0.12)' },
   Geometry: { color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)' },
-  Trigonometry: { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+  Trigonometry: { color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
 };
 
 const PRACTICE_SETS = [

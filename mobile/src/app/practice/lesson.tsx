@@ -13,7 +13,7 @@ import CustomAlertModal from '@/components/common/CustomAlertModal';
 const TOPIC_COLORS: Record<string, string> = {
   Algebra: '#2563eb',
   Geometry: '#8b5cf6',
-  Trigonometry: '#f59e0b',
+  Trigonometry: '#ef4444',
 };
 
 const blendColors = (baseHex: string, tintHex: string, amount: number) => {

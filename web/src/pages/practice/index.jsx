@@ -21,7 +21,7 @@ import { useTheme } from '../../context/ThemeContext';
 const TOPIC_META = {
   Algebra:      { color: '#2563eb', bg: 'rgba(37,99,235,0.12)',  Icon: IoCalculatorOutline },
   Geometry:     { color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)', Icon: IoShapesOutline },
-  Trigonometry: { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', Icon: IoAnalyticsOutline },
+  Trigonometry: { color: '#ef4444', bg: 'rgba(239,68,68,0.12)',  Icon: IoAnalyticsOutline },
 };
 
 const DAILY_TOPICS = ['Algebra', 'Geometry', 'Trigonometry'];
@@ -109,7 +109,7 @@ export function PracticeTopicCard({ topic, navigate, masteryLabel }) {
 
       {/* Subtopic tags */}
       {topic.subtopics.length > 0 && (
-        <div className="w-full pt-3 border-t border-gray-100 dark:border-gray-800">
+        <div className="w-full pt-3 border-t border-gray-100 dark:border-gray-700/80">
           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Key Subtopics:</p>
           <div className="flex flex-wrap gap-1.5">
             {topic.subtopics.slice(0, 3).map((s) => (

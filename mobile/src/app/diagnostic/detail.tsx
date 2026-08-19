@@ -18,10 +18,11 @@ import MasteryRing from '@/components/MasteryRing';
 
 export default function DiagnosticDetailScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, number } = useLocalSearchParams<{ id: string; number?: string }>();
   const { darkMode, primaryColor } = useTheme();
 
   const [diagnostic, setDiagnostic] = useState<any>(null);
+  const [diagNumber, setDiagNumber] = useState<number | null>(number ? parseInt(number, 10) : null);
   const [loading, setLoading] = useState(true);
   const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null);
 
@@ -37,6 +38,24 @@ export default function DiagnosticDetailScreen() {
       const res: any = await diagnosticService.getDiagnosticById(diagId);
       const doc = res.data?.diagnostic ?? res.diagnostic ?? res.data ?? null;
       setDiagnostic(doc);
+
+      try {
+        const histRes: any = await diagnosticService.getDiagnosticHistory();
+        const docs = histRes.data?.diagnostics ?? histRes.diagnostics ?? [];
+        if (docs.length > 0) {
+          const targetId = doc?._id || doc?.id || diagId;
+          const idx = docs.findIndex((d: any) => (d._id || d.id) === targetId);
+          if (idx !== -1) {
+            setDiagNumber(docs.length - idx);
+          } else if (!number) {
+            setDiagNumber(docs.length);
+          }
+        } else if (!number) {
+          setDiagNumber(1);
+        }
+      } catch (e) {
+        console.log('Error fetching history count for diagnostic number:', e);
+      }
     } catch (error) {
       console.error('Error fetching diagnostic detail:', error);
       setDiagnostic(null);
@@ -133,7 +152,7 @@ export default function DiagnosticDetailScreen() {
   const subjects = [
     { name: 'Algebra', score: diagnostic.topicScores?.algebra?.score ?? diagnostic.algebraScore ?? 0, color: '#3b82f6' },
     { name: 'Geometry', score: diagnostic.topicScores?.geometry?.score ?? diagnostic.geometryScore ?? 0, color: '#8b5cf6' },
-    { name: 'Trigonometry', score: diagnostic.topicScores?.trigonometry?.score ?? diagnostic.trigonometryScore ?? 0, color: '#f59e0b' },
+    { name: 'Trigonometry', score: diagnostic.topicScores?.trigonometry?.score ?? diagnostic.trigonometryScore ?? 0, color: '#ef4444' },
   ];
 
   return (
@@ -164,6 +183,14 @@ export default function DiagnosticDetailScreen() {
               strokeWidth={8}
             />
             <View style={styles.summaryMeta}>
+              {diagNumber ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <Ionicons name="ribbon-outline" size={19} color={colors.primary} />
+                  <Text style={{ fontSize: 17, fontWeight: '800', color: colors.primary, letterSpacing: -0.2 }}>
+                    Diagnostic #{diagNumber}
+                  </Text>
+                </View>
+              ) : null}
               <View style={styles.metaRow}>
                 <Ionicons name="time-outline" size={16} color={colors.textMuted} />
                 <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Time Spent: </Text>

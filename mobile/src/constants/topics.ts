@@ -22,7 +22,7 @@ export const TOPICS: Topic[] = [
     id: 'trigonometry',
     name: 'Trigonometry',
     icon: 'analytics',
-    color: '#f59e0b',
+    color: '#ef4444',
   },
 ];
 

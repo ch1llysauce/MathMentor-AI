@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
+import { handleApkDownload } from '../../utils/apkUtils';
 import {
   IoArrowBack,
   IoMoonOutline,
@@ -158,6 +159,9 @@ export default function Settings() {
               <a
                 href={import.meta.env.VITE_APK_DOWNLOAD_URL || "/MathMentorAI.apk"}
                 download="MathMentor-AI.apk"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => handleApkDownload(e, import.meta.env.VITE_APK_DOWNLOAD_URL || "/MathMentorAI.apk")}
                 className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-white text-xs font-bold transition-all shadow-md active:scale-98 cursor-pointer"
                 style={{ background: themeGradient }}
               >

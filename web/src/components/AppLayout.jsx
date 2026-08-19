@@ -10,6 +10,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useActiveSession } from '../context/ActiveSessionContext';
+import { handleApkDownload } from '../utils/apkUtils';
 import SignOutModal from './SignOutModal';
 import ScientificCalculator from './ScientificCalculator';
 
@@ -115,6 +116,9 @@ export default function AppLayout() {
         <a
           href={import.meta.env.VITE_APK_DOWNLOAD_URL || "/MathMentorAI.apk"}
           download="MathMentor-AI.apk"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => handleApkDownload(e, import.meta.env.VITE_APK_DOWNLOAD_URL || "/MathMentorAI.apk")}
           className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-white text-xs font-bold hover:bg-white/90 transition-all shadow-xs active:scale-98 cursor-pointer"
           style={{ color: primaryColor }}
         >

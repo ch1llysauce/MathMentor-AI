@@ -44,7 +44,7 @@ const TOPIC_META: Record<string, { icon: string; color: string; description: str
   },
   Trigonometry: {
     icon: 'compass-outline',
-    color: '#f59e0b',
+    color: '#ef4444',
     description: 'Master ratios, triangles, and the unit circle with confidence.',
     subtopics: 9,
   },
@@ -597,8 +597,8 @@ export default function DashboardScreen() {
           {/* Stats Row */}
           <View style={styles.statsRow}>
             <View style={[styles.statCard, { backgroundColor: D.card }]}>
-              <View style={[styles.statIcon, { backgroundColor: darkMode ? 'rgba(165,180,252,0.2)' : 'rgba(216, 227, 251, 1)' }]}>
-                <Ionicons name="checkmark-done" size={24} color={darkMode ? '#a5b4fc' : '#091426'} />
+              <View style={[styles.statIcon, { backgroundColor: darkMode ? `${primaryColor}25` : `${primaryColor}15` }]}>
+                <Ionicons name="checkmark-done" size={24} color={primaryColor} />
               </View>
               <Text style={[styles.statLabel, { color: D.textLight }]}>Accuracy</Text>
               {stats.accuracyTotal > 0 ? (
@@ -614,10 +614,10 @@ export default function DashboardScreen() {
             </View>
 
             <View style={[styles.statCard, { backgroundColor: D.card }]}>
-              <View style={[styles.statIcon, { backgroundColor: darkMode ? 'rgba(248,113,113,0.15)' : 'rgba(255, 218, 214, 1)' }]}>
-                <Ionicons name="timer" size={24} color={darkMode ? '#f87171' : '#ba1a1a'} />
+              <View style={[styles.statIcon, { backgroundColor: darkMode ? `${primaryColor}25` : `${primaryColor}15` }]}>
+                <Ionicons name="timer" size={24} color={primaryColor} />
               </View>
-              <Text style={[styles.statLabel, { color: D.textLight }]}>Avg. Speed</Text>
+              <Text style={[styles.statLabel, { color: D.textLight }]}>Average Speed</Text>
               <Text style={[styles.statValue, { color: D.text }]}>{stats.avgSpeed > 0 ? `${stats.avgSpeed}s` : '—'}</Text>
             </View>
           </View>

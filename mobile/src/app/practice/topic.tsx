@@ -48,7 +48,7 @@ const PRACTICE_SETS: PracticeSet[] = [
 const TOPIC_COLORS: Record<string, string> = {
   Algebra: '#2563eb',
   Geometry: '#8b5cf6',
-  Trigonometry: '#f59e0b',
+  Trigonometry: '#ef4444',
 };
 
 const blendColors = (baseHex: string, tintHex: string, amount: number) => {
@@ -523,9 +523,7 @@ export default function TopicScreen() {
                       </View>
 
                       {!lesson.locked && (
-                        <View style={[styles.chevronCircle, { backgroundColor: darkMode ? '#252f40' : '#f2f4f6' }]}>
-                          <Ionicons name="chevron-forward" size={16} color={T.textLight} />
-                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={T.textLight} style={{ marginLeft: 6 }} />
                       )}
                     </LinearGradient>
                   </TouchableOpacity>

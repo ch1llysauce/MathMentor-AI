@@ -210,7 +210,7 @@ export default function PracticeScreen() {
             color = '#8b5cf6';
           } else if (topicLower === 'trigonometry') {
             icon = 'analytics';
-            color = '#f59e0b';
+            color = '#ef4444';
           }
 
           return {
@@ -256,7 +256,7 @@ export default function PracticeScreen() {
             id: '3',
             name: 'Trigonometry',
             icon: 'analytics',
-            color: '#f59e0b',
+            color: '#ef4444',
             lessons: 0,
             problems: 0,
             mastery: diagnosticData?.trigonometryScore || 0,
@@ -554,7 +554,7 @@ export default function PracticeScreen() {
                     </View>
 
                     {/* Subtopics */}
-                    <View style={[styles.subtopicsSection, { borderTopColor: P.surface }]}>
+                    <View style={[styles.subtopicsSection, { borderTopColor: darkMode ? 'rgba(255, 255, 255, 0.15)' : Colors.border }]}>
                       <Text style={[styles.subtopicsLabel, { color: P.text }]}>Key Subtopics:</Text>
                       <View style={styles.subtopicsContainer}>
                         {topic.subtopics.slice(0, 3).map((subtopic, index) => (

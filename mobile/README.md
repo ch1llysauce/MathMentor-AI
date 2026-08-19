@@ -38,7 +38,7 @@ mobile/
 │   │   ├── auth/             # Login, Register, Forgot Password
 │   │   ├── practice/         # Lesson viewer, Lesson AI chat, Problems runner, Topic list
 │   │   ├── profile/          # Settings, Edit Profile, Active Sessions, Privacy
-│   │   ├── diagnostic/       # Retake assessment, Topic details
+│   │   ├── diagnostic/       # Retake assessment, Diagnostic history, Question review detail view, Topic details
 │   │   └── _layout.tsx       # Root layout (AuthProvider + ThemeProvider)
 │   ├── components/           # Reusable UI components (Modals, Cards, Math text)
 │   ├── constants/            # API config, color presets, curriculum data
