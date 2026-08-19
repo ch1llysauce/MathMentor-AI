@@ -1439,7 +1439,7 @@ export default function Diagnosis() {
               </div>
               
               {/* Period selector */}
-              <div className="flex bg-gray-100 dark:bg-gray-800/80 rounded-xl p-1 gap-1">
+              <div className="inline-flex w-fit bg-gray-100 dark:bg-gray-800/80 rounded-xl p-1 gap-1">
                 {PERIODS.map(({ id, label }) => (
                   <button
                     key={id}
