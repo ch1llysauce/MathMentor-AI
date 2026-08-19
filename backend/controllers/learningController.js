@@ -127,7 +127,7 @@ export const getSessionHistory = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const submitDiagnosticResults = asyncHandler(async (req, res) => {
-    const { topicScores, totalQuestions, correctAnswers, timeSpent } = req.body;
+    const { topicScores, totalQuestions, correctAnswers, timeSpent, questionResponses } = req.body;
 
     if (!topicScores) {
         throw new AppError("Topic scores are required", 400);
@@ -172,6 +172,7 @@ export const submitDiagnosticResults = asyncHandler(async (req, res) => {
         correctAnswers,
         overallScore,
         timeSpent: timeSpent || 0,
+        questionResponses: questionResponses || [],
         completedAt: new Date()
     });
 
@@ -234,6 +235,28 @@ export const getDiagnosticHistory = asyncHandler(async (req, res) => {
         success: true,
         count: diagnostics.length,
         data: { diagnostics }
+    });
+});
+
+/**
+ * @desc    Get diagnostic result by ID
+ * @route   GET /api/learning/diagnostic/:id
+ * @access  Private
+ */
+export const getDiagnosticById = asyncHandler(async (req, res) => {
+    const diagnostic = await DiagnosticResult.findById(req.params.id);
+
+    if (!diagnostic) {
+        throw new AppError("Diagnostic result not found", 404);
+    }
+
+    if (diagnostic.user.toString() !== req.user._id.toString()) {
+        throw new AppError("Not authorized to access this diagnostic result", 403);
+    }
+
+    res.status(200).json({
+        success: true,
+        data: { diagnostic }
     });
 });
 

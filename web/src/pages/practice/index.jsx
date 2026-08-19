@@ -20,7 +20,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 const TOPIC_META = {
   Algebra:      { color: '#2563eb', bg: 'rgba(37,99,235,0.12)',  Icon: IoCalculatorOutline },
-  Geometry:     { color: '#00a472', bg: 'rgba(0,164,114,0.12)',  Icon: IoShapesOutline },
+  Geometry:     { color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)', Icon: IoShapesOutline },
   Trigonometry: { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', Icon: IoAnalyticsOutline },
 };
 
@@ -231,10 +231,70 @@ export default function PracticeIndex() {
   const filteredTopics = topics.filter((t) => {
     const matchSearch = t.name.toLowerCase().includes(search.toLowerCase()) ||
       t.subtopics.some((s) => s.toLowerCase().includes(search.toLowerCase()));
+    if (filter === 'daily')  return false;
     if (filter === 'weak')   return matchSearch && t.mastery < 70;
     if (filter === 'strong') return matchSearch && t.mastery >= 80;
     return matchSearch;
   });
+
+  const renderDailyCard = () => (
+    <button
+      onClick={dailyDone ? undefined : () => navigate(`/practice/problems`, { state: { topic: dailyTopic, category: 'mixed', count: 10, title: `Daily Challenge — ${dailyTopic}`, isDaily: true } })}
+      disabled={dailyDone}
+      onMouseEnter={() => setDailyHovered(true)}
+      onMouseLeave={() => setDailyHovered(false)}
+      style={{
+        background: dailyDone
+          ? `linear-gradient(135deg, ${darkMode ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.06)'} 0%, ${cardBase} 100%)`
+          : dailyHovered
+            ? `linear-gradient(135deg, ${cardBase} 0%, rgba(245,158,11,0.20) 100%)`
+            : `linear-gradient(135deg, ${cardBase} 0%, rgba(245,158,11,0.08) 100%)`,
+        borderColor: dailyDone ? '#10b98150' : dailyHovered ? '#f59e0b60' : darkMode ? '#2d3748' : '#f59e0b30',
+        transform: !dailyDone && dailyHovered ? 'translateY(-2px)' : 'none',
+      }}
+      className={`w-full bg-white dark:bg-[#1a2333] border rounded-2xl p-4 text-left flex items-center gap-4 shadow-2xs transition-all ${
+        dailyDone ? 'cursor-default' : 'cursor-pointer'
+      }`}
+    >
+      <div
+        className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 shadow-2xs border"
+        style={{
+          background: dailyDone
+            ? 'linear-gradient(135deg, rgba(16,185,129,0.3) 0%, rgba(16,185,129,0.1) 100%)'
+            : 'linear-gradient(135deg, rgba(245,158,11,0.3) 0%, rgba(245,158,11,0.1) 100%)',
+          borderColor: dailyDone ? '#10b98140' : '#f59e0b40',
+          color: dailyDone ? '#10b981' : '#f59e0b',
+        }}
+      >
+        {dailyDone
+          ? <IoCheckmarkCircle size={28} />
+          : <IoTrophyOutline size={28} />
+        }
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <p className="font-bold text-gray-900 dark:text-white">Daily Challenge</p>
+          {dailyDone && dailyScore && (
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">
+              {dailyScore.score}/{dailyScore.total}
+            </span>
+          )}
+          {dailyDone && !dailyScore && (
+            <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">Done ✓</span>
+          )}
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          {dailyDone
+            ? (dailyScore ? `Score: ${dailyScore.score}/${dailyScore.total} · Come back tomorrow!` : 'Come back tomorrow for a new challenge!')
+            : `Today: ${dailyTopic} — 10 mixed problems`}
+        </p>
+      </div>
+      {dailyDone
+        ? <IoLockClosedOutline size={18} className="text-emerald-500 shrink-0" />
+        : <IoChevronForwardOutline size={18} className="text-gray-400 shrink-0" />
+      }
+    </button>
+  );
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6 pb-24 sm:pb-28">
@@ -277,6 +337,7 @@ export default function PracticeIndex() {
           <div className="flex flex-wrap gap-2 pb-1">
             {[
               { id: 'all',    label: 'All Topics' },
+              { id: 'daily',  label: 'Daily Challenge', Icon: IoTrophyOutline },
               { id: 'weak',   label: 'Need Practice', Icon: IoArrowDownOutline },
               { id: 'strong', label: 'Strong Areas',  Icon: IoArrowUpOutline },
             ].map(({ id, label, Icon }) => {
@@ -309,6 +370,10 @@ export default function PracticeIndex() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {[1, 2, 3].map((i) => <div key={i} className="h-48 bg-gray-100 dark:bg-gray-800 rounded-3xl animate-pulse" />)}
         </div>
+      ) : filter === 'daily' ? (
+        <div className="max-w-2xl">
+          {renderDailyCard()}
+        </div>
       ) : filteredTopics.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-[#1a2333] border border-gray-100 dark:border-[#2d3748] rounded-3xl p-8 shadow-2xs">
           <IoSearchOutline size={44} className="mx-auto mb-3 text-gray-300" />
@@ -323,66 +388,13 @@ export default function PracticeIndex() {
         </div>
       )}
 
-      {/* Daily challenge */}
-      <div className="bg-white dark:bg-[#1a2333] border border-gray-100 dark:border-[#2d3748] rounded-3xl p-5 sm:p-6 shadow-2xs">
-        <p className="text-sm font-bold text-gray-900 dark:text-white mb-3">Quick Actions</p>
-        <button
-          onClick={dailyDone ? undefined : () => navigate(`/practice/problems`, { state: { topic: dailyTopic, category: 'mixed', count: 10, title: `Daily Challenge — ${dailyTopic}`, isDaily: true } })}
-          disabled={dailyDone}
-          onMouseEnter={() => setDailyHovered(true)}
-          onMouseLeave={() => setDailyHovered(false)}
-          style={{
-            background: dailyDone
-              ? `linear-gradient(135deg, ${darkMode ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.06)'} 0%, ${cardBase} 100%)`
-              : dailyHovered
-                ? `linear-gradient(135deg, ${cardBase} 0%, rgba(245,158,11,0.20) 100%)`
-                : `linear-gradient(135deg, ${cardBase} 0%, rgba(245,158,11,0.08) 100%)`,
-            borderColor: dailyDone ? '#10b98150' : dailyHovered ? '#f59e0b60' : darkMode ? '#2d3748' : '#f59e0b30',
-            transform: !dailyDone && dailyHovered ? 'translateY(-2px)' : 'none',
-          }}
-          className={`w-full bg-white dark:bg-[#1a2333] border rounded-2xl p-4 text-left flex items-center gap-4 shadow-2xs transition-all ${
-            dailyDone ? 'cursor-default' : 'cursor-pointer'
-          }`}
-        >
-          <div
-            className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 shadow-2xs border"
-            style={{
-              background: dailyDone
-                ? 'linear-gradient(135deg, rgba(16,185,129,0.3) 0%, rgba(16,185,129,0.1) 100%)'
-                : 'linear-gradient(135deg, rgba(245,158,11,0.3) 0%, rgba(245,158,11,0.1) 100%)',
-              borderColor: dailyDone ? '#10b98140' : '#f59e0b40',
-              color: dailyDone ? '#10b981' : '#f59e0b',
-            }}
-          >
-            {dailyDone
-              ? <IoCheckmarkCircle size={28} />
-              : <IoTrophyOutline size={28} />
-            }
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              <p className="font-bold text-gray-900 dark:text-white">Daily Challenge</p>
-              {dailyDone && dailyScore && (
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  {dailyScore.score}/{dailyScore.total}
-                </span>
-              )}
-              {dailyDone && !dailyScore && (
-                <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">Done ✓</span>
-              )}
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {dailyDone
-                ? (dailyScore ? `Score: ${dailyScore.score}/${dailyScore.total} · Come back tomorrow!` : 'Come back tomorrow for a new challenge!')
-                : `Today: ${dailyTopic} — 10 mixed problems`}
-            </p>
-          </div>
-          {dailyDone
-            ? <IoLockClosedOutline size={18} className="text-emerald-500 shrink-0" />
-            : <IoChevronForwardOutline size={18} className="text-gray-400 shrink-0" />
-          }
-        </button>
-      </div>
+      {/* Daily challenge (shown under Quick Actions if daily filter is not active) */}
+      {filter !== 'daily' && (
+        <div className="bg-white dark:bg-[#1a2333] border border-gray-100 dark:border-[#2d3748] rounded-3xl p-5 sm:p-6 shadow-2xs">
+          <p className="text-sm font-bold text-gray-900 dark:text-white mb-3">Quick Actions</p>
+          {renderDailyCard()}
+        </div>
+      )}
     </div>
   );
 }

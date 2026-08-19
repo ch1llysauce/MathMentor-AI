@@ -6,6 +6,7 @@ import {
     getSessionHistory,
     submitDiagnosticResults,
     getDiagnosticHistory,
+    getDiagnosticById,
     getLatestDiagnostic,
     getReviewQuestions,
     getLessons,
@@ -39,6 +40,7 @@ router.get("/sessions", getSessionHistory);
 router.post("/diagnostic/submit", submitDiagnosticResults);
 router.get("/diagnostic/history", getDiagnosticHistory);
 router.get("/diagnostic/latest", getLatestDiagnostic);
+router.get("/diagnostic/:id", validateMongoId("id"), getDiagnosticById);
 
 // Lessons
 router.get("/lessons", getLessons);

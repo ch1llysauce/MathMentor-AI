@@ -55,6 +55,14 @@ export const diagnosticService = {
   },
 
   /**
+   * Get diagnostic result by ID
+   */
+  getDiagnosticById: async (id: string): Promise<DiagnosticResponse> => {
+    const response = await api.get(`/learning/diagnostic/${id}`);
+    return response.data;
+  },
+
+  /**
    * Submit diagnostic test results
    */
   submitDiagnosticResults: async (data: {
@@ -62,6 +70,7 @@ export const diagnosticService = {
     totalQuestions: number;
     correctAnswers: number;
     timeSpent: number;
+    questionResponses?: any[];
   }): Promise<DiagnosticResponse> => {
     const response = await api.post('/learning/diagnostic/submit', data);
     return response.data;

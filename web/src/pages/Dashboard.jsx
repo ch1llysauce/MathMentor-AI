@@ -19,7 +19,7 @@ import { progressApi, learningApi } from '../services/api';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const TOPIC_META = {
   Algebra: { Icon: IoCalculatorOutline, color: '#2563eb', description: 'Build your foundation with equations, expressions, and algebraic reasoning.' },
-  Geometry: { Icon: IoShapesOutline, color: '#00a472', description: 'Explore angles, shapes, areas, and spatial relationships.' },
+  Geometry: { Icon: IoShapesOutline, color: '#8b5cf6', description: 'Explore angles, shapes, areas, and spatial relationships.' },
   Trigonometry: { Icon: IoCompassOutline, color: '#f59e0b', description: 'Master ratios, triangles, and the unit circle with confidence.' },
 };
 

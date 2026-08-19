@@ -15,6 +15,7 @@ import {
   IoSparklesOutline,
   IoWarningOutline,
   IoChevronForwardOutline,
+  IoChevronDownOutline,
   IoSchoolOutline,
   IoPlayOutline,
   IoCalculatorOutline,
@@ -85,7 +86,7 @@ function getRecommendation(diag) {
 }
 
 // ─── Mastery Ring (SVG) ───────────────────────────────────────────────────────
-function MasteryRing({ percentage, topic, subtitle, onClick, color = '#4b41e1', size = 120, stroke = 10 }) {
+function MasteryRing({ percentage, topic, subtitle, onClick, color = '#4b41e1', size = 85, stroke = 7 }) {
   const radius = (size - stroke) / 2;
   const circ   = 2 * Math.PI * radius;
   const offset = circ - (Math.min(percentage, 100) / 100) * circ;
@@ -110,12 +111,12 @@ function MasteryRing({ percentage, topic, subtitle, onClick, color = '#4b41e1', 
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center flex-col">
-          <span className="text-2xl font-extrabold tracking-tight" style={{ color: color }}>{Math.round(percentage)}%</span>
+          <span className="text-base sm:text-xl font-extrabold tracking-tight" style={{ color: color }}>{Math.round(percentage)}%</span>
         </div>
       </div>
       <div className="text-center">
-        <p className="text-base font-bold text-gray-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors">{topic}</p>
-        {subtitle && <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>}
+        <p className="text-xs sm:text-base font-bold text-gray-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors">{topic}</p>
+        {subtitle && <p className="text-[11px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>}
       </div>
     </>
   );
@@ -124,7 +125,7 @@ function MasteryRing({ percentage, topic, subtitle, onClick, color = '#4b41e1', 
     return (
       <button
         onClick={onClick}
-        className="flex flex-col items-center gap-3 p-4 rounded-2xl hover:bg-gray-50/80 dark:hover:bg-gray-800/40 transition-all duration-300 focus:outline-none group border border-transparent hover:border-gray-200 dark:hover:border-gray-700 hover:shadow-sm"
+        className="flex flex-col items-center gap-2 sm:gap-3 p-1.5 sm:p-4 rounded-2xl hover:bg-gray-50/80 dark:hover:bg-gray-800/40 transition-all duration-300 focus:outline-none group border border-transparent hover:border-gray-200 dark:hover:border-gray-700 hover:shadow-sm"
       >
         {content}
       </button>
@@ -132,7 +133,7 @@ function MasteryRing({ percentage, topic, subtitle, onClick, color = '#4b41e1', 
   }
 
   return (
-    <div className="flex flex-col items-center gap-3 p-4 rounded-2xl">
+    <div className="flex flex-col items-center gap-2 sm:gap-3 p-1.5 sm:p-4 rounded-2xl">
       {content}
     </div>
   );
@@ -605,43 +606,292 @@ function SubmittingScreen() {
   );
 }
 
+function HistoryDetailView({ item, onBack }) {
+  const { primaryColor } = useTheme();
+  const [expandedQ, setExpandedQ] = useState(null);
+
+  const overallScore = Math.round(item.overallScore ?? 0);
+  const totalQuestions = item.totalQuestions ?? 0;
+  const totalCorrect = item.correctAnswers ?? 0;
+  const totalIncorrect = Math.max(0, totalQuestions - totalCorrect);
+  const timeSpent = item.timeSpent ?? 0;
+  const dateStr = item.completedAt ? new Date(item.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown Date';
+  const responses = item.questionResponses || [];
+
+  const subjects = [
+    { name: 'Algebra', score: item.topicScores?.algebra?.score ?? item.algebraScore ?? 0, color: '#3b82f6' },
+    { name: 'Geometry', score: item.topicScores?.geometry?.score ?? item.geometryScore ?? 0, color: '#8b5cf6' },
+    { name: 'Trigonometry', score: item.topicScores?.trigonometry?.score ?? item.trigonometryScore ?? 0, color: '#f59e0b' },
+  ];
+
+  const formatTime = (seconds) => {
+    if (!seconds) return '0s';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m === 0 ? `${s}s` : `${m}m ${s}s`;
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      {/* Top Header */}
+      <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-4">
+        <button
+          onClick={onBack}
+          className="w-10 h-10 rounded-2xl bg-white dark:bg-[#1a2333] border border-gray-200 dark:border-[#2d3748] flex items-center justify-center text-gray-700 dark:text-gray-200 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-600 dark:hover:text-purple-400 transition-all shadow-2xs"
+        >
+          <IoArrowBackOutline size={20} />
+        </button>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white">Diagnostic Summary</h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Completed on {dateStr}</p>
+        </div>
+      </div>
+
+      {/* Summary Card */}
+      <div className="bg-white dark:bg-[#1a2333] border border-gray-200 dark:border-[#2d3748] rounded-3xl p-6 shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row items-center gap-6 justify-between">
+          <div className="flex items-center gap-6">
+            <MasteryRing
+              percentage={overallScore}
+              topic="Overall"
+              subtitle={overallScore >= 80 ? 'Mastered' : overallScore >= 50 ? 'Proficient' : 'Needs Practice'}
+              color={overallScore >= 70 ? (primaryColor || '#4b41e1') : overallScore >= 40 ? '#f59e0b' : '#ef4444'}
+              size={100}
+              stroke={9}
+            />
+            <div className="space-y-1.5 text-sm">
+              <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300 font-medium">
+                <IoTimeOutline size={16} className="text-purple-600 dark:text-purple-400" /> Time Spent: <strong className="text-gray-900 dark:text-white">{formatTime(timeSpent)}</strong>
+              </p>
+              <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300 font-medium">
+                <IoSchoolOutline size={16} className="text-purple-600 dark:text-purple-400" /> Overall Score: <strong className="text-gray-900 dark:text-white">{overallScore}%</strong>
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 w-full sm:w-auto">
+            <div className="bg-purple-50 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-800/40 rounded-2xl p-3 text-center min-w-[80px]">
+              <span className="block text-xl font-black text-purple-700 dark:text-purple-300">{totalQuestions}</span>
+              <span className="text-[11px] font-bold text-purple-900 dark:text-purple-200">Total</span>
+            </div>
+            <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/40 rounded-2xl p-3 text-center min-w-[80px]">
+              <span className="block text-xl font-black text-emerald-600 dark:text-emerald-400">{totalCorrect}</span>
+              <span className="text-[11px] font-bold text-emerald-900 dark:text-emerald-200">Correct</span>
+            </div>
+            <div className="bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-800/40 rounded-2xl p-3 text-center min-w-[80px]">
+              <span className="block text-xl font-black text-red-500 dark:text-red-400">{totalIncorrect}</span>
+              <span className="text-[11px] font-bold text-red-900 dark:text-red-200">Incorrect</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Topic Breakdown */}
+        <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
+          <h3 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-wider mb-4">Subject Mastery</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {subjects.map(({ name, score, color }) => (
+              <div key={name} className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200/80 dark:border-gray-700/60 rounded-2xl p-4 space-y-2">
+                <div className="flex justify-between items-center text-sm font-bold">
+                  <span className="text-gray-800 dark:text-gray-200">{name}</span>
+                  <span style={{ color }}>{score}%</span>
+                </div>
+                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-300" style={{ width: `${score}%`, backgroundColor: color }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Questions Review */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-extrabold text-gray-900 dark:text-white">Questions Review</h2>
+          {responses.length > 0 && (
+            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{responses.length} Questions</span>
+          )}
+        </div>
+
+        {responses.length === 0 ? (
+          <div className="bg-white dark:bg-[#1a2333] border border-gray-200 dark:border-[#2d3748] rounded-2xl p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
+            <IoAlertCircleOutline size={24} className="mx-auto text-gray-400 mb-2" />
+            Detailed question breakdown is available for diagnostic tests taken after this update.
+          </div>
+        ) : (
+          responses.map((q, idx) => {
+            const isExpanded = expandedQ === idx;
+            const diffColor = q.difficulty === 'Easy' ? '#00a472' : q.difficulty === 'Hard' ? '#ef4444' : '#f59e0b';
+            return (
+              <div
+                key={idx}
+                className={`bg-white dark:bg-[#1a2333] border-2 rounded-2xl overflow-hidden transition-all shadow-2xs ${
+                  q.isCorrect ? 'border-emerald-400/80 dark:border-emerald-600/60' : 'border-red-400/80 dark:border-red-600/60'
+                }`}
+              >
+                <button
+                  onClick={() => setExpandedQ(isExpanded ? null : idx)}
+                  className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition-colors"
+                >
+                  <div className="flex items-center gap-3 flex-1 pr-4">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${q.isCorrect ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-950/60 text-red-500 dark:text-red-400'}`}>
+                      {q.isCorrect ? <IoCheckmarkCircleOutline size={20} /> : <IoCloseOutline size={20} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">Question #{idx + 1}</span>
+                        {q.topic && (
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-800/40">
+                            {q.topic}
+                          </span>
+                        )}
+                        {q.difficulty && (
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg border" style={{ backgroundColor: `${diffColor}15`, color: diffColor, borderColor: `${diffColor}30` }}>
+                            {q.difficulty}
+                          </span>
+                        )}
+                      </div>
+                      {q.subtopic && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{q.subtopic}</p>}
+                    </div>
+                  </div>
+                  <IoChevronDownOutline size={18} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isExpanded && (
+                  <div className="px-5 pb-5 pt-2 border-t border-gray-100 dark:border-gray-800/80 space-y-4">
+                    <div className="text-gray-900 dark:text-gray-100 font-medium leading-relaxed text-base pt-2">
+                      <MathText text={q.questionText} />
+                    </div>
+
+                    {/* Choices */}
+                    {q.choices?.length > 0 && (
+                      <div className="space-y-2">
+                        {q.choices.map((choice, cIdx) => {
+                          const letter = String.fromCharCode(65 + cIdx);
+                          const isUserSel = choice.trim().toLowerCase() === (q.userAnswer ?? '').trim().toLowerCase();
+                          const isCorrectChoice = choice.trim().toLowerCase() === (q.correctAnswer ?? '').trim().toLowerCase();
+
+                          let itemClass = 'bg-white dark:bg-[#18181b] border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200';
+                          if (isCorrectChoice) {
+                            itemClass = 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-400 dark:border-emerald-600 text-emerald-900 dark:text-emerald-200 font-semibold';
+                          } else if (isUserSel && !q.isCorrect) {
+                            itemClass = 'bg-red-50 dark:bg-red-950/60 border-red-400 dark:border-red-600 text-red-900 dark:text-red-200 font-semibold';
+                          }
+
+                          return (
+                            <div key={cIdx} className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm ${itemClass}`}>
+                              <span className="font-extrabold text-xs shrink-0">{letter}.</span>
+                              <span className="flex-1"><MathText text={choice} /></span>
+                              {isCorrectChoice && <IoCheckmarkCircleOutline size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0" />}
+                              {isUserSel && !q.isCorrect && <IoCloseOutline size={18} className="text-red-500 dark:text-red-400 shrink-0" />}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Explanation */}
+                    {q.explanation && (
+                      <div className="bg-purple-50/70 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-800/40 rounded-xl p-4 text-sm space-y-1">
+                        <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-300">
+                          <IoBulbOutline size={16} className="text-purple-600 dark:text-purple-400" />
+                          <span>Explanation</span>
+                        </div>
+                        <div className="text-gray-800 dark:text-gray-200 leading-relaxed"><MathText text={q.explanation} /></div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
 function HistoryScreen({ onBack }) {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDetail, setSelectedDetail] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
   useEffect(() => {
     learningApi.getDiagnosticHistory()
       .then(({ data }) => setHistory(data?.data?.diagnostics ?? data?.diagnostics ?? []))
       .catch(() => setHistory([]))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleSelectHistoryItem = async (item) => {
+    if (!item?._id) return;
+    setLoadingDetail(true);
+    try {
+      const { data } = await learningApi.getDiagnosticById(item._id);
+      const fullDoc = data?.data?.diagnostic ?? data?.diagnostic ?? item;
+      setSelectedDetail(fullDoc);
+    } catch (err) {
+      console.error('Error loading diagnostic detail:', err);
+      setSelectedDetail(item);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  if (selectedDetail) {
+    return <HistoryDetailView item={selectedDetail} onBack={() => setSelectedDetail(null)} />;
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={onBack} className="text-gray-400 hover:text-gray-600"><IoArrowBackOutline size={20} /></button>
-        <h1 className="text-xl font-bold text-gray-900">Diagnostic History</h1>
+        <button onClick={onBack} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+          <IoArrowBackOutline size={20} />
+        </button>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Diagnostic History</h1>
       </div>
-      {loading ? (
+      {loading || loadingDetail ? (
         <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" /></div>
       ) : history.length === 0 ? (
-        <p className="text-gray-500 text-center py-12">No diagnostic history yet.</p>
+        <p className="text-gray-500 dark:text-gray-400 text-center py-12">No diagnostic history yet.</p>
       ) : (
         <div className="space-y-3">
           {history.map((h, i) => (
-            <div key={i} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
-                  <IoTimeOutline size={16} className="text-purple-600" />
+            <div
+              key={h._id || i}
+              onClick={() => handleSelectHistoryItem(h)}
+              className="bg-white dark:bg-[#1a2333] border border-gray-100 dark:border-[#2d3748] rounded-2xl p-4 shadow-2xs hover:shadow-md hover:border-purple-300 dark:hover:border-purple-700 transition-all cursor-pointer flex justify-between items-center group"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-800/40 flex items-center justify-center shrink-0">
+                  <IoTimeOutline size={18} className="text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Diagnostic #{history.length - i}</p>
-                  {h.completedAt && <p className="text-xs text-gray-400">{new Date(h.completedAt).toLocaleDateString()}</p>}
+                  <p className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                    Diagnostic #{history.length - i}
+                  </p>
+                  {h.completedAt && (
+                    <p className="text-xs text-gray-400 dark:text-gray-400 mt-0.5">
+                      {new Date(h.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </p>
+                  )}
                 </div>
               </div>
-              {h.overallScore != null && (
-                <span className={`text-sm font-bold ${h.overallScore >= 70 ? 'text-emerald-600' : h.overallScore >= 40 ? 'text-yellow-600' : 'text-red-600'}`}>
-                  {Math.round(h.overallScore)}%
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                {h.overallScore != null && (
+                  <span className={`text-sm font-extrabold px-3 py-1 rounded-xl ${
+                    h.overallScore >= 70
+                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/40'
+                      : h.overallScore >= 40
+                      ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800/40'
+                      : 'bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/40'
+                  }`}>
+                    {Math.round(h.overallScore)}%
+                  </span>
+                )}
+                <IoChevronForwardOutline size={16} className="text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+              </div>
             </div>
           ))}
         </div>
@@ -708,7 +958,7 @@ function TopicDetailScreen({ topic, latestDiag, onBack, onPractice }) {
       ? `Good foundation in ${topic}! Push to master the remaining subtopics.`
       : `Excellent ${topic} mastery! Challenge yourself with harder problems.`;
 
-  const topicColor = topic === 'Algebra' ? '#3b82f6' : topic === 'Geometry' ? '#10b981' : '#f59e0b';
+  const topicColor = topic === 'Algebra' ? '#3b82f6' : topic === 'Geometry' ? '#8b5cf6' : '#f59e0b';
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -906,8 +1156,25 @@ export default function Diagnosis() {
       const totalCorrect = Object.entries(answers).filter(
         ([idx, ans]) => (ans ?? '').trim().toLowerCase() === (questions[idx]?.correctAnswer ?? '').trim().toLowerCase()
       ).length;
+
+      const questionResponses = questions.map((q, idx) => {
+        const userAns = answers[idx] || '';
+        const isRight = (userAns ?? '').trim().toLowerCase() === (q.correctAnswer ?? '').trim().toLowerCase();
+        return {
+          questionText: q.question,
+          topic: q.topic,
+          subtopic: q.subtopic || '',
+          difficulty: q.difficulty || 'Medium',
+          choices: q.choices || [],
+          correctAnswer: q.correctAnswer || '',
+          userAnswer: userAns,
+          isCorrect: isRight,
+          explanation: q.explanation || '',
+        };
+      });
+
       const { data } = await learningApi.submitDiagnostic({
-        topicScores, totalQuestions: questions.length, correctAnswers: totalCorrect, timeSpent,
+        topicScores, totalQuestions: questions.length, correctAnswers: totalCorrect, timeSpent, questionResponses,
       });
       const diag = data?.data?.diagnosticResult ?? data?.data?.diagnostic ?? data?.diagnostic ?? data;
       setResult(diag);
@@ -1047,7 +1314,7 @@ export default function Diagnosis() {
 
   const subjects = [
     { name: 'Algebra',      score: latestDiag.algebraScore ?? 0, color: '#3b82f6' }, // Blue
-    { name: 'Geometry',     score: latestDiag.geometryScore ?? 0, color: '#10b981' }, // Emerald
+    { name: 'Geometry',     score: latestDiag.geometryScore ?? 0, color: '#8b5cf6' }, // Purple
     { name: 'Trigonometry', score: latestDiag.trigonometryScore ?? 0, color: '#f59e0b' }, // Amber
   ];
 
@@ -1090,7 +1357,7 @@ export default function Diagnosis() {
             </div>
 
             {/* Mastery rings */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-3 gap-1 sm:gap-6 mb-8">
               {subjects.map(({ name, score, color }) => (
                 <MasteryRing
                   key={name}

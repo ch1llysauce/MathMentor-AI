@@ -54,7 +54,14 @@ export default function DiagnosticScreen() {
   };
   const [diagnostic, setDiagnostic] = useState<DiagnosticResult | null>(_diagCache.diagnostic);
   const [timelineData, setTimelineData] = useState<any[]>(_diagCache.timelineData);
-  const [selectedPeriod, setSelectedPeriod] = useState<TimelinePeriod>('week');
+  const [selectedPeriod, setSelectedPeriod] = useState<TimelinePeriod>(_diagCache.selectedPeriod || 'week');
+  const selectedPeriodRef = React.useRef(selectedPeriod);
+
+  useEffect(() => {
+    selectedPeriodRef.current = selectedPeriod;
+    _diagCache.selectedPeriod = selectedPeriod;
+  }, [selectedPeriod]);
+
   const [loading, setLoading] = useState(!_diagCache.loaded);
   const [refreshing, setRefreshing] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
@@ -69,13 +76,13 @@ export default function DiagnosticScreen() {
   };
 
   useEffect(() => {
-    if (!_diagCache.loaded) loadDiagnosticData();
+    if (!_diagCache.loaded) loadDiagnosticData(false, selectedPeriodRef.current);
   }, []);
 
   // Silently refresh when tab is re-focused
   useFocusEffect(
     useCallback(() => {
-      if (_diagCache.loaded) loadDiagnosticData(true);
+      if (_diagCache.loaded) loadDiagnosticData(true, selectedPeriodRef.current);
     }, [])
   );
 
@@ -85,14 +92,14 @@ export default function DiagnosticScreen() {
     }
   }, [selectedPeriod]);
 
-  const loadDiagnosticData = async (silent = false) => {
+  const loadDiagnosticData = async (silent = false, periodOverride?: TimelinePeriod) => {
     try {
       if (!silent) setLoading(true);
       const response = await diagnosticService.getLatestDiagnostic();
       const diag = response.data?.diagnostic || (response as any).data;
       setDiagnostic(diag);
       _diagCache.diagnostic = diag;
-      await loadTimelineData(selectedPeriod);
+      await loadTimelineData(periodOverride || selectedPeriodRef.current);
       _diagCache.loaded = true;
     } catch (error: any) {
       console.error('Error loading diagnostic:', error);
@@ -258,17 +265,17 @@ export default function DiagnosticScreen() {
               topic="Algebra"
               subtitle={getTopicSubtitle('Algebra', diagnostic.algebraScore)}
               color="#2563eb"
-              size={85}
-              strokeWidth={7}
+              size={72}
+              strokeWidth={6}
               onPress={() => handleTopicPress('Algebra', diagnostic.algebraScore)}
             />
             <MasteryRing
               percentage={diagnostic.geometryScore}
               topic="Geometry"
               subtitle={getTopicSubtitle('Geometry', diagnostic.geometryScore)}
-              color="#00a472"
-              size={85}
-              strokeWidth={7}
+              color="#8b5cf6"
+              size={72}
+              strokeWidth={6}
               onPress={() => handleTopicPress('Geometry', diagnostic.geometryScore)}
             />
             <MasteryRing
@@ -276,8 +283,8 @@ export default function DiagnosticScreen() {
               topic="Trigonometry"
               subtitle={getTopicSubtitle('Trigonometry', diagnostic.trigonometryScore)}
               color="#f59e0b"
-              size={85}
-              strokeWidth={7}
+              size={72}
+              strokeWidth={6}
               onPress={() => handleTopicPress('Trigonometry', diagnostic.trigonometryScore)}
             />
           </View>
@@ -479,40 +486,41 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 80,
-    paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 62,
+    paddingBottom: 12,
   },
   title: {
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: '700',
     color: Colors.primary,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 14,
     color: Colors.textLight,
-    lineHeight: 28,
+    lineHeight: 20,
+    marginBottom: 8,
   },
   badge: {
     alignSelf: 'flex-start',
     backgroundColor: Colors.secondaryFixed,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 16,
   },
   badgeText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
     color: Colors.onSecondaryFixedVariant,
     letterSpacing: 0.5,
   },
   section: {
     backgroundColor: Colors.white,
-    marginHorizontal: 24,
-    marginBottom: 16,
-    borderRadius: 12,
-    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 16,
+    padding: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
@@ -523,85 +531,85 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 14,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: Colors.primary,
   },
   sectionSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: Colors.textLight,
-    marginTop: 4,
+    marginTop: 2,
   },
   viewDetails: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '700',
     color: Colors.secondary,
     letterSpacing: 0.5,
   },
   weakAreasHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   masteryRingsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'flex-start',
     width: '100%',
-    paddingHorizontal: 4,
+    paddingHorizontal: 0,
   },
   recommendationCard: {
     flexDirection: 'row',
     backgroundColor: Colors.surfaceContainerLow,
-    borderLeftWidth: 4,
+    borderLeftWidth: 3,
     borderLeftColor: Colors.secondary,
     borderRadius: 12,
-    padding: 16,
-    marginTop: 24,
-    gap: 16,
+    padding: 12,
+    marginTop: 14,
+    gap: 12,
   },
   recommendationContent: {
     flex: 1,
-    gap: 4,
+    gap: 2,
   },
   recommendationTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     color: Colors.primary,
   },
   recommendationText: {
-    fontSize: 14,
+    fontSize: 12.5,
     color: Colors.text,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   noWeakAreasCard: {
-    padding: 24,
-    borderRadius: 20,
+    padding: 16,
+    borderRadius: 16,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   noWeakAreasTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     color: '#00a472',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   noWeakAreasSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
     textAlign: 'center',
   },
   ctaCard: {
-    borderRadius: 20,
-    padding: 24,
-    marginTop: 16,
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 12,
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -609,45 +617,45 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   ctaIconBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   ctaTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: '#ffffff',
     textAlign: 'center',
   },
   ctaSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.85)',
     textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 12,
+    lineHeight: 16,
+    marginBottom: 8,
   },
   ctaButton: {
     width: '100%',
-    paddingVertical: 14,
-    borderRadius: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   ctaButtonText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   historyButton: {
-    marginHorizontal: 24,
-    marginBottom: 24,
-    paddingVertical: 16,
-    borderRadius: 20,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -660,21 +668,21 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   historyButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
   periodSelector: {
     flexDirection: 'row',
     backgroundColor: Colors.surfaceContainerLow,
-    padding: 4,
+    padding: 3,
     borderRadius: 8,
-    gap: 8,
-    marginBottom: 24,
+    gap: 6,
+    marginBottom: 14,
     alignSelf: 'flex-start',
   },
   periodButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 6,
   },
   periodButtonActive: {
@@ -686,8 +694,8 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   periodButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
     color: Colors.textLight,
     letterSpacing: 0.5,
   },

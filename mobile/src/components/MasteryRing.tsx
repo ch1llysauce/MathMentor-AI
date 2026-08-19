@@ -45,7 +45,7 @@ export const MasteryRing: React.FC<MasteryRingProps> = ({
 
   const defaultColor =
     topic === 'Algebra' ? '#2563eb' :
-    topic === 'Geometry' ? '#00a472' :
+    topic === 'Geometry' ? '#8b5cf6' :
     topic === 'Trigonometry' ? '#f59e0b' :
     (percentage >= 80 ? '#00a472' : percentage >= 60 ? '#f59e0b' : '#ef4444');
 
@@ -159,3 +159,5 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 });
+
+export default MasteryRing;

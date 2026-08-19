@@ -24,7 +24,7 @@ import { offlineCacheService } from '@/services/offlineCache';
 // (Imported from tabCache so logout can clear it centrally)
 const _cachedTopics = practiceCache;
 
-type TopicFilter = 'all' | 'weak' | 'strong';
+type TopicFilter = 'all' | 'daily' | 'weak' | 'strong';
 
 interface Topic {
   id: string;
@@ -40,11 +40,11 @@ interface Topic {
 const blendColors = (baseHex: string, tintHex: string, amount: number) => {
   const c1 = baseHex.replace('#', '');
   const c2 = tintHex.replace('#', '');
-  
+
   const r1 = parseInt(c1.substring(0, 2), 16) || 0;
   const g1 = parseInt(c1.substring(2, 4), 16) || 0;
   const b1 = parseInt(c1.substring(4, 6), 16) || 0;
-  
+
   const r2 = parseInt(c2.substring(0, 2), 16) || 0;
   const g2 = parseInt(c2.substring(2, 4), 16) || 0;
   const b2 = parseInt(c2.substring(4, 6), 16) || 0;
@@ -85,7 +85,7 @@ export default function PracticeScreen() {
   const DAILY_TOPICS = ['algebra', 'geometry', 'trigonometry'];
   const dailyTopicIndex =
     (new Date().getDate() + new Date().getMonth() * 3) % DAILY_TOPICS.length;
-  const dailyTopic     = DAILY_TOPICS[dailyTopicIndex];
+  const dailyTopic = DAILY_TOPICS[dailyTopicIndex];
   const dailyTopicLabel = dailyTopic.charAt(0).toUpperCase() + dailyTopic.slice(1);
   const [dailyDone, setDailyDone] = useState(false);
   const [dailyScore, setDailyScore] = useState<{ score: number; total: number } | null>(null);
@@ -120,11 +120,11 @@ export default function PracticeScreen() {
     router.push({
       pathname: '/practice/problems',
       params: {
-        topic:    dailyTopic,
+        topic: dailyTopic,
         category: 'mixed',
-        count:    '10',
-        title:    `Daily Challenge — ${dailyTopicLabel}`,
-        isDaily:  'true',
+        count: '10',
+        title: `Daily Challenge — ${dailyTopicLabel}`,
+        isDaily: 'true',
       },
     });
   };
@@ -133,7 +133,7 @@ export default function PracticeScreen() {
     if (!_cachedTopics.topics) loadData();
   }, []);
 
-      // Silently refresh when tab is re-focused (e.g. returning from topic screen)
+  // Silently refresh when tab is re-focused (e.g. returning from topic screen)
   useFocusEffect(
     useCallback(() => {
       // Always re-check daily challenge completion on focus (server-side)
@@ -145,7 +145,7 @@ export default function PracticeScreen() {
   const loadData = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
-      
+
       // Load user diagnostic data for mastery scores
       let diagnosticData = null;
       try {
@@ -168,10 +168,10 @@ export default function PracticeScreen() {
 
         // Group lessons by topic and build topic list
         const topicMap = new Map<string, any>();
-        
+
         lessons.forEach((lesson: any) => {
           const topicName = lesson.topic;
-          
+
           if (!topicMap.has(topicName)) {
             topicMap.set(topicName, {
               name: topicName,
@@ -180,7 +180,7 @@ export default function PracticeScreen() {
               problemCount: 0,
             });
           }
-          
+
           const topic = topicMap.get(topicName);
           topic.subtopics.add(lesson.subtopic);
           topic.lessons.push(lesson);
@@ -207,7 +207,7 @@ export default function PracticeScreen() {
             color = '#2563eb';
           } else if (topicLower === 'geometry') {
             icon = 'shapes';
-            color = '#00a472';
+            color = '#8b5cf6';
           } else if (topicLower === 'trigonometry') {
             icon = 'analytics';
             color = '#f59e0b';
@@ -246,7 +246,7 @@ export default function PracticeScreen() {
             id: '2',
             name: 'Geometry',
             icon: 'shapes',
-            color: '#00a472',
+            color: '#8b5cf6',
             lessons: 0,
             problems: 0,
             mastery: diagnosticData?.geometryScore || 0,
@@ -274,7 +274,8 @@ export default function PracticeScreen() {
   const filteredTopics = topics.filter(topic => {
     const matchesSearch = topic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       topic.subtopics.some(sub => sub.toLowerCase().includes(searchQuery.toLowerCase()));
-    
+
+    if (selectedFilter === 'daily') return false;
     if (selectedFilter === 'weak') return matchesSearch && topic.mastery < 70;
     if (selectedFilter === 'strong') return matchesSearch && topic.mastery >= 80;
     return matchesSearch;
@@ -289,12 +290,85 @@ export default function PracticeScreen() {
   const handleTopicPress = (topic: Topic) => {
     router.push({
       pathname: '/practice/topic',
-      params: { 
+      params: {
         topicId: topic.id,
         topicName: topic.name,
         mastery: topic.mastery.toString(),
       }
     });
+  };
+
+  const renderDailyChallengeCard = () => {
+    const actionColor = dailyDone ? '#00a472' : '#f59e0b';
+    const actionCardColors: [string, string] = [
+      P.card,
+      blendColors(P.card, actionColor, darkMode ? 0.22 : 0.08)
+    ];
+    const actionCircleColors: [string, string] = [
+      blendColors(P.card, actionColor, darkMode ? 0.35 : 0.18),
+      blendColors(P.card, actionColor, darkMode ? 0.12 : 0.05)
+    ];
+
+    return (
+      <TouchableOpacity
+        onPress={dailyDone ? undefined : handleDailyChallenge}
+        activeOpacity={dailyDone ? 1 : 0.8}
+        disabled={dailyDone}
+      >
+        <LinearGradient
+          colors={actionCardColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[
+            styles.actionCard,
+            { borderColor: blendColors(P.card, actionColor, darkMode ? 0.40 : 0.25), borderWidth: 1 },
+            dailyDone && styles.actionCardDone,
+          ]}
+        >
+          <LinearGradient
+            colors={actionCircleColors}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.actionIcon, { borderColor: blendColors(P.card, actionColor, darkMode ? 0.45 : 0.30), borderWidth: 1 }]}
+          >
+            <Ionicons
+              name={dailyDone ? 'checkmark-circle' : 'trophy'}
+              size={22}
+              color={actionColor}
+            />
+          </LinearGradient>
+          <View style={styles.actionContent}>
+            <View style={styles.actionTitleRow}>
+              <Text style={[styles.actionTitle, { color: P.text }]}>Daily Challenge</Text>
+              {dailyDone && dailyScore && (
+                <View style={styles.scoreBadge}>
+                  <Text style={styles.scoreBadgeText}>
+                    {dailyScore.score}/{dailyScore.total}
+                  </Text>
+                </View>
+              )}
+              {dailyDone && !dailyScore && (
+                <View style={styles.doneBadge}>
+                  <Text style={styles.doneBadgeText}>Done ✓</Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.actionSubtitle, { color: P.textLight }]}>
+              {dailyDone
+                ? dailyScore
+                  ? `Score: ${dailyScore.score}/${dailyScore.total} · Come back tomorrow!`
+                  : 'Come back tomorrow for a new challenge!'
+                : `Today: ${dailyTopicLabel} — 10 mixed problems`}
+            </Text>
+          </View>
+          {dailyDone ? (
+            <Ionicons name="lock-closed" size={16} color="#00a472" />
+          ) : (
+            <Ionicons name="chevron-forward" size={18} color={P.textLight} />
+          )}
+        </LinearGradient>
+      </TouchableOpacity>
+    );
   };
 
   if (loading) {
@@ -350,14 +424,29 @@ export default function PracticeScreen() {
               All Topics
             </Text>
           </TouchableOpacity>
-          
+
+          <TouchableOpacity
+            style={[styles.filterChip, { backgroundColor: P.chipBg, borderColor: P.border }, selectedFilter === 'daily' && { backgroundColor: P.chipActiveBg, borderColor: P.chipActiveBg }]}
+            onPress={() => setSelectedFilter('daily')}
+          >
+            <Ionicons
+              name="trophy-outline"
+              size={14}
+              color={selectedFilter === 'daily' ? P.chipActiveText : (darkMode ? '#ffffff' : '#000000')}
+              style={{ marginRight: 4 }}
+            />
+            <Text style={[styles.filterChipText, { color: P.text }, selectedFilter === 'daily' && { color: P.chipActiveText }]}>
+              Daily Challenge
+            </Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[styles.filterChip, { backgroundColor: P.chipBg, borderColor: P.border }, selectedFilter === 'weak' && { backgroundColor: P.chipActiveBg, borderColor: P.chipActiveBg }]}
             onPress={() => setSelectedFilter('weak')}
           >
-            <Ionicons 
-              name="arrow-down" 
-              size={14} 
+            <Ionicons
+              name="arrow-down"
+              size={14}
               color={selectedFilter === 'weak' ? P.chipActiveText : P.textLight}
               style={{ marginRight: 4 }}
             />
@@ -365,14 +454,14 @@ export default function PracticeScreen() {
               Need Practice
             </Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={[styles.filterChip, { backgroundColor: P.chipBg, borderColor: P.border }, selectedFilter === 'strong' && { backgroundColor: P.chipActiveBg, borderColor: P.chipActiveBg }]}
             onPress={() => setSelectedFilter('strong')}
           >
-            <Ionicons 
-              name="arrow-up" 
-              size={14} 
+            <Ionicons
+              name="arrow-up"
+              size={14}
               color={selectedFilter === 'strong' ? P.chipActiveText : P.textLight}
               style={{ marginRight: 4 }}
             />
@@ -384,7 +473,9 @@ export default function PracticeScreen() {
 
         {/* Topics List */}
         <View style={styles.topicsList}>
-          {filteredTopics.length === 0 ? (
+          {selectedFilter === 'daily' ? (
+            renderDailyChallengeCard()
+          ) : filteredTopics.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="search" size={64} color={P.textLight} />
               <Text style={[styles.emptyText, { color: P.text }]}>No topics found</Text>
@@ -422,20 +513,20 @@ export default function PracticeScreen() {
                         end={{ x: 1, y: 1 }}
                         style={[styles.topicIcon, { borderColor: blendColors(P.card, topic.color, darkMode ? 0.45 : 0.30), borderWidth: 1 }]}
                       >
-                        <Ionicons name={topic.icon as any} size={30} color={topic.color} />
+                        <Ionicons name={topic.icon as any} size={24} color={topic.color} />
                       </LinearGradient>
-                      
+
                       <View style={styles.topicInfo}>
                         <Text style={[styles.topicName, { color: P.text }]}>{topic.name}</Text>
                         <View style={styles.topicMeta}>
                           <View style={styles.metaItem}>
-                            <Ionicons name="book-outline" size={14} color={P.textLight} />
+                            <Ionicons name="book-outline" size={13} color={P.textLight} />
                             <Text style={[styles.metaText, { color: P.textLight }]}>{topic.lessons} lessons</Text>
                           </View>
                         </View>
                       </View>
-                      
-                      <Ionicons name="chevron-forward" size={20} color={P.textLight} />
+
+                      <Ionicons name="chevron-forward" size={18} color={P.textLight} />
                     </View>
 
                     {/* Progress Bar */}
@@ -450,14 +541,14 @@ export default function PracticeScreen() {
                         </View>
                       </View>
                       <View style={[styles.progressBarContainer, { backgroundColor: P.surface }]}>
-                        <View 
+                        <View
                           style={[
                             styles.progressBar,
-                            { 
+                            {
                               width: `${topic.mastery}%`,
                               backgroundColor: masteryInfo.color
                             }
-                          ]} 
+                          ]}
                         />
                       </View>
                     </View>
@@ -486,82 +577,12 @@ export default function PracticeScreen() {
         </View>
 
         {/* Quick Actions */}
-        <View style={styles.quickActions}>
-          <Text style={[styles.quickActionsTitle, { color: P.text }]}>Quick Actions</Text>
-
-          {(() => {
-            const actionColor = dailyDone ? '#00a472' : '#f59e0b';
-            const actionCardColors: [string, string] = [
-              P.card,
-              blendColors(P.card, actionColor, darkMode ? 0.22 : 0.08)
-            ];
-            const actionCircleColors: [string, string] = [
-              blendColors(P.card, actionColor, darkMode ? 0.35 : 0.18),
-              blendColors(P.card, actionColor, darkMode ? 0.12 : 0.05)
-            ];
-
-            return (
-              <TouchableOpacity
-                onPress={dailyDone ? undefined : handleDailyChallenge}
-                activeOpacity={dailyDone ? 1 : 0.8}
-                disabled={dailyDone}
-              >
-                <LinearGradient
-                  colors={actionCardColors}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={[
-                    styles.actionCard,
-                    { borderColor: blendColors(P.card, actionColor, darkMode ? 0.40 : 0.25), borderWidth: 1 },
-                    dailyDone && styles.actionCardDone,
-                  ]}
-                >
-                  <LinearGradient
-                    colors={actionCircleColors}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={[styles.actionIcon, { borderColor: blendColors(P.card, actionColor, darkMode ? 0.45 : 0.30), borderWidth: 1 }]}
-                  >
-                    <Ionicons
-                      name={dailyDone ? 'checkmark-circle' : 'trophy'}
-                      size={26}
-                      color={actionColor}
-                    />
-                  </LinearGradient>
-                  <View style={styles.actionContent}>
-                    <View style={styles.actionTitleRow}>
-                      <Text style={[styles.actionTitle, { color: P.text }]}>Daily Challenge</Text>
-                      {dailyDone && dailyScore && (
-                        <View style={styles.scoreBadge}>
-                          <Text style={styles.scoreBadgeText}>
-                            {dailyScore.score}/{dailyScore.total}
-                          </Text>
-                        </View>
-                      )}
-                      {dailyDone && !dailyScore && (
-                        <View style={styles.doneBadge}>
-                          <Text style={styles.doneBadgeText}>Done ✓</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={[styles.actionSubtitle, { color: P.textLight }]}>
-                      {dailyDone
-                        ? dailyScore
-                          ? `Score: ${dailyScore.score}/${dailyScore.total} · Come back tomorrow!`
-                          : 'Come back tomorrow for a new challenge!'
-                        : `Today: ${dailyTopicLabel} — 10 mixed problems`}
-                    </Text>
-                  </View>
-                  {dailyDone ? (
-                    <Ionicons name="lock-closed" size={18} color="#00a472" />
-                  ) : (
-                    <Ionicons name="chevron-forward" size={20} color={P.textLight} />
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-            );
-          })()}
-        </View>
+        {selectedFilter !== 'daily' && (
+          <View style={styles.quickActions}>
+            <Text style={[styles.quickActionsTitle, { color: P.text }]}>Quick Actions</Text>
+            {renderDailyChallengeCard()}
+          </View>
+        )}
 
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -581,60 +602,60 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: 15,
     color: Colors.textLight,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 80,
-    paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 62,
+    paddingBottom: 8,
   },
   title: {
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: '700',
     color: Colors.primary,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 14,
     color: Colors.textLight,
-    lineHeight: 28,
+    lineHeight: 20,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.white,
-    marginHorizontal: 24,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 2,
   },
   searchIcon: {
-    marginRight: 12,
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.text,
   },
   filterContainer: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     gap: 8,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     backgroundColor: Colors.white,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -643,7 +664,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
   },
   filterChipText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: Colors.text,
   },
@@ -651,58 +672,58 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   topicsList: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
   },
   emptyState: {
     alignItems: 'center',
-    padding: 40,
+    padding: 32,
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: Colors.text,
-    marginTop: 16,
+    marginTop: 12,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.textLight,
     marginTop: 4,
   },
   topicCard: {
     borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    padding: 14,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
     elevation: 2,
   },
   topicHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   topicIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   topicInfo: {
     flex: 1,
   },
   topicName: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '700',
     color: Colors.text,
-    marginBottom: 6,
+    marginBottom: 2,
   },
   topicMeta: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 12,
   },
   metaItem: {
     flexDirection: 'row',
@@ -710,20 +731,20 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   metaText: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.textLight,
   },
   progressSection: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   progressLabel: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.textLight,
     fontWeight: '500',
   },
@@ -733,66 +754,66 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   masteryText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
   masteryPercent: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: Colors.text,
   },
   progressBarContainer: {
-    height: 8,
+    height: 6,
     backgroundColor: Colors.surfaceContainer,
-    borderRadius: 4,
+    borderRadius: 3,
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 3,
   },
   subtopicsSection: {
-    paddingTop: 16,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: Colors.surfaceContainer,
   },
   subtopicsLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: Colors.text,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   subtopicsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   subtopicTag: {
     backgroundColor: Colors.surfaceContainer,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
   subtopicText: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.text,
     fontWeight: '500',
   },
   quickActions: {
-    paddingHorizontal: 24,
-    marginTop: 8,
+    paddingHorizontal: 16,
+    marginTop: 4,
   },
   quickActionsTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: Colors.text,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   actionCard: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 16,
-    padding: 16,
+    padding: 12,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -830,28 +851,28 @@ const styles = StyleSheet.create({
     borderColor: '#00a472',
   },
   scoreBadgeText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#00a472',
   },
   actionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   actionContent: {
     flex: 1,
   },
   actionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: Colors.text,
   },
   actionSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.textLight,
   },
 });

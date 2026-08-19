@@ -143,6 +143,18 @@ const diagnosticResultSchema = new mongoose.Schema(
         default: 0 // in seconds
     },
 
+    questionResponses: [{
+        questionText: String,
+        topic: String,
+        subtopic: String,
+        difficulty: String,
+        choices: [String],
+        correctAnswer: String,
+        userAnswer: String,
+        isCorrect: Boolean,
+        explanation: String
+    }],
+
     completedAt: {
         type: Date,
         default: Date.now

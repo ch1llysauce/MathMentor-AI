@@ -17,7 +17,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 const TOPIC_COLORS = {
   Algebra: '#2563eb',
-  Geometry: '#00a472',
+  Geometry: '#8b5cf6',
   Trigonometry: '#f59e0b',
 };
 

@@ -96,6 +96,7 @@ export const learningApi = {
   completeLesson:      (id, t)  => api.put(`/learning/lessons/${id}/complete`, { timeSpent: t }),
   markIncomplete:      (id)     => api.put(`/learning/lessons/${id}/incomplete`),
   getDiagnosticHistory:()       => api.get('/learning/diagnostic/history'),
+  getDiagnosticById:   (id)     => api.get(`/learning/diagnostic/${id}`),
   getLatestDiagnostic: ()       => api.get('/learning/diagnostic/latest'),
   submitDiagnostic:    (data)   => api.post('/learning/diagnostic/submit', data),
   getLessonConversation:(id)    => api.get(`/learning/lessons/${id}/conversation`),

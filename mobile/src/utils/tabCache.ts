@@ -23,8 +23,9 @@ export const dashCache: {
 export const diagCache: {
   diagnostic: any | null;
   timelineData: any[];
+  selectedPeriod: 'week' | 'month' | '6months';
   loaded: boolean;
-} = { diagnostic: null, timelineData: [], loaded: false };
+} = { diagnostic: null, timelineData: [], selectedPeriod: 'week', loaded: false };
 
 // ── Practice ──────────────────────────────────────────────────────────────────
 export const practiceCache: {
@@ -42,6 +43,7 @@ export function clearTabCaches() {
 
   diagCache.diagnostic = null;
   diagCache.timelineData = [];
+  diagCache.selectedPeriod = 'week';
   diagCache.loaded = false;
 
   practiceCache.topics = null;

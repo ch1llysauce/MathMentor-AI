@@ -18,7 +18,7 @@ const features = [
 
 const subjects = [
   { label: 'Algebra',      desc: '10 modules · 45 lessons', color: '#2563eb', bg: 'rgba(37,99,235,0.08)',  border: 'rgba(37,99,235,0.2)' },
-  { label: 'Geometry',     desc: '9 modules · 40 lessons',  color: '#00a472', bg: 'rgba(0,164,114,0.08)', border: 'rgba(0,164,114,0.2)' },
+  { label: 'Geometry',     desc: '9 modules · 40 lessons',  color: '#8b5cf6', bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.2)' },
   { label: 'Trigonometry', desc: '9 modules · 31 lessons',  color: '#f59e0b', bg: 'rgba(245,158,11,0.08)',border: 'rgba(245,158,11,0.2)' },
 ];
 

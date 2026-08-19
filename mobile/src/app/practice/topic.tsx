@@ -7,6 +7,7 @@ import {
   StatusBar,
   ActivityIndicator,
   TextInput,
+  BackHandler,
 } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,7 +47,7 @@ const PRACTICE_SETS: PracticeSet[] = [
 
 const TOPIC_COLORS: Record<string, string> = {
   Algebra: '#2563eb',
-  Geometry: '#00a472',
+  Geometry: '#8b5cf6',
   Trigonometry: '#f59e0b',
 };
 
@@ -258,6 +259,25 @@ export default function TopicScreen() {
     setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: true }), 50);
   };
 
+  const handleBackToPractice = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/practice');
+    }
+  }, [router]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        handleBackToPractice();
+        return true;
+      };
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [handleBackToPractice])
+  );
+
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: T.bg, justifyContent: 'center', alignItems: 'center' }]}>
@@ -277,7 +297,7 @@ export default function TopicScreen() {
       <View style={[styles.header, { backgroundColor: T.header, borderBottomColor: T.border }]}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => router.replace('/(tabs)/practice')}
+          onPress={handleBackToPractice}
           activeOpacity={0.7}
         >
           <Ionicons name="arrow-back" size={24} color={T.text} />
@@ -708,12 +728,12 @@ const styles = StyleSheet.create({
   lessonCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 16,
+    padding: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 2,
   },
@@ -721,23 +741,23 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   lessonNumber: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
+    marginRight: 12,
   },
   chevronCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 10,
+    marginLeft: 8,
   },
   lessonNumberText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: Colors.primary,
   },
@@ -745,10 +765,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   lessonTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: Colors.text,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   lessonTitleLocked: {
     color: Colors.textLight,
@@ -759,13 +779,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   lessonDuration: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.textLight,
   },
   practiceCard: {
     backgroundColor: Colors.white,
     borderRadius: 16,
-    padding: 16,
+    padding: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -780,10 +800,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   practiceTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: Colors.text,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   practiceMeta: {
     flexDirection: 'row',
@@ -796,35 +816,35 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   metaText: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.textLight,
   },
   difficultyBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   difficultyText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
   practiceProgress: {
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: 10,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: Colors.surfaceContainer,
   },
   progressInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   progressText: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.textLight,
   },
   progressPercent: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: Colors.text,
   },
@@ -842,14 +862,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderWidth: 1,
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     paddingVertical: 0,
   },
   chipsRow: {
@@ -859,19 +879,19 @@ const styles = StyleSheet.create({
   },
   stickyFilters: {
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 10,
     paddingBottom: 8,
     gap: 8,
     borderBottomWidth: 1,
   },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 16,
     borderWidth: 1,
   },
   chipText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
   },
   resultsCount: {

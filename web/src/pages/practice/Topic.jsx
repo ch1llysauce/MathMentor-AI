@@ -20,7 +20,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 const TOPIC_META = {
   Algebra: { color: '#2563eb', bg: 'rgba(37,99,235,0.12)' },
-  Geometry: { color: '#00a472', bg: 'rgba(0,164,114,0.12)' },
+  Geometry: { color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)' },
   Trigonometry: { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
 };
 

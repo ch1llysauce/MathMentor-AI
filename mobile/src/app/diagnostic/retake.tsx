@@ -253,11 +253,28 @@ export default function RetakeDiagnosticScreen() {
       ).length;
       const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
 
+      const questionResponses = questions.map((q, idx) => {
+        const userAns = answers[idx] || '';
+        const isRight = userAns.trim().toLowerCase() === (q.correctAnswer || '').trim().toLowerCase();
+        return {
+          questionText: q.question,
+          topic: q.topic,
+          subtopic: q.subtopic || '',
+          difficulty: q.difficulty || 'Medium',
+          choices: q.choices || [],
+          correctAnswer: q.correctAnswer || '',
+          userAnswer: userAns,
+          isCorrect: isRight,
+          explanation: q.explanation || '',
+        };
+      });
+
       const response = await diagnosticService.submitDiagnosticResults({
         topicScores,
         totalQuestions: questions.length,
         correctAnswers: totalCorrect,
         timeSpent,
+        questionResponses,
       });
 
       const resDiag = (response as any)?.data?.diagnosticResult || (response as any)?.data?.diagnostic || (response as any)?.data || response || {

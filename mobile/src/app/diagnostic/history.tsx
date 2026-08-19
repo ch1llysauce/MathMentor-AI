@@ -95,8 +95,10 @@ export default function DiagnosticHistoryScreen() {
             const score = Math.round(item.overallScore ?? 0);
 
             return (
-              <View
+              <TouchableOpacity
                 key={item._id || index}
+                onPress={() => item._id && router.push(`/diagnostic/detail?id=${item._id}` as any)}
+                activeOpacity={0.7}
                 style={[styles.historyCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               >
                 <View style={styles.historyLeft}>
@@ -109,12 +111,15 @@ export default function DiagnosticHistoryScreen() {
                   </View>
                 </View>
 
-                {item.overallScore != null && (
-                  <View style={[styles.scoreBadge, { backgroundColor: getScoreColor(score) + '1A' }]}>
-                    <Text style={[styles.scoreText, { color: getScoreColor(score) }]}>{score}%</Text>
-                  </View>
-                )}
-              </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  {item.overallScore != null && (
+                    <View style={[styles.scoreBadge, { backgroundColor: getScoreColor(score) + '1A' }]}>
+                      <Text style={[styles.scoreText, { color: getScoreColor(score) }]}>{score}%</Text>
+                    </View>
+                  )}
+                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                </View>
+              </TouchableOpacity>
             );
           })}
         </ScrollView>

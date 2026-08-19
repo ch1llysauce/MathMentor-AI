@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, BackHandler } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,7 +12,7 @@ import CustomAlertModal from '@/components/common/CustomAlertModal';
 
 const TOPIC_COLORS: Record<string, string> = {
   Algebra: '#2563eb',
-  Geometry: '#00a472',
+  Geometry: '#8b5cf6',
   Trigonometry: '#f59e0b',
 };
 
@@ -191,6 +191,28 @@ export default function LessonScreen() {
     }
   };
 
+  const handleBack = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace({
+        pathname: '/practice/topic',
+        params: { topicName: lesson?.topic || topicName, mastery },
+      });
+    }
+  }, [router, lesson?.topic, topicName, mastery]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        handleBack();
+        return true;
+      };
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [handleBack])
+  );
+
   if (loading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: L.bg }]}>
@@ -205,7 +227,7 @@ export default function LessonScreen() {
       <View style={[styles.errorContainer, { backgroundColor: L.bg }]}>
         <Ionicons name="alert-circle-outline" size={64} color={L.textLight} />
         <Text style={[styles.errorText, { color: L.text }]}>Lesson not found</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
@@ -228,10 +250,7 @@ export default function LessonScreen() {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: L.header, borderBottomColor: L.border }]}>
-        <TouchableOpacity style={[styles.backIcon, { backgroundColor: L.surface }]} onPress={() => router.replace({
-          pathname: '/practice/topic',
-          params: { topicName: lesson.topic, mastery },
-        })}>
+        <TouchableOpacity style={[styles.backIcon, { backgroundColor: L.surface }]} onPress={handleBack}>
           <Ionicons name="arrow-back" size={24} color={L.text} />
         </TouchableOpacity>
         <View style={styles.headerContent}>

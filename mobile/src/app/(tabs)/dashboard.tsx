@@ -38,7 +38,7 @@ const TOPIC_META: Record<string, { icon: string; color: string; description: str
   },
   Geometry: {
     icon: 'shapes-outline',
-    color: '#00a472',
+    color: '#8b5cf6',
     description: 'Explore angles, shapes, areas, and spatial relationships.',
     subtopics: 9,
   },
